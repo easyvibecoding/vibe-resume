@@ -26,7 +26,7 @@ requests, and an end-to-end "one JD, every market" example.
 | **Warp** (agentic terminal) | reads `.claude/skills/` + `.agents/skills/` + `.warp/skills/` | Zero config; extra `.agents/skills/` symlink added defensively |
 | **OpenClaw** (Nov 2025 → 250k ⭐ Feb 2026) | `~/.openclaw/skills/<name>/SKILL.md` (user scope only) | User-scope symlink — see below |
 | **OpenCode** (CLI agent) | `.opencode/skills/<name>/` (project) + `~/.opencode/skills/` (user) | Project-scope symlink included; user-scope optional |
-| **Hermes Agent** (Nous Research) | Own skill + memory + MCP bridge | Out of scope — reachable via MCP, future v0.3 work |
+| **Hermes Agent** (Nous Research) | `~/.hermes/skills/<category>/<name>/SKILL.md` (its own 5-section structure: *When to Use / Quick Reference / Procedure / Pitfalls / Verification*) | Native skill at [`.hermes/skills/ai-used-resume/SKILL.md`](.hermes/skills/ai-used-resume/SKILL.md); install via `hermes skills install easyvibecoding/vibe-resume/.hermes/skills/ai-used-resume --force --yes` |
 
 All four of the first five hosts receive the same SKILL.md content with zero drift because everything ultimately resolves to `.claude/skills/ai-used-resume/`.
 

@@ -92,7 +92,7 @@ The skill follows the 2026 converged `SKILL.md` convention, so **one canonical f
 | **Warp** (agentic terminal) | reads `.claude/skills/` + `.agents/skills/` + `.warp/skills/` | Zero config (`.agents/skills/` symlink added defensively) |
 | **OpenClaw** (250k⭐ in 60 days) | `~/.openclaw/skills/` (user scope only) | User-scope symlink — see below |
 | **OpenCode** (terminal CLI agent) | `.opencode/skills/` + `~/.opencode/skills/` | Project-scope symlink included |
-| **Hermes Agent** | Own skill + memory + MCP bridge | Reachable via MCP — future v0.3 |
+| **Hermes Agent** (Nous Research) | `~/.hermes/skills/<category>/<name>/SKILL.md` (5-section body) | Native skill at [`.hermes/skills/ai-used-resume/SKILL.md`](.hermes/skills/ai-used-resume/SKILL.md); install with `hermes skills install easyvibecoding/vibe-resume/.hermes/skills/ai-used-resume --force --yes` |
 
 Activate the skill system-wide (so it fires anywhere, not just inside this clone):
 
@@ -114,7 +114,7 @@ mkdir -p ~/.opencode/skills && \
   ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.opencode/skills/ai-used-resume
 ```
 
-See [`AGENTS.md`](AGENTS.md) for the full matrix, Windows symlink commands, and Hermes Agent / MCP plans.
+See [`AGENTS.md`](AGENTS.md) for the full matrix, Windows symlink commands, and Hermes Agent install notes.
 
 ## Quick start
 
