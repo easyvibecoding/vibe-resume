@@ -224,6 +224,66 @@ def list_versions(ctx: click.Context) -> None:
 
 
 @cli.command()
+@click.argument("shell", type=click.Choice(["bash", "zsh", "fish"]))
+@click.option(
+    "--install",
+    is_flag=True,
+    default=False,
+    help="Append the generated snippet to the shell's rc file instead of printing it",
+)
+def completion(shell: str, install: bool) -> None:
+    """Print (or install) a shell completion script for `vibe-resume`.
+
+    Examples:
+        vibe-resume completion zsh >> ~/.zshrc
+        vibe-resume completion zsh --install
+    """
+    import os
+    import subprocess
+
+    # Click auto-generates completion when _<PROG_NAME>_COMPLETE=<shell>_source is set.
+    env = os.environ.copy()
+    env["_VIBE_RESUME_COMPLETE"] = f"{shell}_source"
+    result = subprocess.run(
+        ["vibe-resume"],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    snippet = result.stdout.strip()
+    if not snippet:
+        console.print(
+            f"[red]Failed to generate completion for {shell}.[/red] "
+            f"Make sure `vibe-resume` is on PATH (is the project installed? "
+            f"run `uv sync` or `pip install -e .`)."
+        )
+        raise click.exceptions.Exit(1)
+
+    if not install:
+        click.echo(snippet)
+        return
+
+    rc_path = {
+        "bash": Path.home() / ".bashrc",
+        "zsh": Path.home() / ".zshrc",
+        "fish": Path.home() / ".config/fish/completions/vibe-resume.fish",
+    }[shell]
+    rc_path.parent.mkdir(parents=True, exist_ok=True)
+    marker = "# >>> vibe-resume completion >>>"
+    end_marker = "# <<< vibe-resume completion <<<"
+    existing = rc_path.read_text() if rc_path.exists() else ""
+    if marker in existing:
+        console.print(f"[yellow]completion block already present in {rc_path}; leaving as-is[/yellow]")
+        return
+    block = f"\n{marker}\n{snippet}\n{end_marker}\n"
+    with rc_path.open("a", encoding="utf-8") as fh:
+        fh.write(block)
+    console.print(f"[green]✓[/green] appended completion block to {rc_path}")
+    console.print(f"[dim]Open a new shell or `source {rc_path}` to activate.[/dim]")
+
+
+@cli.command()
 @click.argument("from_version")
 @click.argument("to_version")
 @click.pass_context

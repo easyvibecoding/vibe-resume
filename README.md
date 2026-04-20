@@ -95,6 +95,7 @@ uv run python cli.py render -f all    # md + docx + pdf + git snapshot
 | `cli.py render --tailor data/imports/jd.txt` | tailor for a specific job description |
 | `cli.py review [-v N \| --file PATH] [--locale L] [--jd JD.txt]` | score the rendered draft against the 8-point reviewer checklist |
 | `cli.py trend [--locale L]` | score history per locale with ASCII sparkline + mean + latest grade |
+| `cli.py completion {bash\|zsh\|fish} [--install]` | print or install a shell completion script so `--locale <tab>` expands |
 | `cli.py status` | show per-source activity counts |
 | `cli.py list-versions` / `cli.py diff 1 2` | resume version history |
 

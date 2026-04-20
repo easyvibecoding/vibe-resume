@@ -23,6 +23,10 @@ All notable changes to `vibe-resume`. Format follows
   information list (not a centered strip), Occupation/Employer fields
   under each experience block (matches Europass XML schema labels),
   CEFR languages section, GDPR-minimal personal data.
+- **Shell completions** — `cli.py completion {bash,zsh,fish}` prints a
+  completion snippet (or `--install` appends it to the right rc file
+  with a sentinel-bracketed block so a re-run is idempotent). Makes
+  `vibe-resume render --locale <tab>` expand across the 10 locales.
 - **`zh_HK` locale** — Hong Kong bilingual CV. Section headings pair
   English + 繁體中文 ("Personal Profile 個人簡介" / "Work Experience
   工作經驗") so one document works for Cantonese- and English-speaking
@@ -71,7 +75,6 @@ All notable changes to `vibe-resume`. Format follows
 - **PDF cover page**: optional one-page hero summary before the main resume (`render.cover_page: true`); useful for de_DE Lebenslauf + JP 履歴書 bundles.
 - **Extractor hardening**: real-sample validation for Grok / Perplexity / Mistral / Poe cloud exports — schemas are currently lenient-parsed.
 - **JP 履歴書 legacy cells**: optional 通勤時間 / 扶養家族 / 配偶者 cells (some traditional employers still expect these).
-- **Shell completions**: `cli.py completion install {bash,zsh,fish}` so `uv run vibe-resume render --locale <tab>` works.
 - **Prompt coverage**: verify ko_KR / zh_CN LLM output end-to-end (same way we verified zh_TW/ja_JP/de_DE/fr_FR in 0.1).
 
 ## [0.1.0] — 2026-04-20
