@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -23,7 +23,7 @@ def extract(cfg: dict[str, Any]) -> list[Activity]:
             data = json.loads(mcp_cfg.read_text())
             servers = list((data.get("mcpServers") or {}).keys())
             if servers:
-                mtime = datetime.fromtimestamp(mcp_cfg.stat().st_mtime, tz=timezone.utc)
+                mtime = datetime.fromtimestamp(mcp_cfg.stat().st_mtime, tz=UTC)
                 activities.append(
                     Activity(
                         source=Source.CLAUDE_DESKTOP,
@@ -44,7 +44,7 @@ def extract(cfg: dict[str, Any]) -> list[Activity]:
     if ext_dir.exists():
         exts = [p.name for p in ext_dir.iterdir() if p.is_dir()]
         if exts:
-            mtime = datetime.fromtimestamp(ext_dir.stat().st_mtime, tz=timezone.utc)
+            mtime = datetime.fromtimestamp(ext_dir.stat().st_mtime, tz=UTC)
             activities.append(
                 Activity(
                     source=Source.CLAUDE_DESKTOP,

@@ -1,11 +1,11 @@
 """ElevenLabs history via API. Requires ELEVENLABS_API_KEY."""
 from __future__ import annotations
 
-import os
-import urllib.request
-import urllib.error
 import json
-from datetime import datetime, timezone
+import os
+import urllib.error
+import urllib.request
+from datetime import UTC, datetime
 from typing import Any
 
 from core.schema import Activity, ActivityType, Source
@@ -30,7 +30,7 @@ def extract(cfg: dict[str, Any]) -> list[Activity]:
     activities: list[Activity] = []
     for item in data.get("history") or []:
         ts_unix = item.get("date_unix") or 0
-        ts = datetime.fromtimestamp(ts_unix, tz=timezone.utc)
+        ts = datetime.fromtimestamp(ts_unix, tz=UTC)
         activities.append(
             Activity(
                 source=Source.ELEVENLABS,

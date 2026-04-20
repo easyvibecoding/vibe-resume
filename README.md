@@ -2,11 +2,30 @@
 
 > Turn your AI coding history into a versioned, reviewer-ready résumé — **for the vibe coding era**.
 
+[![CI](https://github.com/easyvibecoding/vibe-resume/actions/workflows/tests.yml/badge.svg)](https://github.com/easyvibecoding/vibe-resume/actions/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![Locales](https://img.shields.io/badge/locales-9-brightgreen.svg)](docs/resume_locales.md)
+[![uv](https://img.shields.io/badge/packaged%20with-uv-261230.svg)](https://github.com/astral-sh/uv)
+
 `vibe-resume` scans every AI assistant you use on macOS (Claude Code, Cursor, GitHub Copilot, Cline, Continue, Aider, Windsurf, Zed AI, ChatGPT / Claude.ai / Gemini / Grok / Perplexity / Mistral exports, ComfyUI, Midjourney, Suno, ElevenLabs, and your `git` commits) and synthesizes the usage trail into a **Markdown / DOCX / PDF résumé** with built-in git snapshots so every draft is diff-able and rollback-able.
 
 <p align="center">
   <em>Scan → Group by project → Classify task types → LLM-enrich to XYZ bullets → Render → Snapshot</em>
 </p>
+
+## How it differs
+
+| | vibe-resume | Reactive Resume / OpenResume | Resume-LM / Resume Matcher | HackMyResume / JSON Resume |
+|---|---|---|---|---|
+| **Primary signal** | AI tool sessions + git commits (auto-extracted) | User-typed content in WYSIWYG | Uploaded PDF + JD | User-typed JSON |
+| **Locales** | **9** (en_US/en_EU/en_GB/zh_TW/zh_CN/ja_JP/ko_KR/de_DE/fr_FR) with culture-specific layouts | 1–2 | 1 | Theme-dependent |
+| **JP 履歴書 JIS Z 8303 grid** | ✅ `render/japan.py` | ❌ | ❌ | ❌ |
+| **Europass labelled personal-info** | ✅ `en_EU` template | ❌ | ❌ | ❌ |
+| **Reviewer audit** | 8-point scorecard + trend sparkline | — | ATS score only | — |
+| **JD tailoring** | `enrich --tailor JD.txt` (LLM prompt injection) | — | ✅ LLM rewrite | — |
+| **Privacy** | Fully local; `claude -p` headless; nothing leaves your machine | Varies (OpenAI-key optional) | Cloud API required | Fully local |
+| **Shape** | Python CLI pipeline | Web UI | Web UI | Node CLI |
 
 ## Why
 

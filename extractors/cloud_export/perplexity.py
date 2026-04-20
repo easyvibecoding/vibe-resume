@@ -3,9 +3,10 @@ from __future__ import annotations
 
 import json
 import zipfile
-from datetime import datetime, timezone
+from collections.abc import Iterator
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 from core.schema import Activity, ActivityType, Source
 
@@ -15,7 +16,7 @@ NAME = "perplexity"
 def _parse_ts(v: Any) -> datetime | None:
     if isinstance(v, (int, float)):
         try:
-            return datetime.fromtimestamp(v if v < 1e11 else v / 1000, tz=timezone.utc)
+            return datetime.fromtimestamp(v if v < 1e11 else v / 1000, tz=UTC)
         except (OSError, ValueError):
             return None
     if isinstance(v, str):
@@ -58,7 +59,7 @@ def extract(cfg: dict[str, Any]) -> list[Activity]:
             if not entries:
                 continue
             start = _parse_ts(t.get("created_at")) or datetime.fromtimestamp(
-                f.stat().st_mtime, tz=timezone.utc
+                f.stat().st_mtime, tz=UTC
             )
             end = _parse_ts(t.get("updated_at")) or start
             snippets = [str(e.get("query", ""))[:200] for e in entries[:3] if isinstance(e, dict)]

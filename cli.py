@@ -1,7 +1,6 @@
 """AI-used-resume CLI entry point."""
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
 import click
@@ -179,8 +178,9 @@ def review(
 @click.pass_context
 def trend(ctx: click.Context, locale: str | None) -> None:
     """Summarize review score history per locale with a sparkline."""
-    from core.review import load_reviews_by_locale, sparkline
     from rich.table import Table
+
+    from core.review import load_reviews_by_locale, sparkline
 
     reviews_dir = ROOT / "data" / "reviews"
     by_locale = load_reviews_by_locale(reviews_dir)

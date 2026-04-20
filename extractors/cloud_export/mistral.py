@@ -3,9 +3,10 @@ from __future__ import annotations
 
 import json
 import zipfile
-from datetime import datetime, timezone
+from collections.abc import Iterator
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 from core.schema import Activity, ActivityType, Source
 
@@ -19,7 +20,7 @@ def _parse_ts(v: Any) -> datetime | None:
         except ValueError:
             return None
     if isinstance(v, (int, float)):
-        return datetime.fromtimestamp(v if v < 1e11 else v / 1000, tz=timezone.utc)
+        return datetime.fromtimestamp(v if v < 1e11 else v / 1000, tz=UTC)
     return None
 
 
@@ -58,7 +59,7 @@ def extract(cfg: dict[str, Any]) -> list[Activity]:
                 continue
             start = (
                 _parse_ts(c.get("created_at"))
-                or datetime.fromtimestamp(f.stat().st_mtime, tz=timezone.utc)
+                or datetime.fromtimestamp(f.stat().st_mtime, tz=UTC)
             )
             end = _parse_ts(c.get("updated_at")) or start
             activities.append(

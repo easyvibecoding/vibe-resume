@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -53,7 +53,7 @@ def _parse_tab(tab: dict, src_file: Path) -> Activity | None:
 
     # Cursor doesn't reliably store per-bubble timestamps in older schemas.
     # Fall back to file mtime.
-    ts_fallback = datetime.fromtimestamp(src_file.stat().st_mtime, tz=timezone.utc)
+    ts_fallback = datetime.fromtimestamp(src_file.stat().st_mtime, tz=UTC)
 
     texts = []
     for b in bubbles[:8]:
@@ -118,7 +118,7 @@ def extract(cfg: dict[str, Any]) -> list[Activity]:
                     msgs = c.get("messages") or []
                     if not msgs:
                         continue
-                    ts_fallback = datetime.fromtimestamp(db.stat().st_mtime, tz=timezone.utc)
+                    ts_fallback = datetime.fromtimestamp(db.stat().st_mtime, tz=UTC)
                     user_n = sum(1 for m in msgs if m.get("role") == "user")
                     asst_n = sum(1 for m in msgs if m.get("role") == "assistant")
                     if user_n + asst_n == 0:

@@ -1,11 +1,11 @@
 """Midjourney — scan image folders for MJ-embedded IPTC/XMP metadata (post Oct 2025)."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from PIL import ExifTags, Image, UnidentifiedImageError
+from PIL import Image, UnidentifiedImageError
 
 from core.schema import Activity, ActivityType, Source
 
@@ -28,7 +28,7 @@ def extract(cfg: dict[str, Any]) -> list[Activity]:
             blob = str(info) + str(xmp)
             if "midjourney" not in blob.lower() and "Job ID" not in blob:
                 continue
-            mtime = datetime.fromtimestamp(f.stat().st_mtime, tz=timezone.utc)
+            mtime = datetime.fromtimestamp(f.stat().st_mtime, tz=UTC)
             activities.append(
                 Activity(
                     source=Source.MIDJOURNEY,

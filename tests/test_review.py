@@ -1,6 +1,8 @@
 """Unit tests for core.review heuristic checks."""
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from core.review import (
@@ -10,7 +12,6 @@ from core.review import (
     review,
 )
 from render.i18n import get_locale
-
 
 GOOD_HEAD = """\
 # Alex Chen

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import re
 from collections import Counter
-from typing import Iterable
+from collections.abc import Iterable
 
 from core.schema import Activity
 

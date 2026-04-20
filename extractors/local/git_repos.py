@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import subprocess
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -139,8 +139,8 @@ def extract(cfg: dict[str, Any]) -> list[Activity]:
                 Activity(
                     source=Source.GIT,
                     session_id=f"{repo.name}:{ym}",
-                    timestamp_start=first.astimezone(timezone.utc),
-                    timestamp_end=last.astimezone(timezone.utc),
+                    timestamp_start=first.astimezone(UTC),
+                    timestamp_end=last.astimezone(UTC),
                     project=str(repo),
                     activity_type=ActivityType.COMMIT,
                     user_prompts_count=len(items),

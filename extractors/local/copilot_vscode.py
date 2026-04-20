@@ -7,7 +7,7 @@ need summary stats, so we replay deltas onto a minimal state.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -66,9 +66,9 @@ def extract(cfg: dict[str, Any]) -> list[Activity]:
             sid = state.get("sessionId") or f.stem
             created = state.get("creationDate")
             ts = (
-                datetime.fromtimestamp(created / 1000, tz=timezone.utc)
+                datetime.fromtimestamp(created / 1000, tz=UTC)
                 if isinstance(created, (int, float))
-                else datetime.fromtimestamp(f.stat().st_mtime, tz=timezone.utc)
+                else datetime.fromtimestamp(f.stat().st_mtime, tz=UTC)
             )
             user_prompts: list[str] = []
             for req in requests:
@@ -86,7 +86,7 @@ def extract(cfg: dict[str, Any]) -> list[Activity]:
                     source=Source.COPILOT_VSCODE,
                     session_id=sid,
                     timestamp_start=ts,
-                    timestamp_end=datetime.fromtimestamp(f.stat().st_mtime, tz=timezone.utc),
+                    timestamp_end=datetime.fromtimestamp(f.stat().st_mtime, tz=UTC),
                     project=workspace_hash,
                     activity_type=ActivityType.CODING,
                     user_prompts_count=len(user_prompts),

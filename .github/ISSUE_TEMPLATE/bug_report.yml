@@ -1,0 +1,66 @@
+name: Bug report
+description: A reproducible problem in the extractor / enricher / renderer / reviewer pipeline.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report! Please include the pipeline stage + locale so we can reproduce quickly.
+
+  - type: dropdown
+    id: stage
+    attributes:
+      label: Pipeline stage
+      options:
+        - extract
+        - aggregate
+        - enrich
+        - render
+        - review
+        - trend
+        - other
+    validations:
+      required: true
+
+  - type: input
+    id: locale
+    attributes:
+      label: Locale (if render / review / enrich)
+      placeholder: "en_US | zh_TW | ja_JP | …"
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction steps
+      description: Minimal command sequence that triggers the bug.
+      placeholder: |
+        1. `uv run vibe-resume aggregate`
+        2. `uv run vibe-resume enrich --locale ja_JP -n 1`
+        3. Observe …
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs actual
+      placeholder: |
+        Expected: …
+        Actual: …
+    validations:
+      required: true
+
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: OS, Python version, `uv`/`pip` version, `claude --version` if the enricher is involved.
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log / traceback
+      render: text

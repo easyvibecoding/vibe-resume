@@ -6,7 +6,6 @@ If `claude` is missing, fall back to a naive rule-based summary.
 """
 from __future__ import annotations
 
-import json
 import shutil
 import subprocess
 from pathlib import Path

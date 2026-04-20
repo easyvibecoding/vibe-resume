@@ -4,8 +4,7 @@
 """
 from __future__ import annotations
 
-import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -16,8 +15,8 @@ NAME = "suno"
 
 def _mp3_scan(roots: list[Path]) -> list[Activity]:
     try:
-        from mutagen.mp3 import MP3  # noqa: F401
         from mutagen.id3 import ID3
+        from mutagen.mp3 import MP3  # noqa: F401
     except ImportError:
         return []
     out: list[Activity] = []
@@ -33,7 +32,7 @@ def _mp3_scan(roots: list[Path]) -> list[Activity]:
             comment = str(tags.get("COMM::XXX") or tags.get("COMM::eng") or "")
             if "suno" not in (title + comment).lower() and "suno" not in str(f).lower():
                 continue
-            mtime = datetime.fromtimestamp(f.stat().st_mtime, tz=timezone.utc)
+            mtime = datetime.fromtimestamp(f.stat().st_mtime, tz=UTC)
             out.append(
                 Activity(
                     source=Source.SUNO,

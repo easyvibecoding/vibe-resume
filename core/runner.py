@@ -86,7 +86,7 @@ def run_extractors(cfg: dict[str, Any], only: list[str] | None = None) -> None:
             mod = _load(kind, mod_name)
             acts = mod.extract(cfg)
         except ModuleNotFoundError:
-            console.print(f"  [yellow]skip[/yellow] (module not yet implemented)")
+            console.print("  [yellow]skip[/yellow] (module not yet implemented)")
             continue
         except Exception as e:
             console.print(f"  [red]error[/red] {e}")

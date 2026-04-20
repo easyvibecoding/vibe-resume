@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -33,7 +33,7 @@ def extract(cfg: dict[str, Any]) -> list[Activity]:
             asst_n = sum(1 for m in messages if m.get("role") == "assistant")
             if user_n + asst_n == 0:
                 continue
-            mtime = datetime.fromtimestamp(f.stat().st_mtime, tz=timezone.utc)
+            mtime = datetime.fromtimestamp(f.stat().st_mtime, tz=UTC)
             activities.append(
                 Activity(
                     source=Source.ZED,

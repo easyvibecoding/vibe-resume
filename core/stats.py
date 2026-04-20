@@ -6,9 +6,9 @@ Supplement with a rolling 30-day view showing active days, peak day, streak.
 """
 from __future__ import annotations
 
-from collections import Counter, defaultdict
+from collections import Counter
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from core.schema import Activity, ProjectGroup, Source
 
@@ -39,7 +39,7 @@ class WindowStats:
 
 
 def _now_utc() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _iter_window_activities(
@@ -50,7 +50,7 @@ def _iter_window_activities(
         for a in g.activities:
             ts = a.timestamp_start
             if ts.tzinfo is None:
-                ts = ts.replace(tzinfo=timezone.utc)
+                ts = ts.replace(tzinfo=UTC)
             if ts >= cutoff:
                 out.append((a, g))
     return out
@@ -99,7 +99,7 @@ def compute_window_stats(
     for a, g in win:
         ts = a.timestamp_start
         if ts.tzinfo is None:
-            ts = ts.replace(tzinfo=timezone.utc)
+            ts = ts.replace(tzinfo=UTC)
         per_day[ts.date().isoformat()] += 1
         per_week[_monday_of(ts).date().isoformat()] += 1
         per_project[g.name] += 1

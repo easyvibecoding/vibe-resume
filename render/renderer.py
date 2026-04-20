@@ -3,14 +3,13 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+from collections import Counter
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from rich.console import Console
-
-from collections import Counter
 
 from core.aggregator import load_groups, load_observed_summary, load_window_stats
 from core.schema import load_profile

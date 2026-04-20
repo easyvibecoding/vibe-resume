@@ -8,7 +8,7 @@ Detects:
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -62,7 +62,7 @@ def extract(cfg: dict[str, Any]) -> list[Activity]:
             if not hit:
                 continue
             source, extra = hit
-            mtime = datetime.fromtimestamp(f.stat().st_mtime, tz=timezone.utc)
+            mtime = datetime.fromtimestamp(f.stat().st_mtime, tz=UTC)
             prompt_preview = str(extra.get("parameters") or extra.get("prompt") or extra)[:300]
             activities.append(
                 Activity(

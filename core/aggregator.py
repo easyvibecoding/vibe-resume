@@ -10,9 +10,9 @@ from typing import Any
 import orjson
 from rich.console import Console
 
-from core.classifier import capability_breadth, classify, tally_categories
+from core.classifier import capability_breadth, tally_categories
 from core.privacy import PrivacyFilter
-from core.schema import Activity, ProjectGroup, Source
+from core.schema import Activity, ProjectGroup
 from core.tech_canonical import canonical_list
 from extractors.base import load_activities
 

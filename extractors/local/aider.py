@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -42,9 +42,9 @@ def extract(cfg: dict[str, Any]) -> list[Activity]:
             asst_n = len(HEADER_ASSISTANT.findall(text))
             if user_n == 0:
                 continue
-            mtime = datetime.fromtimestamp(f.stat().st_mtime, tz=timezone.utc)
+            mtime = datetime.fromtimestamp(f.stat().st_mtime, tz=UTC)
             try:
-                ctime = datetime.fromtimestamp(f.stat().st_birthtime, tz=timezone.utc)
+                ctime = datetime.fromtimestamp(f.stat().st_birthtime, tz=UTC)
             except AttributeError:
                 ctime = mtime
             first = next((m for m in HEADER_USER.finditer(text)), None)

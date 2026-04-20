@@ -1,0 +1,30 @@
+name: Locale / region request
+description: Ask for a new locale template or report a culture-specific issue.
+labels: ["locale"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Adding a locale needs template + i18n registration + a prompt language label. See CONTRIBUTING.md for the full checklist.
+
+  - type: input
+    id: locale
+    attributes:
+      label: Locale code (BCP-47)
+      placeholder: "zh_HK | en_SG | es_ES | …"
+    validations:
+      required: true
+
+  - type: textarea
+    id: conventions
+    attributes:
+      label: Regional conventions reviewers expect
+      description: Photo? DOB? 履歴書-style grid? Bilingual layout? Date format? Language proficiency scale?
+    validations:
+      required: true
+
+  - type: textarea
+    id: references
+    attributes:
+      label: Reference sources
+      description: Links to employer templates, government guidelines, or well-known résumé resources for this region.

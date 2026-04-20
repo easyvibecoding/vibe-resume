@@ -8,9 +8,10 @@ from __future__ import annotations
 
 import json
 import zipfile
-from datetime import datetime, timezone
+from collections.abc import Iterator
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 from core.schema import Activity, ActivityType, Source
 
@@ -59,8 +60,8 @@ def _parse_conversation(conv: dict, src_file: Path) -> Activity | None:
     asst_nodes = [n for n in nodes if n["role"] == "assistant"]
     if not user_nodes:
         return None
-    start = datetime.fromtimestamp(nodes[0]["time"], tz=timezone.utc)
-    end = datetime.fromtimestamp(nodes[-1]["time"], tz=timezone.utc)
+    start = datetime.fromtimestamp(nodes[0]["time"], tz=UTC)
+    end = datetime.fromtimestamp(nodes[-1]["time"], tz=UTC)
     snippet = " | ".join(n["text"][:200] for n in user_nodes[:3])
     return Activity(
         source=Source.CHATGPT,

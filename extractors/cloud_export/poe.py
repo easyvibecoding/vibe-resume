@@ -7,7 +7,7 @@ CSV: columns timestamp, sender, message.
 from __future__ import annotations
 
 import csv
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -19,7 +19,7 @@ NAME = "poe"
 def _parse_ts(s: str) -> datetime | None:
     for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%dT%H:%M:%S"):
         try:
-            return datetime.strptime(s.strip(), fmt).replace(tzinfo=timezone.utc)
+            return datetime.strptime(s.strip(), fmt).replace(tzinfo=UTC)
         except ValueError:
             continue
     try:
@@ -51,7 +51,7 @@ def _extract_txt(f: Path) -> Activity | None:
             asst_n += 1
     if user_n == 0:
         return None
-    mtime = datetime.fromtimestamp(f.stat().st_mtime, tz=timezone.utc)
+    mtime = datetime.fromtimestamp(f.stat().st_mtime, tz=UTC)
     start = min(ts_list) if ts_list else mtime
     end = max(ts_list) if ts_list else mtime
     return Activity(
@@ -77,7 +77,7 @@ def _extract_csv(f: Path) -> Activity | None:
     user_rows = [r for r in rows if str(r.get("sender", "")).lower() in ("you", "user")]
     asst_rows = [r for r in rows if str(r.get("sender", "")).lower() not in ("you", "user")]
     ts_list = [t for t in (_parse_ts(r.get("timestamp", "")) for r in rows) if t]
-    mtime = datetime.fromtimestamp(f.stat().st_mtime, tz=timezone.utc)
+    mtime = datetime.fromtimestamp(f.stat().st_mtime, tz=UTC)
     start = min(ts_list) if ts_list else mtime
     end = max(ts_list) if ts_list else mtime
     return Activity(

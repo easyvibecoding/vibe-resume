@@ -7,7 +7,7 @@ Each task dir contains api_conversation_history.json and ui_messages.json.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -48,9 +48,9 @@ def extract(cfg: dict[str, Any]) -> list[Activity]:
         if not api_hist:
             continue
 
-        mtime = datetime.fromtimestamp(task_dir.stat().st_mtime, tz=timezone.utc)
+        mtime = datetime.fromtimestamp(task_dir.stat().st_mtime, tz=UTC)
         try:
-            ctime = datetime.fromtimestamp(task_dir.stat().st_birthtime, tz=timezone.utc)
+            ctime = datetime.fromtimestamp(task_dir.stat().st_birthtime, tz=UTC)
         except AttributeError:
             ctime = mtime
 

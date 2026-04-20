@@ -1,0 +1,16 @@
+* text=auto eol=lf
+
+# Exclude dev-only files from source tarballs / sdist
+.github/                export-ignore
+.gitattributes          export-ignore
+.gitignore              export-ignore
+tests/                  export-ignore
+docs/review_v007.md     export-ignore
+CONTRIBUTING.md         export-ignore
+SECURITY.md             export-ignore
+
+# Binary assets — don't try to diff
+*.png                   binary
+*.jpg                   binary
+*.pdf                   binary
+*.docx                  binary
