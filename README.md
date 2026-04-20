@@ -73,25 +73,38 @@ ChatGPT · Claude.ai · Gemini Takeout · Grok · Perplexity · Mistral Le Chat 
 - **Privacy filter** — regex redaction + project blocklist + optional tech abstraction
 - **Versioned output** — internal git repo under `data/resume_history/` with `list-versions` / `diff v1 v2` / `rollback`
 
-## Use as a Claude Code Agent Skill
+## Use as an Agent Skill (Claude Code / Gemini CLI / Copilot CLI / Cursor)
 
-Beyond the CLI, `vibe-resume` ships as a [Claude Code Agent Skill](https://docs.claude.com/en/docs/claude-code/skills) so that inside Claude Code you can just say things like:
+Beyond the CLI, `vibe-resume` ships as an [Agent Skill](AGENTS.md) that drives the full `extract → aggregate → enrich → render → review → trend` pipeline from natural language prompts. Inside a supported host you can just say:
 
 > *"Generate my résumé from my AI usage."*
 > *"Render my résumé in Japanese and German and review both."*
 > *"Tailor my résumé for this JD: data/imports/lumen_labs.txt."*
 
-Claude reads `.claude/skills/ai-used-resume/SKILL.md` as context and drives the full
-`extract → aggregate → enrich → render → review → trend` pipeline for you.
+The skill follows the 2026 converged `SKILL.md` convention, so a single canonical file works across four hosts:
 
-Activate skill triggers system-wide (not just inside this clone) by symlinking the skill folder to your user-level skills directory:
+| Host | Discovery path | Setup |
+|---|---|---|
+| **Claude Code** | `.claude/skills/ai-used-resume/` | Native — auto-loaded |
+| **Gemini CLI** | `.gemini/skills/ai-used-resume/` | Symlinked to the canonical file |
+| **GitHub Copilot CLI** | reads `.claude/skills/` natively | Zero config |
+| **Cursor CLI** | reads `AGENTS.md` at repo root | Points agents at the SKILL.md |
+
+Canonical source of truth: [`.claude/skills/ai-used-resume/SKILL.md`](.claude/skills/ai-used-resume/SKILL.md) — everything else (the `.gemini/` symlink, `AGENTS.md`) points at this file so updates land everywhere at once.
+
+Activate the skill system-wide (not just inside this clone):
 
 ```bash
+# Claude Code
 mkdir -p ~/.claude/skills
 ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.claude/skills/ai-used-resume
+
+# Gemini CLI
+mkdir -p ~/.gemini/skills
+ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.gemini/skills/ai-used-resume
 ```
 
-After that, any Claude Code session that matches the skill's description will auto-load it.
+See [`AGENTS.md`](AGENTS.md) for the full host matrix and Windows instructions.
 
 ## Quick start
 
