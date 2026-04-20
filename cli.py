@@ -85,15 +85,22 @@ def render(
     if all_locales and locale:
         raise click.UsageError("--locale and --all-locales are mutually exclusive")
 
-    fmt = format or ctx.obj["config"].get("render", {}).get("default_format", "md")
+    cfg = ctx.obj["config"]
+    fmt = format or cfg.get("render", {}).get("default_format", "md")
 
     if all_locales:
-        console.print(f"[cyan]rendering {len(LOCALES)} locales[/cyan]")
+        # If the user didn't pass --format, fan out over the configured list
+        # of formats so batch runs can produce md + docx + pdf in one sweep.
+        formats = [fmt] if format else cfg.get("render", {}).get("all_locales_formats") or ["md"]
+        console.print(
+            f"[cyan]rendering {len(LOCALES)} locales × {len(formats)} format(s): {', '.join(formats)}[/cyan]"
+        )
         for key in LOCALES:
             console.print(f"\n[bold]── {key} ──[/bold]")
-            run_render(ctx.obj["config"], fmt=fmt, tailor=tailor, locale=key)
+            for f in formats:
+                run_render(cfg, fmt=f, tailor=tailor, locale=key)
     else:
-        run_render(ctx.obj["config"], fmt=fmt, tailor=tailor, locale=locale)
+        run_render(cfg, fmt=fmt, tailor=tailor, locale=locale)
 
 
 @cli.command()
@@ -160,6 +167,45 @@ def review(
 
     console.print(report.as_markdown(previous=previous))
     console.print(f"[cyan]wrote[/cyan] {md_out.relative_to(ROOT)}  ·  {json_out.relative_to(ROOT)}")
+
+
+@cli.command()
+@click.option("--locale", default=None, help="Restrict trend to a single locale; omit to show all")
+@click.pass_context
+def trend(ctx: click.Context, locale: str | None) -> None:
+    """Summarize review score history per locale with a sparkline."""
+    from core.review import load_reviews_by_locale, sparkline
+    from rich.table import Table
+
+    reviews_dir = ROOT / "data" / "reviews"
+    by_locale = load_reviews_by_locale(reviews_dir)
+    if not by_locale:
+        console.print(f"[yellow]no reviews found in {reviews_dir}[/yellow]")
+        return
+
+    locales = [locale] if locale else sorted(by_locale.keys())
+    table = Table(title="Review score trend")
+    table.add_column("Locale")
+    table.add_column("Runs", justify="right")
+    table.add_column("First", justify="right")
+    table.add_column("Latest", justify="right")
+    table.add_column("Mean", justify="right")
+    table.add_column("Grade", justify="center")
+    table.add_column("Trend", justify="left")
+
+    for loc in locales:
+        entries = by_locale.get(loc)
+        if not entries:
+            continue
+        percents = [(r.total / r.max_total * 100) if r.max_total else 0 for _, r in entries]
+        first = f"{entries[0][1].total}/{entries[0][1].max_total}"
+        latest_v, latest_r = entries[-1]
+        latest = f"v{latest_v}: {latest_r.total}/{latest_r.max_total}"
+        mean = sum(percents) / len(percents)
+        spark = sparkline(percents)
+        table.add_row(loc, str(len(entries)), first, latest, f"{mean:.1f}%", latest_r.grade, spark)
+
+    console.print(table)
 
 
 @cli.command("list-versions")

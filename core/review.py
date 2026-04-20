@@ -596,6 +596,50 @@ def write_report(
     return md_path, json_path
 
 
+def load_reviews_by_locale(reviews_dir: Path) -> dict[str, list[tuple[int, ReviewReport]]]:
+    """Scan reviews_dir for `resume_v*_review.json` and group by locale.
+
+    Returns locale_key → [(version, ReviewReport)], sorted by version ascending.
+    """
+    out: dict[str, list[tuple[int, ReviewReport]]] = {}
+    if not reviews_dir.exists():
+        return out
+    for j in reviews_dir.glob("resume_v*_review.json"):
+        m = re.search(r"resume_v(\d+)", j.stem)
+        if not m:
+            continue
+        try:
+            data = json.loads(j.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        locale = data.get("locale", "en_US")
+        out.setdefault(locale, []).append((int(m.group(1)), ReviewReport.from_dict(data)))
+    for loc in out:
+        out[loc].sort(key=lambda x: x[0])
+    return out
+
+
+# ASCII sparkline chars from low to high — classic U+2581..U+2588 block set.
+_SPARK = "▁▂▃▄▅▆▇█"
+
+
+def sparkline(values: list[float], width: int = 24) -> str:
+    """Return a one-line sparkline for a series. Empty/constant series → flat."""
+    if not values:
+        return ""
+    lo, hi = min(values), max(values)
+    span = hi - lo
+    if span == 0:
+        return _SPARK[len(_SPARK) // 2] * min(len(values), width)
+    # down-sample if longer than target width — keep most recent bias
+    if len(values) > width:
+        step = len(values) / width
+        sampled = [values[int(i * step)] for i in range(width)]
+    else:
+        sampled = values
+    return "".join(_SPARK[min(int((v - lo) / span * (len(_SPARK) - 1)), len(_SPARK) - 1)] for v in sampled)
+
+
 def find_previous_review(reviews_dir: Path, current_source: str, locale_key: str) -> ReviewReport | None:
     """Locate the most recent earlier review for the same locale.
 

@@ -4,6 +4,44 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added (on `main`, not yet tagged)
+- **`cli.py trend`** — per-locale review score history with ASCII
+  sparkline, mean %, and grade of latest run.
+- **`cli.py render --all-locales`** batch mode + `config.render.all_locales_formats`
+  to control which formats fan out per locale (default `["md"]`).
+- **Locale resolution chain** on renderer: CLI `--locale` >
+  `profile.preferred_locale` > `config.render.locale` > `en_US`.
+- **JD tokenizer hardening** (`core.review.parse_jd_keywords`): prefers
+  known tech names (`_JD_TECH_PRIORITY`), skips structural noise
+  (`_JD_STOPWORDS`); keyword echo went 10/12 → 12/12 on the sample JD.
+- 18 additional unit tests (41 total now) — parse_jd_keywords /
+  find_previous_review / ReviewReport.grade boundaries / _pick_template /
+  _build_prompt across en_US, zh_TW, zh_CN, ja_JP, de_DE.
+
+### Verified
+- Enrichment prompt dispatch produces **native output** in every
+  noun-phrase locale we ran end-to-end with `claude -p`:
+  - zh_TW: 「設計並部署基於 FastAPI 與 pgvector 的 RAG 搜尋平台…」
+  - ja_JP: 「FastAPIとpgvectorを核にRAG検索基盤を設計し…」 *(headline 「フルスタック + DevOps」, no 简体 leakage)*
+  - de_DE: 「Full-Stack-Engineer für RAG-Suchplattform mit FastAPI…」
+  - fr_FR: 「Ingénieur full-stack sur plateforme RAG Python/FastAPI…」
+  - Tech nouns (FastAPI, PostgreSQL, Next.js) stay English per the
+    prompt rule; metric numbers from source data flow through unchanged.
+
+### Planned for v0.2
+
+- **More locales**: `en_EU` (Europass-styled English), `zh_HK` (bilingual EN+繁), `en_SG` (NRIC-aware).
+- **Enricher `--tailor`**: feed the active JD into the prompt so achievements bias toward the keywords the reviewer is already primed for.
+- **`cli.py render --tailor` + review `--jd`** integrated into a single "target" object (one JD passed once, used everywhere).
+- **Windows backup**: `scripts/backup_claude_projects.ps1` + Task Scheduler XML, paired with the existing macOS launchd and Linux cron docs.
+- **PDF cover page**: optional one-page hero summary before the main resume (`render.cover_page: true`); useful for de_DE Lebenslauf + JP 履歴書 bundles.
+- **Extractor hardening**: real-sample validation for Grok / Perplexity / Mistral / Poe cloud exports — schemas are currently lenient-parsed.
+- **JP 履歴書 legacy cells**: optional 通勤時間 / 扶養家族 / 配偶者 cells (some traditional employers still expect these).
+- **Shell completions**: `cli.py completion install {bash,zsh,fish}` so `uv run vibe-resume render --locale <tab>` works.
+- **Prompt coverage**: verify ko_KR / zh_CN LLM output end-to-end (same way we verified zh_TW/ja_JP/de_DE/fr_FR in 0.1).
+
 ## [0.1.0] — 2026-04-20
 
 First public-ready cut: end-to-end pipeline from AI-tool extractors through

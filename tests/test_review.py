@@ -126,6 +126,104 @@ class TestRedFlags:
         assert any("photo" in n.lower() for n in s.notes)
 
 
+class TestJdKeywords:
+    def test_stopwords_excluded(self, tmp_path):
+        from core.review import parse_jd_keywords
+
+        jd = tmp_path / "jd.txt"
+        jd.write_text(
+            "About the role\nWe are hiring a Senior Full-stack Engineer — Remote / Taipei.\n"
+            "Stack: React, FastAPI, PostgreSQL, Docker.\n"
+        )
+        kws = parse_jd_keywords(jd)
+        # structural / seniority / geography words must NOT show up
+        for bad in ("About", "Remote", "Senior", "Engineer", "Taipei"):
+            assert bad not in kws, f"stopword {bad!r} leaked into {kws}"
+
+    def test_tech_priority_ordered_by_first_appearance(self, tmp_path):
+        from core.review import parse_jd_keywords
+
+        jd = tmp_path / "jd.txt"
+        # Docker appears first in prose, then FastAPI, then React
+        jd.write_text("Deploy with Docker to AWS. Use FastAPI on the backend. React on the client.\n")
+        kws = parse_jd_keywords(jd, limit=6)
+        # Docker should come before FastAPI before React (first-appearance order)
+        assert kws.index("Docker") < kws.index("FastAPI") < kws.index("React")
+
+    def test_respects_limit(self, tmp_path):
+        from core.review import parse_jd_keywords
+
+        jd = tmp_path / "jd.txt"
+        jd.write_text("React FastAPI PostgreSQL Docker Kubernetes Redis AWS Stripe pgvector RAG\n")
+        kws = parse_jd_keywords(jd, limit=3)
+        assert len(kws) == 3
+
+
+class TestFindPreviousReview:
+    def _write_review(self, path: Path, version: int, locale: str, total: int = 50, max_total: int = 60) -> None:
+        import json
+
+        path.write_text(
+            json.dumps(
+                {
+                    "source": f"resume_v{version:03d}_{locale}.md" if locale != "en_US" else f"resume_v{version:03d}.md",
+                    "locale": locale,
+                    "total": total,
+                    "max_total": max_total,
+                    "grade": "B",
+                    "scores": [],
+                }
+            )
+        )
+
+    def test_returns_most_recent_previous_same_locale(self, tmp_path):
+        from core.review import find_previous_review
+
+        # v005 zh_TW, v007 zh_TW — finding prior for v010_zh_TW should return v007
+        self._write_review(tmp_path / "resume_v005_zh_TW_review.json", 5, "zh_TW", total=40)
+        self._write_review(tmp_path / "resume_v007_zh_TW_review.json", 7, "zh_TW", total=48)
+        self._write_review(tmp_path / "resume_v009_zh_TW_review.json", 9, "zh_TW", total=55)
+
+        prev = find_previous_review(tmp_path, "resume_v010_zh_TW.md", "zh_TW")
+        assert prev is not None
+        assert prev.total == 55  # v009 is the most recent earlier version
+
+    def test_ignores_other_locales(self, tmp_path):
+        from core.review import find_previous_review
+
+        self._write_review(tmp_path / "resume_v005_zh_TW_review.json", 5, "zh_TW", total=40)
+        self._write_review(tmp_path / "resume_v007_review.json", 7, "en_US", total=60)
+        # asking for en_US previous of v010 should ignore v005 zh_TW
+        prev = find_previous_review(tmp_path, "resume_v010.md", "en_US")
+        assert prev is not None
+        assert prev.total == 60
+        assert prev.locale == "en_US"
+
+    def test_returns_none_when_nothing_prior(self, tmp_path):
+        from core.review import find_previous_review
+
+        # only a *later* version exists
+        self._write_review(tmp_path / "resume_v020_zh_TW_review.json", 20, "zh_TW")
+        prev = find_previous_review(tmp_path, "resume_v010_zh_TW.md", "zh_TW")
+        assert prev is None
+
+
+class TestReviewReportGrade:
+    def test_grade_boundaries(self):
+        from core.review import ReviewReport, Score
+
+        def mk(total: int, max_total: int = 60) -> ReviewReport:
+            return ReviewReport(source="x", locale="en_US", total=total, max_total=max_total, scores=[])
+
+        assert mk(60).grade == "A"   # 100%
+        assert mk(54).grade == "A"   # 90%
+        assert mk(53).grade == "B"   # 88%
+        assert mk(48).grade == "B"   # 80%
+        assert mk(47).grade == "C"   # 78%
+        assert mk(36).grade == "D"   # 60%
+        assert mk(29).grade == "F"   # 48%
+
+
 class TestEndToEnd:
     def test_review_produces_grade_a_for_well_formed_resume(self):
         md = (
