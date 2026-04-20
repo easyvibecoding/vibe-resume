@@ -73,6 +73,26 @@ ChatGPT · Claude.ai · Gemini Takeout · Grok · Perplexity · Mistral Le Chat 
 - **Privacy filter** — regex redaction + project blocklist + optional tech abstraction
 - **Versioned output** — internal git repo under `data/resume_history/` with `list-versions` / `diff v1 v2` / `rollback`
 
+## Use as a Claude Code Agent Skill
+
+Beyond the CLI, `vibe-resume` ships as a [Claude Code Agent Skill](https://docs.claude.com/en/docs/claude-code/skills) so that inside Claude Code you can just say things like:
+
+> *"Generate my résumé from my AI usage."*
+> *"Render my résumé in Japanese and German and review both."*
+> *"Tailor my résumé for this JD: data/imports/lumen_labs.txt."*
+
+Claude reads `.claude/skills/ai-used-resume/SKILL.md` as context and drives the full
+`extract → aggregate → enrich → render → review → trend` pipeline for you.
+
+Activate skill triggers system-wide (not just inside this clone) by symlinking the skill folder to your user-level skills directory:
+
+```bash
+mkdir -p ~/.claude/skills
+ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.claude/skills/ai-used-resume
+```
+
+After that, any Claude Code session that matches the skill's description will auto-load it.
+
 ## Quick start
 
 ```bash
