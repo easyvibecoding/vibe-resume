@@ -131,3 +131,7 @@ render:
   draft_dir: "./data/drafts"
   # keep last N versions before auto-prune (0 = keep all)
   max_versions: 0
+  # Default locale when neither `--locale` nor `profile.preferred_locale` is set.
+  # Supported: en_US | en_GB | zh_TW | zh_CN | ja_JP | ko_KR | de_DE | fr_FR
+  # Resolution priority: CLI --locale  >  profile.preferred_locale  >  this value  >  en_US.
+  locale: "en_US"

@@ -10,6 +10,10 @@ target_role: ""
 summary: |
   Write 2-3 sentences about yourself. Leave empty to let the enricher draft one from your activity.
 
+# Preferred locale for `cli.py render` when --locale is not passed.
+# Overrides config.yaml:render.locale. Leave empty to fall back to config default.
+# preferred_locale: "zh_TW"
+
 # --- locale-conditional personal data ---------------------------------------
 # Only emitted when the active locale's `personal_fields` includes them.
 # Leaving any of these blank is always safe — US/UK templates ignore them by design.

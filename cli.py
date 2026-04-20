@@ -64,13 +64,36 @@ def enrich(ctx: click.Context, limit: int | None, locale: str | None) -> None:
     default=None,
     help="Output locale: en_US (default) | en_GB | zh_TW | zh_CN | ja_JP | de_DE | fr_FR | ko_KR",
 )
+@click.option(
+    "--all-locales",
+    is_flag=True,
+    default=False,
+    help="Render every supported locale in one pass (mutually exclusive with --locale)",
+)
 @click.pass_context
-def render(ctx: click.Context, format: str | None, tailor: str | None, locale: str | None) -> None:
+def render(
+    ctx: click.Context,
+    format: str | None,
+    tailor: str | None,
+    locale: str | None,
+    all_locales: bool,
+) -> None:
     """Render resume draft to selected format and snapshot a version."""
     from core.runner import run_render
+    from render.i18n import LOCALES
+
+    if all_locales and locale:
+        raise click.UsageError("--locale and --all-locales are mutually exclusive")
 
     fmt = format or ctx.obj["config"].get("render", {}).get("default_format", "md")
-    run_render(ctx.obj["config"], fmt=fmt, tailor=tailor, locale=locale)
+
+    if all_locales:
+        console.print(f"[cyan]rendering {len(LOCALES)} locales[/cyan]")
+        for key in LOCALES:
+            console.print(f"\n[bold]── {key} ──[/bold]")
+            run_render(ctx.obj["config"], fmt=fmt, tailor=tailor, locale=key)
+    else:
+        run_render(ctx.obj["config"], fmt=fmt, tailor=tailor, locale=locale)
 
 
 @cli.command()

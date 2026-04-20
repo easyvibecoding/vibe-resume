@@ -476,20 +476,110 @@ def review_file(
     return review(text, locale_key, source=str(Path(md_path).name), jd_keywords=jd_keywords)
 
 
+# Structural / title words that appear in most JDs and carry no signal.
+# Matched case-insensitively; don't put lowercase-only words here (they never
+# survive the initial capitalized-token regex anyway).
+_JD_STOPWORDS: set[str] = {
+    # document structure
+    "About", "Role", "Overview", "Summary", "Responsibilities", "Requirements",
+    "Qualifications", "Benefits", "Bonus", "Plus", "Nice", "Preferred",
+    "What", "You", "Your", "We", "Our", "Us", "Who",
+    "Will", "Would", "Could", "Can", "Must", "Should", "May",
+    # seniority / job-level labels
+    "Senior", "Junior", "Mid", "Staff", "Principal", "Lead", "Head",
+    "Manager", "Director", "VP", "Intern",
+    # work-style labels
+    "Remote", "Hybrid", "Onsite", "On-site", "Full-time", "Part-time",
+    "Contract", "Contractor", "Permanent",
+    # generic soft/business terms
+    "Engineer", "Engineering", "Developer", "Development", "Software",
+    "Team", "Teams", "Company", "Industry", "Product", "Products",
+    "Experience", "Skills", "Years", "Year", "Strong",
+    # generic verb-ish leads
+    "Design", "Build", "Ship", "Ship", "Work", "Working", "Drive",
+    "Deliver", "Own", "Partner", "Debug",
+    # geographic / currency — keep the tech terms, drop the location noise
+    "US", "UK", "EU", "USD", "EUR", "Taipei", "Taiwan", "Tokyo",
+    "London", "Berlin", "Paris", "Seoul", "SG",
+    # month/day (JDs often list "posted March 2026" etc.)
+    "January", "February", "March", "April", "May", "June", "July",
+    "August", "September", "October", "November", "December",
+    "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday",
+}
+
+# Whitelist of framework / language / infra names — these jump to the top of
+# the extracted keyword list regardless of JD position. Kept short and
+# canonical (matches what our tech_canonical module produces).
+_JD_TECH_PRIORITY: list[str] = [
+    # languages
+    "Python", "TypeScript", "JavaScript", "Go", "Rust", "Java", "Kotlin",
+    "Swift", "Ruby", "PHP", "Scala", "C++",
+    # frontend
+    "React", "Next.js", "Vue", "Svelte", "Angular", "Tailwind",
+    # backend
+    "FastAPI", "Django", "Flask", "Express", "NestJS", "Rails", "Spring",
+    "gRPC", "GraphQL",
+    # data
+    "PostgreSQL", "MySQL", "SQLite", "MongoDB", "Redis", "Kafka", "NATS",
+    "Elasticsearch", "Snowflake", "BigQuery", "DuckDB", "pgvector",
+    # infra / ops
+    "Docker", "Kubernetes", "Terraform", "Ansible", "AWS", "GCP", "Azure",
+    "Vercel", "Fly.io", "Heroku", "GitHub", "GitLab",
+    # AI / agents
+    "Claude", "GPT", "OpenAI", "LangChain", "LlamaIndex", "RAG", "LLM",
+    "Embedding", "Cursor", "Copilot",
+    # observability / billing / integrations
+    "Sentry", "Datadog", "Stripe", "Twilio", "PagerDuty",
+    # CI / infra glue
+    "Actions", "CircleCI", "Jenkins", "ArgoCD",
+]
+
+
 def parse_jd_keywords(path: Path, limit: int = 12) -> list[str]:
-    """Cheap JD tokenizer — top `limit` proper-noun / capitalized tech terms."""
+    """JD tokenizer that prefers real tech/framework names over structural words.
+
+    Strategy:
+    1. Scan JD text for exact matches from `_JD_TECH_PRIORITY` (case-sensitive
+       where it matters — "Actions" means GitHub Actions, not generic).
+       Those go first, ordered by first appearance in the JD.
+    2. Fill remaining slots with other capitalized tokens, skipping
+       `_JD_STOPWORDS` so "About", "Remote", "Senior" never leak in.
+    """
     text = Path(path).read_text(encoding="utf-8")
-    # collect capitalized tokens and acronyms, dedup preserving order
+
+    selected: list[str] = []
+    seen: set[str] = set()
+
+    # pass 1 — prioritized tech/framework names, order by first appearance
+    tech_hits: list[tuple[int, str]] = []
+    for tech in _JD_TECH_PRIORITY:
+        # word boundaries on both sides; allow trailing punctuation
+        m = re.search(rf"\b{re.escape(tech)}\b", text)
+        if m:
+            tech_hits.append((m.start(), tech))
+    tech_hits.sort()
+    for _, tech in tech_hits:
+        if tech not in seen:
+            selected.append(tech)
+            seen.add(tech)
+            if len(selected) >= limit:
+                return selected
+
+    # pass 2 — fallback capitalized tokens, stopword-filtered
+    stop_lower = {s.lower() for s in _JD_STOPWORDS}
     cands = re.findall(r"\b([A-Z][A-Za-z0-9+./-]{1,})\b", text)
-    seen: list[str] = []
     for c in cands:
         if c.lower() in {"i", "a", "the", "and", "or", "with"}:
             continue
-        if c not in seen:
-            seen.append(c)
-        if len(seen) >= limit:
+        if c.lower() in stop_lower:
+            continue
+        if c in seen:
+            continue
+        selected.append(c)
+        seen.add(c)
+        if len(selected) >= limit:
             break
-    return seen
+    return selected
 
 
 def write_report(

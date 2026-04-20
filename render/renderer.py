@@ -63,7 +63,19 @@ def _render_md(cfg: dict[str, Any], tailor: str | None, locale: str | None = Non
         lstrip_blocks=True,
         keep_trailing_newline=True,
     )
-    locale_key = resolve_locale(locale or cfg.get("render", {}).get("locale"))
+    profile = load_profile(ROOT / "profile.yaml")
+    profile_dict = profile.model_dump()
+    # preserve extra fields (preferred_locale, <field>_<locale> overrides, etc.)
+    if hasattr(profile, "model_extra") and profile.model_extra:
+        profile_dict.update(profile.model_extra)
+
+    # Locale resolution priority: CLI arg > profile.preferred_locale > config.render.locale > en_US
+    resolved_raw = (
+        locale
+        or profile_dict.get("preferred_locale")
+        or cfg.get("render", {}).get("locale")
+    )
+    locale_key = resolve_locale(resolved_raw)
     locale_meta = get_locale(locale_key)
 
     # register locale-aware filters so templates can call {{ d | date }}
@@ -72,7 +84,6 @@ def _render_md(cfg: dict[str, Any], tailor: str | None, locale: str | None = Non
     env.filters["date_range"] = lambda start, end: format_date_range(start, end, locale_key)
     env.filters["localized"] = lambda obj, key: localized(obj, key, locale_key)
 
-    profile = load_profile(ROOT / "profile.yaml")
     groups = load_groups()
     raw_groups = [g.model_dump(mode="json") for g in groups]
 
@@ -146,7 +157,7 @@ def _render_md(cfg: dict[str, Any], tailor: str | None, locale: str | None = Non
     window_stats = load_window_stats() or {}
 
     ctx = {
-        "profile": profile.model_dump(),
+        "profile": profile_dict,
         "groups": raw_groups,
         "skills": skills_list,
         "skills_grouped": skills_grouped,
