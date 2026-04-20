@@ -34,3 +34,24 @@ jobs:
 
       - name: Run tests
         run: uv run pytest -q
+
+  powershell:
+    name: PSScriptAnalyzer (windows-latest)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PSScriptAnalyzer
+        shell: pwsh
+        run: Install-Module -Name PSScriptAnalyzer -Scope CurrentUser -Force
+
+      - name: Lint PowerShell scripts
+        shell: pwsh
+        run: |
+          $results = Invoke-ScriptAnalyzer -Path scripts/ -Recurse -Severity Warning,Error
+          $results | Format-Table -AutoSize
+          if ($results.Count -gt 0) { exit 1 }
+
+      - name: Smoke-test backup script (WhatIf)
+        shell: pwsh
+        run: pwsh -NoProfile -File scripts\backup_claude_projects.ps1 -WhatIf -ArchiveDir ${{ runner.temp }}\ClaudeArchive

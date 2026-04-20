@@ -23,6 +23,18 @@ All notable changes to `vibe-resume`. Format follows
   information list (not a centered strip), Occupation/Employer fields
   under each experience block (matches Europass XML schema labels),
   CEFR languages section, GDPR-minimal personal data.
+- **`zh_HK` locale** — Hong Kong bilingual CV. Section headings pair
+  English + 繁體中文 ("Personal Profile 個人簡介" / "Work Experience
+  工作經驗") so one document works for Cantonese- and English-speaking
+  reviewers in one pass. Photo optional; HKID intentionally never
+  emitted; CEFR-style language-proficiency section.
+- **Windows backup** — `scripts/backup_claude_projects.ps1`
+  (PowerShell 7, robocopy `/MIR /XO` mirror + dated snapshot) +
+  `scripts/vibe-resume-backup.xml` Task Scheduler import template.
+  The PS1 is smoke-testable via `pwsh -WhatIf` on macOS/Linux,
+  statically checked by `PSScriptAnalyzer`, and exercised by a
+  `windows-latest` matrix job in CI so a Windows box is not needed
+  to maintain it.
 - **`cli.py enrich --tailor JD.txt`** — injects `parse_jd_keywords`
   output into the enrich prompt as a "Tailor hint" block so
   achievements surface JD keywords verbatim when the raw activity
@@ -54,9 +66,8 @@ All notable changes to `vibe-resume`. Format follows
 
 ### Planned for v0.2
 
-- **More locales**: `zh_HK` (bilingual EN+繁), `en_SG` (NRIC-aware). *(`en_EU` done above.)*
+- **More locales**: `en_SG` (NRIC-aware). *(`en_EU` and `zh_HK` done above.)*
 - **`cli.py render --tailor` + review `--jd`** integrated into a single "target" object (one JD passed once, used everywhere).
-- **Windows backup**: `scripts/backup_claude_projects.ps1` + Task Scheduler XML, paired with the existing macOS launchd and Linux cron docs.
 - **PDF cover page**: optional one-page hero summary before the main resume (`render.cover_page: true`); useful for de_DE Lebenslauf + JP 履歴書 bundles.
 - **Extractor hardening**: real-sample validation for Grok / Perplexity / Mistral / Poe cloud exports — schemas are currently lenient-parsed.
 - **JP 履歴書 legacy cells**: optional 通勤時間 / 扶養家族 / 配偶者 cells (some traditional employers still expect these).

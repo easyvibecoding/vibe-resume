@@ -5,7 +5,7 @@
 [![CI](https://github.com/easyvibecoding/vibe-resume/actions/workflows/tests.yml/badge.svg)](https://github.com/easyvibecoding/vibe-resume/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
-[![Locales](https://img.shields.io/badge/locales-9-brightgreen.svg)](docs/resume_locales.md)
+[![Locales](https://img.shields.io/badge/locales-10-brightgreen.svg)](docs/resume_locales.md)
 [![uv](https://img.shields.io/badge/packaged%20with-uv-261230.svg)](https://github.com/astral-sh/uv)
 
 `vibe-resume` scans every AI assistant you use on macOS (Claude Code, Cursor, GitHub Copilot, Cline, Continue, Aider, Windsurf, Zed AI, ChatGPT / Claude.ai / Gemini / Grok / Perplexity / Mistral exports, ComfyUI, Midjourney, Suno, ElevenLabs, and your `git` commits) and synthesizes the usage trail into a **Markdown / DOCX / PDF résumé** with built-in git snapshots so every draft is diff-able and rollback-able.
@@ -19,7 +19,7 @@
 | | vibe-resume | Reactive Resume / OpenResume | Resume-LM / Resume Matcher | HackMyResume / JSON Resume |
 |---|---|---|---|---|
 | **Primary signal** | AI tool sessions + git commits (auto-extracted) | User-typed content in WYSIWYG | Uploaded PDF + JD | User-typed JSON |
-| **Locales** | **9** (en_US/en_EU/en_GB/zh_TW/zh_CN/ja_JP/ko_KR/de_DE/fr_FR) with culture-specific layouts | 1–2 | 1 | Theme-dependent |
+| **Locales** | **10** (en_US/en_EU/en_GB/zh_TW/zh_HK/zh_CN/ja_JP/ko_KR/de_DE/fr_FR) with culture-specific layouts | 1–2 | 1 | Theme-dependent |
 | **JP 履歴書 JIS Z 8303 grid** | ✅ `render/japan.py` | ❌ | ❌ | ❌ |
 | **Europass labelled personal-info** | ✅ `en_EU` template | ❌ | ❌ | ❌ |
 | **Reviewer audit** | 8-point scorecard + trend sparkline | — | ATS score only | — |
@@ -116,6 +116,7 @@ uv run python cli.py render -f md  --locale de_DE     # Lebenslauf with Persönl
 | `en_EU` | XYZ action-verb | optional | Personal information / Work experience / Education and training / … | Europass-styled — labelled personal-info list, CEFR languages, GDPR-minimal (no DOB by default) |
 | `en_GB` | XYZ action-verb | forbidden | Personal statement / … | UK spellings, CEFR languages |
 | `zh_TW` | noun-phrase | optional | 自我介紹 / 技能專長 / 工作經歷 / … | 全形分隔, 中英技術混排 |
+| `zh_HK` | noun-phrase | optional | Personal Profile 個人簡介 / Work Experience 工作經驗 / … | **Bilingual EN + 繁** headings; CEFR; no HKID |
 | `zh_CN` | noun-phrase | optional | 个人简介 / 专业技能 / … | 简体, 大厂偏美式 |
 | `ja_JP` | noun-phrase | **expected** | 職務要約 / 職務経歴 / … | DOCX = JIS Z 8303 履歴書 grid (`render/japan.py`); md = 職務経歴書 |
 | `ko_KR` | noun-phrase | **expected** | 자기소개 / 보유 기술 / 경력 / … | 자기소개서 left as separate doc |
@@ -190,7 +191,7 @@ uv run python cli.py render --all-locales -f docx         # force a specific for
 uv run python cli.py render --all-locales --tailor jd.txt # one JD, every locale
 ```
 
-`--all-locales` iterates the full `LOCALES` registry (currently 9 locales).
+`--all-locales` iterates the full `LOCALES` registry (currently 10 locales).
 Per-locale formats are controlled by `config.render.all_locales_formats`
 (default `["md"]`) — bump it to `["md", "docx", "pdf"]` to cut full bundles.
 `--locale` and `--all-locales` are mutually exclusive.
@@ -260,6 +261,28 @@ chmod +x scripts/backup_claude_projects.sh
 # then register as launchd / cron for weekly backup
 ```
 
+### Windows backup (Task Scheduler)
+
+`scripts/backup_claude_projects.ps1` is the PowerShell-7 equivalent that uses
+`robocopy /MIR /XO` to mirror `%USERPROFILE%\.claude\projects` into
+`%USERPROFILE%\ClaudeCodeArchive\current`, with a dated snapshot on the side:
+
+```powershell
+# one-off run
+pwsh -NoProfile -File scripts\backup_claude_projects.ps1
+
+# dry-run (also works on macOS/Linux — great for smoke-testing)
+pwsh -NoProfile -File scripts\backup_claude_projects.ps1 -WhatIf
+
+# register as a weekly task (Sundays 03:00)
+schtasks /Create /TN "vibe-resume backup" /XML scripts\vibe-resume-backup.xml
+```
+
+`scripts/vibe-resume-backup.xml` is a ready-to-import Task Scheduler template.
+Edit the `<WorkingDirectory>` path before importing to point at wherever you
+cloned this repo. The PowerShell script is linted by `PSScriptAnalyzer` in CI
+on `windows-latest`, and the `-WhatIf` branch is also exercised there.
+
 ## Project layout
 
 ```
@@ -285,7 +308,10 @@ vibe-resume/
 │   ├── renderer.py        # md / docx / pdf
 │   └── templates/resume.md.j2
 ├── scripts/
-│   └── backup_claude_projects.sh
+│   ├── backup_claude_projects.sh       # macOS / Linux rsync
+│   ├── backup_claude_projects.ps1      # Windows PowerShell 7 (robocopy)
+│   ├── vibe-resume-backup.xml          # Task Scheduler import template
+│   └── com.vibe-resume.backup.plist    # macOS launchd agent
 ├── data/
 │   ├── imports/           # put downloaded ZIPs here
 │   ├── cache/             # per-source extracted JSON (gitignored)
