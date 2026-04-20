@@ -73,38 +73,48 @@ ChatGPT · Claude.ai · Gemini Takeout · Grok · Perplexity · Mistral Le Chat 
 - **Privacy filter** — regex redaction + project blocklist + optional tech abstraction
 - **Versioned output** — internal git repo under `data/resume_history/` with `list-versions` / `diff v1 v2` / `rollback`
 
-## Use as an Agent Skill (Claude Code / Gemini CLI / Copilot CLI / Cursor)
+## Use as an Agent Skill (Claude Code · Gemini CLI · Copilot CLI · Cursor · Warp · OpenClaw · OpenCode)
 
-Beyond the CLI, `vibe-resume` ships as an [Agent Skill](AGENTS.md) that drives the full `extract → aggregate → enrich → render → review → trend` pipeline from natural language prompts. Inside a supported host you can just say:
+Beyond the CLI, `vibe-resume` ships as an [Agent Skill](AGENTS.md) that drives the full `extract → aggregate → enrich → render → review → trend` pipeline from natural-language prompts. Inside any supported host you can just say:
 
 > *"Generate my résumé from my AI usage."*
 > *"Render my résumé in Japanese and German and review both."*
 > *"Tailor my résumé for this JD: data/imports/lumen_labs.txt."*
 
-The skill follows the 2026 converged `SKILL.md` convention, so a single canonical file works across four hosts:
+The skill follows the 2026 converged `SKILL.md` convention, so **one canonical file** ([`.claude/skills/ai-used-resume/SKILL.md`](.claude/skills/ai-used-resume/SKILL.md)) works across every host below. Everything else — the other `skills/` folders, `AGENTS.md` — just points back at it.
 
-| Host | Discovery path | Setup |
+| Host | Discovery | Setup in this repo |
 |---|---|---|
-| **Claude Code** | `.claude/skills/ai-used-resume/` | Native — auto-loaded |
-| **Gemini CLI** | `.gemini/skills/ai-used-resume/` | Symlinked to the canonical file |
+| **Claude Code** | `.claude/skills/` | Canonical — auto-loaded |
+| **Gemini CLI** (Google) | `.gemini/skills/` | Symlink → canonical |
 | **GitHub Copilot CLI** | reads `.claude/skills/` natively | Zero config |
-| **Cursor CLI** | reads `AGENTS.md` at repo root | Points agents at the SKILL.md |
+| **Cursor CLI** | reads `AGENTS.md` + `.cursor/rules/` | `AGENTS.md` points at SKILL.md |
+| **Warp** (agentic terminal) | reads `.claude/skills/` + `.agents/skills/` + `.warp/skills/` | Zero config (`.agents/skills/` symlink added defensively) |
+| **OpenClaw** (250k⭐ in 60 days) | `~/.openclaw/skills/` (user scope only) | User-scope symlink — see below |
+| **OpenCode** (terminal CLI agent) | `.opencode/skills/` + `~/.opencode/skills/` | Project-scope symlink included |
+| **Hermes Agent** | Own skill + memory + MCP bridge | Reachable via MCP — future v0.3 |
 
-Canonical source of truth: [`.claude/skills/ai-used-resume/SKILL.md`](.claude/skills/ai-used-resume/SKILL.md) — everything else (the `.gemini/` symlink, `AGENTS.md`) points at this file so updates land everywhere at once.
-
-Activate the skill system-wide (not just inside this clone):
+Activate the skill system-wide (so it fires anywhere, not just inside this clone):
 
 ```bash
 # Claude Code
-mkdir -p ~/.claude/skills
-ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.claude/skills/ai-used-resume
+mkdir -p ~/.claude/skills && \
+  ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.claude/skills/ai-used-resume
 
 # Gemini CLI
-mkdir -p ~/.gemini/skills
-ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.gemini/skills/ai-used-resume
+mkdir -p ~/.gemini/skills && \
+  ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.gemini/skills/ai-used-resume
+
+# OpenClaw (only honours user-scope paths)
+mkdir -p ~/.openclaw/skills && \
+  ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.openclaw/skills/ai-used-resume
+
+# OpenCode
+mkdir -p ~/.opencode/skills && \
+  ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.opencode/skills/ai-used-resume
 ```
 
-See [`AGENTS.md`](AGENTS.md) for the full host matrix and Windows instructions.
+See [`AGENTS.md`](AGENTS.md) for the full matrix, Windows symlink commands, and Hermes Agent / MCP plans.
 
 ## Quick start
 
