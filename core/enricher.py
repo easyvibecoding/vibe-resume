@@ -129,7 +129,11 @@ def _pick_template(locale_meta: dict[str, Any]) -> tuple[str, str]:
     return template, lang_label
 
 
-def _build_prompt(g: ProjectGroup, locale_meta: dict[str, Any] | None = None) -> str:
+def _build_prompt(
+    g: ProjectGroup,
+    locale_meta: dict[str, Any] | None = None,
+    tailor_keywords: list[str] | None = None,
+) -> str:
     raw_lines: list[str] = []
     for a in g.activities[:12]:
         s = (a.summary or "").strip().replace("\n", " ")
@@ -146,7 +150,7 @@ def _build_prompt(g: ProjectGroup, locale_meta: dict[str, Any] | None = None) ->
     meta = locale_meta or get_locale("en_US")
     template, lang_label = _pick_template(meta)
 
-    return template.format(
+    body = template.format(
         name=g.name,
         path=g.path or "(not on disk)",
         first=g.first_activity.isoformat(timespec="minutes"),
@@ -159,6 +163,20 @@ def _build_prompt(g: ProjectGroup, locale_meta: dict[str, Any] | None = None) ->
         raw=raw,
         lang_label=lang_label,
     )
+    if tailor_keywords:
+        # Append the tailor block *after* the locale prompt so it acts as a
+        # final instruction the model re-reads right before emitting YAML.
+        kw_str = ", ".join(tailor_keywords[:12])
+        body += (
+            "\n\n"
+            "Tailor hint — the target JD emphasises these keywords:\n"
+            f"    {kw_str}\n"
+            "If any of these genuinely describe the project activity above, surface them "
+            "verbatim in at least one achievement (e.g. if `RAG` is listed and the project "
+            "is a retrieval pipeline, prefer 'RAG' over a generic phrase like 'search stack'). "
+            "Never invent a match that isn't supported by the raw activity.\n"
+        )
+    return body
 
 
 def _call_claude(prompt: str, timeout: int = 180) -> str | None:
@@ -214,6 +232,7 @@ def enrich_groups(
     cache_dir: Path,
     limit: int | None = None,
     locale: str | None = None,
+    tailor: str | None = None,
 ) -> None:
     groups = load_groups()
     if not groups:
@@ -222,6 +241,18 @@ def enrich_groups(
 
     locale_meta = get_locale(locale or cfg.get("render", {}).get("locale"))
     console.print(f"[dim]enriching in locale={locale_meta['_key']} style={locale_meta['style']}[/dim]")
+
+    tailor_keywords: list[str] | None = None
+    if tailor:
+        from core.review import parse_jd_keywords
+
+        tailor_path = Path(tailor)
+        if not tailor_path.exists():
+            console.print(f"[yellow]tailor file not found: {tailor_path}[/yellow]")
+        else:
+            tailor_keywords = parse_jd_keywords(tailor_path)
+            preview = ", ".join(tailor_keywords[:8]) if tailor_keywords else "(none)"
+            console.print(f"[dim]tailor keywords from {tailor_path.name}: {preview}[/dim]")
 
     use_llm = cfg.get("enrich", {}).get("mode") == "claude-code-agent"
     enriched: list[dict[str, Any]] = []
@@ -243,7 +274,7 @@ def enrich_groups(
             continue
 
         if use_llm and g.total_sessions >= 2:
-            out = _call_claude(_build_prompt(g, locale_meta))
+            out = _call_claude(_build_prompt(g, locale_meta, tailor_keywords=tailor_keywords))
             parsed = _parse_yaml(out) if out else None
         else:
             parsed = None

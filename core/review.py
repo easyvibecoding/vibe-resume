@@ -72,15 +72,27 @@ HEADING_RE = re.compile(r"^(#{1,6})\s+(.+?)\s*$", re.MULTILINE)
 BULLET_RE = re.compile(r"^[\s]*-\s+(.+?)\s*$", re.MULTILINE)
 # Sections whose bullets are proper nouns / facts and should skip verb+metric checks
 _IRRELEVANT_HEADS = {
+    # English
     "awards", "talks", "hobbies", "interests", "certifications", "education",
-    "languages", "technical skills", "skills",
+    "languages", "technical skills", "skills", "digital skills",
+    "personal information", "mother tongue and other languages",
+    "education and training", "honours and awards", "conferences and publications",
+    "additional information",
+    # 繁中
     "獲獎紀錄", "獎項", "演講 / 分享", "演講", "興趣", "學歷", "證照", "語言",
-    "技能專長", "專業技能", "技術能力",
-    "获奖记录", "演讲", "兴趣", "教育背景", "证书", "专业技能",
+    "技能專長", "專業技能", "技術能力", "語言能力",
+    # 简中
+    "获奖记录", "演讲", "兴趣", "教育背景", "证书", "专业技能", "语言能力",
+    # 日本語
     "受賞歴", "登壇・発表", "趣味・特技", "学歴", "免許・資格",
-    "수상 내역", "발표 / 강연", "관심 분야", "학력", "자격증",
+    # 한국어
+    "수상 내역", "발표 / 강연", "관심 분야", "학력", "자격증", "어학",
+    # Deutsch
     "auszeichnungen", "vorträge", "interessen", "ausbildung", "zertifikate", "kenntnisse",
-    "distinctions", "conférences", "centres d'intérêt", "formation", "certifications", "compétences",
+    "persönliche daten", "sprachen",
+    # français
+    "distinctions", "conférences", "centres d'intérêt", "formation", "certifications",
+    "compétences", "langues", "état civil",
 }
 
 

@@ -104,10 +104,15 @@ def run_aggregator(cfg: dict[str, Any]) -> None:
     aggregate_from_cache(cfg, CACHE_DIR)
 
 
-def run_enricher(cfg: dict[str, Any], limit: int | None = None, locale: str | None = None) -> None:
+def run_enricher(
+    cfg: dict[str, Any],
+    limit: int | None = None,
+    locale: str | None = None,
+    tailor: str | None = None,
+) -> None:
     from core.enricher import enrich_groups
 
-    enrich_groups(cfg, CACHE_DIR, limit=limit, locale=locale)
+    enrich_groups(cfg, CACHE_DIR, limit=limit, locale=locale, tailor=tailor)
 
 
 def run_render(

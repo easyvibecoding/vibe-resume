@@ -48,12 +48,17 @@ def aggregate(ctx: click.Context) -> None:
 @cli.command()
 @click.option("--limit", "-n", type=int, default=None, help="Enrich top N groups only")
 @click.option("--locale", default=None, help="Target locale (controls bullet language + style)")
+@click.option(
+    "--tailor",
+    default=None,
+    help="Path to JD .txt; extracted keywords are injected into the enrich prompt so achievements bias toward them",
+)
 @click.pass_context
-def enrich(ctx: click.Context, limit: int | None, locale: str | None) -> None:
+def enrich(ctx: click.Context, limit: int | None, locale: str | None, tailor: str | None) -> None:
     """Ask Claude Code agent skill to summarize each project group."""
     from core.runner import run_enricher
 
-    run_enricher(ctx.obj["config"], limit=limit, locale=locale)
+    run_enricher(ctx.obj["config"], limit=limit, locale=locale, tailor=tailor)
 
 
 @cli.command()

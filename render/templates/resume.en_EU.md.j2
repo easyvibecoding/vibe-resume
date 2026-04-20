@@ -1,0 +1,117 @@
+{# Europass-styled English CV — docs/resume_locales.md §3.
+   Design choices:
+   - Personal info as a labelled list (Europass convention, not a centered strip)
+   - CEFR language proficiency expected — profile.languages entries should
+     end with "(C1)"/"(B2)"/etc.; we pass them through as-is.
+   - "Main activities and responsibilities" under each experience block
+     matches the Europass XML schema's field label.
+   - GDPR-minimal personal data: no DOB unless explicitly set.
+-#}
+# {{ profile.name }}
+{% if profile.title %}_{{ profile.title }}_{% endif %}
+
+## Personal information
+{% if profile.location %}- **Address**: {{ profile.location }}
+{% endif %}
+{% if profile.email %}- **Email**: {{ profile.email }}
+{% endif %}
+{% if profile.phone %}- **Telephone**: {{ profile.phone }}
+{% endif %}
+{% if profile.nationality %}- **Nationality**: {{ profile.nationality }}
+{% endif %}
+{% if profile.dob %}- **Date of birth**: {{ profile.dob | date }}
+{% endif %}
+{% if profile.linkedin %}- **LinkedIn**: {{ profile.linkedin }}
+{% endif %}
+{% if profile.github %}- **GitHub**: {{ profile.github }}
+{% endif %}
+{% if profile.website %}- **Website**: {{ profile.website }}
+{% endif %}
+
+{% if profile.target_role %}**{{ T.target_role }}**: {{ profile.target_role }}
+{% endif %}
+
+{% if profile.summary %}
+## {{ T.summary }}
+{{ profile.summary | trim }}
+{% endif %}
+
+{% if profile.experience %}
+## {{ T.experience }}
+
+{% for e in profile.experience if e.title or e.company %}
+**{{ T.period }}**: {{ e.start | date }} – {{ e.end | date }}
+**Occupation**: {{ e.title }}
+**Employer**: {{ e.company }}
+
+**{{ T.key_achievements }}**
+{% for b in e.bullets %}- {{ b }}
+{% endfor %}
+
+{% endfor %}
+{% endif %}
+
+## {{ T.projects }}
+{% set w30 = window_stats.get('last_30d') %}
+{% if total_sessions > 0 %}
+_Aggregated from {{ ai_overview | map(attribute='tool') | join(' / ') }} across {{ groups|length }} projects between {{ timespan_start | date }} and {{ timespan_end | date }} ({{ total_sessions }} AI-assisted sessions{% if w30 and w30.sessions > 0 %}; last 30 days: {{ w30.active_days }}/{{ w30.window_days }} active days, longest streak {{ w30.longest_streak_days }} days{% endif %}){% if top_capabilities %}. {{ T.capabilities }}: {{ top_capabilities | join(', ') }}{% endif %}._
+{% endif %}
+
+{% set top_n = 6 %}
+{% for g in groups[:top_n] %}
+**{{ g.name }}**{% if g.headline %} — {{ g.headline }}{% endif %} · _{{ g.first_activity[:7] | date }} – {{ g.last_activity[:7] | date }}_{% if g.tech_stack %} · {{ g.tech_stack[:6] | join(', ') }}{% endif %}
+
+{% if g.achievements %}{% for a in g.achievements %}- {{ a }}
+{% endfor %}{% elif g.summary %}- {{ g.summary }}
+{% endif %}
+
+{% endfor %}
+
+{% if groups|length > top_n %}
+_Additional projects ({{ groups|length - top_n }}): {% for g in groups[top_n:] %}{{ g.name }}{% if g.tech_stack %} ({{ g.tech_stack[:2] | join(', ') }}){% endif %}{% if not loop.last %}; {% endif %}{% endfor %}._
+{% endif %}
+
+{% if profile.education %}
+## {{ T.education }}
+{% for ed in profile.education if ed.degree or ed.school %}- **{{ ed.degree }}**, {{ ed.school }} ({{ ed.year }})
+{% endfor %}
+{% endif %}
+
+{% if profile.certifications %}
+## {{ T.certifications }}
+{% for c in profile.certifications %}- {{ c.name }} ({{ c.year }})
+{% endfor %}
+{% endif %}
+
+{% if profile.languages %}
+## Mother tongue and other languages
+_Proficiency on the CEFR scale (A1 basic → C2 native)._
+{% for lang in profile.languages %}- {{ lang }}
+{% endfor %}
+{% endif %}
+
+{% if profile.custom_sections %}
+{% set awards = profile.custom_sections.get('awards') %}
+{% if awards %}
+## {{ T.awards }}
+{% for item in awards %}- {{ item }}
+{% endfor %}
+{% endif %}
+{% set talks = profile.custom_sections.get('talks') %}
+{% if talks %}
+## {{ T.talks }}
+{% for item in talks %}- {{ item }}
+{% endfor %}
+{% endif %}
+{% set hobbies = profile.custom_sections.get('hobbies') %}
+{% if hobbies %}
+## {{ T.hobbies }}
+{% for item in hobbies %}- {{ item }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+{% if tailored_for %}
+---
+_{{ T.tailored_for }}: {{ tailored_for }}_
+{% endif %}

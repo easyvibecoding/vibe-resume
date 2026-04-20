@@ -70,10 +70,12 @@ uv run python cli.py render -f all    # md + docx + pdf + git snapshot
 |---|---|
 | `cli.py extract [--only NAME]` | run extractors, cache to `data/cache/*.json` |
 | `cli.py aggregate` | group by project, classify task types, infer stack |
-| `cli.py enrich [-n N] [--locale L]` | generate summary + achievements (XYZ for en, noun-phrase for zh/ja/de/fr/ko) |
+| `cli.py enrich [-n N] [--locale L] [--tailor JD.txt]` | generate summary + achievements (XYZ for en, noun-phrase for zh/ja/de/fr/ko); `--tailor` biases bullets toward a JD's keywords |
 | `cli.py render -f md\|docx\|pdf\|all [--locale L]` | render + git snapshot |
+| `cli.py render --all-locales [-f FMT]` | fan out across every registered locale in one pass |
 | `cli.py render --tailor data/imports/jd.txt` | tailor for a specific job description |
 | `cli.py review [-v N \| --file PATH] [--locale L] [--jd JD.txt]` | score the rendered draft against the 8-point reviewer checklist |
+| `cli.py trend [--locale L]` | score history per locale with ASCII sparkline + mean + latest grade |
 | `cli.py status` | show per-source activity counts |
 | `cli.py list-versions` / `cli.py diff 1 2` | resume version history |
 
@@ -92,6 +94,7 @@ uv run python cli.py render -f md  --locale de_DE     # Lebenslauf with Persönl
 | Locale | Style | Photo | Headings | Special |
 |---|---|---|---|---|
 | `en_US` (default) | XYZ action-verb | forbidden | Summary / Skills / Experience / … | Flat ATS-friendly skills line |
+| `en_EU` | XYZ action-verb | optional | Personal information / Work experience / Education and training / … | Europass-styled — labelled personal-info list, CEFR languages, GDPR-minimal (no DOB by default) |
 | `en_GB` | XYZ action-verb | forbidden | Personal statement / … | UK spellings, CEFR languages |
 | `zh_TW` | noun-phrase | optional | 自我介紹 / 技能專長 / 工作經歷 / … | 全形分隔, 中英技術混排 |
 | `zh_CN` | noun-phrase | optional | 个人简介 / 专业技能 / … | 简体, 大厂偏美式 |
@@ -133,6 +136,46 @@ Optional locale-conditional personal fields (`dob`, `gender`, `nationality`,
 The full design rationale and per-locale field matrix is in
 `docs/resume_locales.md`.
 
+### Locale resolution chain
+
+The renderer picks a locale by checking four sources in order and stops at the
+first one that is set:
+
+1. `--locale` on the CLI (highest priority)
+2. `profile.preferred_locale` in `profile.yaml`
+3. `config.render.locale` in `config.yaml`
+4. `en_US` fallback
+
+```yaml
+# profile.yaml — always render ja_JP unless CLI overrides
+preferred_locale: ja_JP
+
+# config.yaml — team default
+render:
+  locale: en_US
+  all_locales_formats: ["md", "docx"]   # what --all-locales produces per locale
+```
+
+Running `cli.py render --locale zh_TW` always wins over `preferred_locale`;
+omit it and `profile.preferred_locale` takes over. The same chain applies
+when `enrich` dispatches the LLM prompt, so the right language label is
+injected regardless of which knob you turn.
+
+### Batch rendering every locale
+
+For final-cut day when you need the full pack for different markets:
+
+```bash
+uv run python cli.py render --all-locales                 # defaults to config.render.all_locales_formats
+uv run python cli.py render --all-locales -f docx         # force a specific format
+uv run python cli.py render --all-locales --tailor jd.txt # one JD, every locale
+```
+
+`--all-locales` iterates the full `LOCALES` registry (currently 9 locales).
+Per-locale formats are controlled by `config.render.all_locales_formats`
+(default `["md"]`) — bump it to `["md", "docx", "pdf"]` to cut full bundles.
+`--locale` and `--all-locales` are mutually exclusive.
+
 ## Reviewer-view audit (`cli.py review`)
 
 After rendering, score the output against the same 8-point checklist a real
@@ -158,6 +201,29 @@ Each draft is graded on:
 Outputs `data/reviews/<draft>_review.md` and `.json` for diffing across
 iterations. A grade ≥ B/(80%) is the bar before sending the draft to a real
 reviewer.
+
+### Score trend (`cli.py trend`)
+
+Every review run drops a JSON artefact into `data/reviews/`, and `trend`
+folds them into one per-locale summary so you can see whether each market
+version is improving or regressing as you iterate:
+
+```bash
+uv run python cli.py trend               # all locales
+uv run python cli.py trend --locale zh_TW
+```
+
+```
+ Locale  Runs  First    Latest        Mean    Grade  Trend
+ en_US   6     58/80    v16: 78/80    91.0%   A      ▂▅▆▇██
+ ja_JP   3     50/80    v14: 72/80    82.5%   A      ▁▅█
+ zh_TW   4     42/80    v15: 74/80    85.0%   A      ▁▃▆█
+```
+
+The sparkline uses U+2581..U+2588 Unicode blocks so it renders in any
+monospace terminal. Columns: run count, first score, latest score (with
+version number), cross-run mean %, grade of the latest run, and the per-run
+trend.
 
 ## Claude Code 30-day cleanup — important
 
