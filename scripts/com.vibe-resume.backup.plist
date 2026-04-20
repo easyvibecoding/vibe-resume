@@ -16,7 +16,8 @@ StartCalendarInterval below = every Sunday at 03:00 local time.
         <string>/bin/bash</string>
         <string>-c</string>
         <!-- Absolute path required: launchd does NOT expand $HOME from a relative cwd. -->
-        <string>$HOME/sideProject/AI-used-resume/scripts/backup_claude_projects.sh</string>
+        <!-- Replace with the absolute path to your clone of vibe-resume. -->
+        <string>$HOME/vibe-resume/scripts/backup_claude_projects.sh</string>
     </array>
 
     <key>EnvironmentVariables</key>
