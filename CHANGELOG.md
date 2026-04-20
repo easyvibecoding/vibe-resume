@@ -19,6 +19,28 @@ All notable changes to `vibe-resume`. Format follows
 - 18 additional unit tests (41 total now) — parse_jd_keywords /
   find_previous_review / ReviewReport.grade boundaries / _pick_template /
   _build_prompt across en_US, zh_TW, zh_CN, ja_JP, de_DE.
+- **`en_EU` locale** — Europass-styled English CV. Labelled Personal
+  information list (not a centered strip), Occupation/Employer fields
+  under each experience block (matches Europass XML schema labels),
+  CEFR languages section, GDPR-minimal personal data.
+- **`cli.py enrich --tailor JD.txt`** — injects `parse_jd_keywords`
+  output into the enrich prompt as a "Tailor hint" block so
+  achievements surface JD keywords verbatim when the raw activity
+  supports them (explicit "never invent a match" rule). Verified on
+  `rag-search-platform`: non-tailor run produced metric-rich but
+  keyword-neutral bullets; tailor run surfaced FastAPI / pgvector /
+  Next.js / TypeScript / Docker / AWS verbatim and added `RAG` to
+  `tech_stack`.
+- README: `trend` / `render --all-locales` / locale resolution chain /
+  `enrich --tailor` sections.
+
+### Verified (on top of the 0.1 list)
+- `cli.py enrich --locale ko_KR -n 1` → native Korean output
+  (풀스택 엔지니어, 설계·배포, 구현, 단축), tech nouns stay English
+  (FastAPI / pgvector / Next.js / Docker / AWS / Claude Code).
+- `cli.py enrich --locale zh_CN -n 1` → all Simplified Chinese
+  (全栈工程师, 设计, 构建, 部署, 重构, 修复), zero Traditional-only
+  character leak.
 
 ### Verified
 - Enrichment prompt dispatch produces **native output** in every
@@ -32,8 +54,7 @@ All notable changes to `vibe-resume`. Format follows
 
 ### Planned for v0.2
 
-- **More locales**: `en_EU` (Europass-styled English), `zh_HK` (bilingual EN+繁), `en_SG` (NRIC-aware).
-- **Enricher `--tailor`**: feed the active JD into the prompt so achievements bias toward the keywords the reviewer is already primed for.
+- **More locales**: `zh_HK` (bilingual EN+繁), `en_SG` (NRIC-aware). *(`en_EU` done above.)*
 - **`cli.py render --tailor` + review `--jd`** integrated into a single "target" object (one JD passed once, used everywhere).
 - **Windows backup**: `scripts/backup_claude_projects.ps1` + Task Scheduler XML, paired with the existing macOS launchd and Linux cron docs.
 - **PDF cover page**: optional one-page hero summary before the main resume (`render.cover_page: true`); useful for de_DE Lebenslauf + JP 履歴書 bundles.
