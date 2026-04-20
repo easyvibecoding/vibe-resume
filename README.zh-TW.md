@@ -1,0 +1,339 @@
+<p align="center">
+  <img src="docs/assets/logo.png" width="120" alt="vibe-resume logo">
+</p>
+
+<p align="center">
+  <a href="README.md">English</a> ·
+  <strong>繁體中文</strong> ·
+  <a href="README.zh-CN.md">简体中文</a> ·
+  <a href="README.ja.md">日本語</a>
+</p>
+
+# vibe-resume
+
+> 把你的 AI 協作紀錄變成可版本化、可審核的履歷 —— **for the vibe coding era**。
+
+[![CI](https://github.com/easyvibecoding/vibe-resume/actions/workflows/tests.yml/badge.svg)](https://github.com/easyvibecoding/vibe-resume/actions/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![Locales](https://img.shields.io/badge/locales-10-brightgreen.svg)](docs/resume_locales.md)
+[![uv](https://img.shields.io/badge/packaged%20with-uv-261230.svg)](https://github.com/astral-sh/uv)
+
+![vibe-resume hero — AI 工具會談流經 extract→aggregate→enrich→render 產出 10 語履歷](docs/assets/hero.png)
+
+`vibe-resume` 掃描你 macOS 上使用過的每一個 AI 助理(Claude Code、Cursor、GitHub Copilot、Cline、Continue、Aider、Windsurf、Zed AI,以及 ChatGPT / Claude.ai / Gemini / Grok / Perplexity / Mistral 的雲端匯出,還有 ComfyUI、Midjourney、Suno、ElevenLabs 與你的 `git` commits),將使用軌跡整合成 **Markdown / DOCX / PDF 履歷**,並內建 git 快照讓每一版草稿都能 diff 與回溯。
+
+## 與其他工具的差異
+
+| | vibe-resume | Reactive Resume / OpenResume | Resume-LM / Resume Matcher | HackMyResume / JSON Resume |
+|---|---|---|---|---|
+| **主要訊號源** | AI 工具會談 + git commits(自動擷取) | 使用者手填的 WYSIWYG 內容 | 上傳 PDF + JD | 使用者手寫 JSON |
+| **Locale 數** | **10** (en_US/en_EU/en_GB/zh_TW/zh_HK/zh_CN/ja_JP/ko_KR/de_DE/fr_FR) 含文化專屬排版 | 1–2 | 1 | 依 theme 而定 |
+| **日本 JIS Z 8303 履歴書格** | ✅ `render/japan.py` | ❌ | ❌ | ❌ |
+| **Europass 帶標籤個人資料** | ✅ `en_EU` 模板 | ❌ | ❌ | ❌ |
+| **履歷審核器** | 8 項評分表 + 趨勢稀疏圖 | — | 只有 ATS 分數 | — |
+| **JD 客製化** | `enrich --tailor JD.txt`(LLM prompt 注入) | — | ✅ LLM 重寫 | — |
+| **隱私** | 全本地;`claude -p` 無頭模式,資料不出本機 | 視情況(OpenAI key 可選) | 必須雲端 API | 全本地 |
+| **形態** | Python CLI pipeline | Web UI | Web UI | Node CLI |
+
+## 為什麼
+
+2026 年的招募青睞能**用量化成果證明 AI 協作生產力**的工程師,而非僅在履歷上列出「Claude Code」作為技能。審核者想看到架構決策、跨棧廣度(前端 / 後端 / DevOps / 除錯 / 部署),以及你交付的速度。而你的 AI 工具其實已經自動記錄了這一切。`vibe-resume` 把這些「使用痕跡」轉成可用的佐證。
+
+## 功能
+
+### 本地 extractor(免登入)
+| 來源 | 路徑 |
+|---|---|
+| Claude Code | `~/.claude/projects/**/*.jsonl` |
+| Claude Code Archive | `~/ClaudeCodeArchive/current`(可選 rsync 備份) |
+| Cursor | `~/Library/Application Support/Cursor/User/**/state.vscdb` |
+| GitHub Copilot (VS Code) | `workspaceStorage/**/chatSessions/` |
+| Cline | `globalStorage/saoudrizwan.claude-dev/` 或 `~/.cline/data/` |
+| Continue.dev | `~/.continue/sessions/` |
+| Aider | `$HOME/**/.aider.chat.history.md` |
+| Windsurf / Cascade | `~/.codeium/windsurf/cascade/` |
+| Zed AI | `~/.local/share/zed/threads/` |
+| Claude Desktop | MCP 設定 + extensions |
+| Git commits | `$HOME` 裡所有 `.git`,以你的 author email 過濾 |
+
+### 雲端匯出匯入器(將 ZIP 丟到 `data/imports/<tool>/`)
+ChatGPT · Claude.ai · Gemini Takeout · Grok · Perplexity · Mistral Le Chat · Poe
+
+### AIGC extractor
+`image_local`(ComfyUI / A1111 PNG metadata)· `midjourney`(IPTC/XMP)· `elevenlabs`(history API)· `suno`(本地 MP3 ID3)· `runway` / `heygen`(stub)
+
+### 履歷智能處理
+- **任務類別分類器** —— 把每次會談標註為 frontend / backend / bug-fix / deployment / refactor / testing 等類
+- **能力廣度** —— 計算每個專案的相異類別數,凸顯跨技能工程師
+- **30 天滾動統計** —— 活躍天數比、每日平均、高峰日、最長連續天(對齊 Claude Code 30 天清理週期)
+- **XYZ enricher** —— 透過 Claude Code CLI 無頭模式把雜訊活動轉成 Google 風格履歷條目
+- **技術棧規範化** —— `postgres` → `PostgreSQL`、`tailwind` → `Tailwind CSS`
+- **硬技能 vs 領域標籤分離** —— 讓 ATS 關鍵字保持乾淨
+- **隱私過濾** —— regex 遮蔽 + 專案黑名單 + 可選技術抽象化
+- **版本化輸出** —— `data/resume_history/` 下的內部 git repo,含 `list-versions` / `diff v1 v2` / `rollback`
+
+## 快速上手
+
+```bash
+# 1. 安裝
+uv venv && uv pip install -e ".[dev]"
+
+# 2. 填入個人檔
+cp profile.example.yaml profile.yaml
+$EDITOR profile.yaml        # 至少填 name / target_role
+
+# 3. (可選)把雲端 ZIP 匯出丟到 data/imports/<tool>/
+
+# 4. 跑 pipeline
+uv run python cli.py extract          # 所有啟用的 extractor
+uv run python cli.py aggregate        # 依專案分組 + 推斷技術棧
+uv run python cli.py enrich           # 透過 claude -p 產生 XYZ bullet
+uv run python cli.py render -f all    # md + docx + pdf + git 快照
+```
+
+## 指令
+
+| 指令 | 功能 |
+|---|---|
+| `cli.py extract [--only NAME]` | 執行 extractor,快取到 `data/cache/*.json` |
+| `cli.py aggregate` | 依專案分組、分類任務、推斷技術棧 |
+| `cli.py enrich [-n N] [--locale L] [--tailor JD.txt]` | 產生 summary + achievements(英文用 XYZ、中日德法韓用名詞片語);`--tailor` 讓 bullet 偏向 JD 關鍵字 |
+| `cli.py render -f md\|docx\|pdf\|all [--locale L]` | 渲染 + git 快照 |
+| `cli.py render --all-locales [-f FMT]` | 一次渲染所有已註冊 locale |
+| `cli.py render --tailor data/imports/jd.txt` | 針對特定 JD 客製 |
+| `cli.py review [-v N \| --file PATH] [--locale L] [--jd JD.txt]` | 以 8 項 reviewer 檢查表評分 |
+| `cli.py trend [--locale L]` | 依 locale 顯示歷次評分 + 平均 + 最新等第 |
+| `cli.py completion {bash\|zsh\|fish} [--install]` | 產生或安裝 shell 補全腳本 |
+| `cli.py status` | 顯示各來源的活動數量 |
+| `cli.py list-versions` / `cli.py diff 1 2` | 履歷版本歷史 |
+
+## 多語 locale 渲染
+
+`vibe-resume` 內建每個 locale 專用模板,讓同一份 `profile.yaml` 與專案資料能渲染成各地區審核者習慣的版型。
+
+```bash
+uv run python cli.py render -f md  --locale en_US     # ATS 優化美式預設
+uv run python cli.py render -f md  --locale zh_TW     # 台灣繁中履歷
+uv run python cli.py render -f all --locale ja_JP     # 履歴書 (DOCX 格子) + 職務経歴書 (md/pdf)
+uv run python cli.py render -f md  --locale de_DE     # Lebenslauf 含 Persönliche Daten 區塊
+```
+
+| Locale | 風格 | 照片 | 標題範例 | 特殊點 |
+|---|---|---|---|---|
+| `en_US`(預設) | XYZ 動詞開頭 | 禁用 | Summary / Skills / Experience / … | 扁平 ATS 友善技能行 |
+| `en_EU` | XYZ 動詞開頭 | 可選 | Personal information / Work experience / Education and training / … | Europass 版面 —— 帶標籤個人資料列,CEFR 語言,GDPR 極簡(預設不露 DOB) |
+| `en_GB` | XYZ 動詞開頭 | 禁用 | Personal statement / … | 英式拼寫、CEFR |
+| `zh_TW` | 名詞片語 | 可選 | 自我介紹 / 技能專長 / 工作經歷 / … | 全形分隔,中英技術混排 |
+| `zh_HK` | 名詞片語 | 可選 | Personal Profile 個人簡介 / Work Experience 工作經驗 / … | **雙語標題 EN + 繁**;CEFR;不放 HKID |
+| `zh_CN` | 名詞片語 | 可選 | 个人简介 / 专业技能 / … | 簡體、大廠偏美式 |
+| `ja_JP` | 名詞片語 | **必備** | 職務要約 / 職務経歴 / … | DOCX = JIS Z 8303 履歴書格子(`render/japan.py`);md = 職務経歴書 |
+| `ko_KR` | 名詞片語 | **必備** | 자기소개 / 보유 기술 / 경력 / … | 자기소개서 以獨立文件處理 |
+| `de_DE` | 名詞片語 | **必備** | Persönliche Daten / Berufserfahrung / … | 填了 `dob` / `nationality` 才會輸出 |
+| `fr_FR` | 名詞片語 | 可選 | Profil / Compétences / Expérience / … | 資淺 1 頁、資深 2 頁 |
+
+### 各 locale 文字覆寫
+
+`UserProfile` 是 `extra="allow"`,所以任何 `<field>_<locale>` key 都可以與英文原欄位並存,模板會用 `localized` Jinja filter 挑正確的版本:
+
+```yaml
+title: "Senior Full-stack Engineer"
+title_zh_TW: "資深全端工程師"
+title_ja_JP: "シニアフルスタックエンジニア"
+
+summary: "Full-stack engineer who…"
+summary_zh_TW: "全端工程師,熟悉 React / Next.js…"
+
+experience:
+  - title: "Senior Full-stack Engineer"
+    title_zh_TW: "資深全端工程師"
+    company: "Lumen Labs"
+    company_zh_TW: "Lumen Labs(種子輪 AI SaaS)"
+    bullets:
+      - "Reduced query latency from 1.8s to 620ms..."
+    bullets_zh_TW:
+      - "查詢中位延遲從 1.8 秒降至 620 毫秒…"
+```
+
+選填的 locale 條件個人欄位(`dob` / `gender` / `nationality` / `mil_service` / `photo_path` / `marital_status`)在 `profile.example.yaml` 有完整說明。只有當 (a) 當前 locale 的 `personal_fields` 包含該欄,且 (b) 值不為空,這些欄位才會輸出。
+
+完整設計理由與各 locale 欄位對應矩陣放在 `docs/resume_locales.md`。
+
+### Locale 解析鏈
+
+渲染器依下列四個來源判斷 locale,遇到第一個有值的就停:
+
+1. CLI 的 `--locale`(最高)
+2. `profile.yaml` 的 `profile.preferred_locale`
+3. `config.yaml` 的 `config.render.locale`
+4. `en_US` fallback
+
+```yaml
+# profile.yaml —— 若 CLI 沒覆寫就一律渲染 ja_JP
+preferred_locale: ja_JP
+
+# config.yaml —— 團隊預設
+render:
+  locale: en_US
+  all_locales_formats: ["md", "docx"]   # --all-locales 每個 locale 的格式
+```
+
+`cli.py render --locale zh_TW` 永遠勝過 `preferred_locale`;省略 `--locale` 則由 `preferred_locale` 接手。`enrich` 呼叫 LLM 時也走同一條鏈,確保語言標籤正確注入。
+
+### 一次渲染所有 locale
+
+需要為各地區打包完整版時:
+
+```bash
+uv run python cli.py render --all-locales                 # 使用 config.render.all_locales_formats
+uv run python cli.py render --all-locales -f docx         # 強制特定格式
+uv run python cli.py render --all-locales --tailor jd.txt # 一份 JD 應用到所有 locale
+```
+
+`--all-locales` 會走完 `LOCALES` 註冊表(目前 10 個)。每個 locale 輸出的格式由 `config.render.all_locales_formats` 控制(預設 `["md"]`),改成 `["md", "docx", "pdf"]` 就能一次產齊全部包。`--locale` 與 `--all-locales` 互斥。
+
+## Reviewer-view 審核(`cli.py review`)
+
+![8 項自動 reviewer 評分表,旁邊是一份已渲染履歷與趨勢稀疏圖](docs/assets/reviewer_audit.png)
+
+渲染完之後,用與真 reviewer 一致的 8 項清單評分:
+
+```bash
+uv run python cli.py review                    # 最新版
+uv run python cli.py review -v 9               # 指定版本
+uv run python cli.py review -v 12 --jd jd.txt  # 加入 JD 關鍵字覆蓋率
+```
+
+每份草稿按以下 8 項評:
+
+1. **Top fold** —— 姓名、目標角色、至少一個具體指標是否出現在前 12 行
+2. **Numbers per bullet** —— 工作經歷的 bullet 中是否 ≥60% 帶有量化指標
+3. **Keyword echo (JD)** —— JD 的主要大寫詞彙是否被履歷重現(無 `--jd` 則略過)
+4. **Action-verb first** —— XYZ locale 下,bullet 是否以過去式動詞開頭
+5. **Density (noun-phrase)** —— 名詞片語 locale 下,bullet 是否自給自足、無懸空代詞
+6. **Red flags** —— 依 locale 檢查照片 / DOB / "References available upon request" / 連續標題等
+7. **Contact line width** —— 首行 contact 是否會換行崩版(中日韓字元雙寬)
+8. **Page count** —— 依行數與 wrap 估計總頁數 vs locale 建議(US/UK ≤2、DE/JP/KR ≤3)
+
+輸出 `data/reviews/<draft>_review.md` 與 `.json` 可跨版 diff。送出真 reviewer 前建議至少拿到 B/(80%) 等第。
+
+### 評分趨勢(`cli.py trend`)
+
+每次 review 都會在 `data/reviews/` 留下 JSON 檔,`trend` 把它們依 locale 摺疊成一份總覽,讓你看出每個市場版本是在進步還是退步:
+
+```bash
+uv run python cli.py trend               # 所有 locale
+uv run python cli.py trend --locale zh_TW
+```
+
+```
+ Locale  Runs  First    Latest        Mean    Grade  Trend
+ en_US   6     58/80    v16: 78/80    91.0%   A      ▂▅▆▇██
+ ja_JP   3     50/80    v14: 72/80    82.5%   A      ▁▅█
+ zh_TW   4     42/80    v15: 74/80    85.0%   A      ▁▃▆█
+```
+
+稀疏圖用 U+2581..U+2588 Unicode block,任何 monospace 終端機都能渲染。欄位:跑幾次、第一次分數、最新分數(含版號)、跨版平均百分比、最新等第、逐次趨勢。
+
+## Claude Code 30 天清理 —— 重要
+
+Claude Code 預設會刪除超過 30 天的 session JSONL 檔。要長期保留:
+
+```bash
+# 1. 延長保留天數
+python3 -c "import json,pathlib; p=pathlib.Path.home()/'.claude/settings.json'; \
+  d=json.loads(p.read_text()); d['cleanupPeriodDays']=365; \
+  p.write_text(json.dumps(d,indent=2,ensure_ascii=False))"
+
+# 2. 定期 rsync 備份(附贈腳本)
+chmod +x scripts/backup_claude_projects.sh
+./scripts/backup_claude_projects.sh
+# 再註冊成 launchd / cron 每週備份
+```
+
+### Windows 備份(Task Scheduler)
+
+`scripts/backup_claude_projects.ps1` 是 PowerShell 7 版等價腳本,用 `robocopy /MIR /XO` 將 `%USERPROFILE%\.claude\projects` 鏡像到 `%USERPROFILE%\ClaudeCodeArchive\current`,並留一份日期快照:
+
+```powershell
+# 一次執行
+pwsh -NoProfile -File scripts\backup_claude_projects.ps1
+
+# Dry-run(macOS/Linux 也能跑,適合冒煙測試)
+pwsh -NoProfile -File scripts\backup_claude_projects.ps1 -WhatIf
+
+# 註冊為每週工作(週日 03:00)
+schtasks /Create /TN "vibe-resume backup" /XML scripts\vibe-resume-backup.xml
+```
+
+`scripts/vibe-resume-backup.xml` 是可直接匯入 Task Scheduler 的模板。匯入前記得把 `<WorkingDirectory>` 改成 repo 實際位置。CI 在 `windows-latest` 跑 `PSScriptAnalyzer` 嚴格檢查這個腳本,`-WhatIf` 分支也會被實際執行一次。
+
+## 專案結構
+
+```
+vibe-resume/
+├── profile.yaml           # 你的個人檔(gitignored)
+├── config.yaml            # extractor 開關、路徑、隱私規則、時間窗
+├── cli.py                 # 進入點
+├── core/
+│   ├── schema.py          # Pydantic v2: Activity、ProjectGroup、UserProfile
+│   ├── classifier.py      # 18 類任務標籤(雙語 regex)
+│   ├── tech_canonical.py  # 硬技能 vs 領域標籤拆分
+│   ├── stats.py           # 滾動時間窗統計(30d/7d)
+│   ├── privacy.py         # 遮蔽 + 黑名單 + 技術抽象
+│   ├── aggregator.py      # 分組 + headline + 重要度排序
+│   ├── enricher.py        # claude -p → XYZ bullet
+│   ├── versioning.py      # 草稿 git 快照
+│   └── runner.py
+├── extractors/
+│   ├── local/             # 11 個本地 extractor
+│   ├── cloud_export/      # 7 個 ZIP 匯入器
+│   └── api/               # 6 個 AIGC extractor
+├── render/
+│   ├── renderer.py        # md / docx / pdf
+│   └── templates/resume.md.j2
+├── scripts/
+│   ├── backup_claude_projects.sh       # macOS / Linux rsync
+│   ├── backup_claude_projects.ps1      # Windows PowerShell 7 (robocopy)
+│   ├── vibe-resume-backup.xml          # Task Scheduler 匯入模板
+│   └── com.vibe-resume.backup.plist    # macOS launchd agent
+├── data/
+│   ├── imports/           # 把下載的 ZIP 放這
+│   ├── cache/             # 各來源 extractor JSON(gitignored)
+│   └── resume_history/    # 渲染輸出 + 內部 git(gitignored)
+└── .claude/skills/ai-used-resume/SKILL.md   # Claude Code Agent Skill
+```
+
+## 新增一個 extractor
+
+```python
+# extractors/local/mytool.py
+from core.schema import Activity, ActivityType, Source
+NAME = "mytool"
+def extract(cfg: dict) -> list[Activity]:
+    return []  # 產生 Activity 物件
+```
+
+再到 `core/runner.py` → `LOCAL_EXTRACTORS` 註冊、`config.yaml` 開啟即可。
+
+## 已知限制
+
+- 全 `$HOME` 掃描(`git_repos`、`aider`)首次要 1–3 分鐘 —— 改成 `scan.mode: whitelist` 可縮小範圍。
+- Grok / Perplexity / Mistral 匯出 schema 採**寬鬆解析**(官方未公開 schema);遇到欄位對不上時,把真 sample 丟到 `data/imports/` 協助修正。
+- Claude Desktop 聊天內容在 Local Storage 以加密形式存 —— 只能抽 MCP 設定 + extensions。
+- PDF 渲染中日韓字元需要 `pandoc` + XeLaTeX;沒裝則 fallback 到純 pandoc。
+
+## 授權
+
+MIT —— 見 [LICENSE](LICENSE)。
+
+## 相關專案
+
+- [sujankapadia/claude-code-analytics](https://github.com/sujankapadia/claude-code-analytics) —— session 分析儀表板
+- [yudppp/claude-code-history-mcp](https://github.com/yudppp/claude-code-history-mcp) —— MCP history server
+- [alicoding/claude-parser](https://github.com/alicoding/claude-parser) —— Git-like conversation API
+- [daaain/claude-code-log](https://github.com/daaain/claude-code-log) —— HTML 時間軸
+- [S2thend/cursor-history](https://github.com/S2thend/cursor-history) —— Cursor 聊天匯出
+- [AndreaCadonna/resumake-mcp](https://github.com/AndreaCadonna/resumake-mcp) —— LaTeX 履歷 MCP
+
+`vibe-resume` 的差異在於**跨工具聚合**並產生「履歷取向」的條目,而非原始 dump。
