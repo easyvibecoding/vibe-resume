@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/logo.png" width="120" alt="vibe-resume logo">
+</p>
+
 # vibe-resume
 
 > Turn your AI coding history into a versioned, reviewer-ready résumé — **for the vibe coding era**.
@@ -8,11 +12,9 @@
 [![Locales](https://img.shields.io/badge/locales-10-brightgreen.svg)](docs/resume_locales.md)
 [![uv](https://img.shields.io/badge/packaged%20with-uv-261230.svg)](https://github.com/astral-sh/uv)
 
-`vibe-resume` scans every AI assistant you use on macOS (Claude Code, Cursor, GitHub Copilot, Cline, Continue, Aider, Windsurf, Zed AI, ChatGPT / Claude.ai / Gemini / Grok / Perplexity / Mistral exports, ComfyUI, Midjourney, Suno, ElevenLabs, and your `git` commits) and synthesizes the usage trail into a **Markdown / DOCX / PDF résumé** with built-in git snapshots so every draft is diff-able and rollback-able.
+![vibe-resume hero — AI tool sessions flow through extract→aggregate→enrich→render into 10 locale résumés](docs/assets/hero.png)
 
-<p align="center">
-  <em>Scan → Group by project → Classify task types → LLM-enrich to XYZ bullets → Render → Snapshot</em>
-</p>
+`vibe-resume` scans every AI assistant you use on macOS (Claude Code, Cursor, GitHub Copilot, Cline, Continue, Aider, Windsurf, Zed AI, ChatGPT / Claude.ai / Gemini / Grok / Perplexity / Mistral exports, ComfyUI, Midjourney, Suno, ElevenLabs, and your `git` commits) and synthesizes the usage trail into a **Markdown / DOCX / PDF résumé** with built-in git snapshots so every draft is diff-able and rollback-able.
 
 ## How it differs
 
@@ -198,6 +200,8 @@ Per-locale formats are controlled by `config.render.all_locales_formats`
 `--locale` and `--all-locales` are mutually exclusive.
 
 ## Reviewer-view audit (`cli.py review`)
+
+![8-point automated reviewer scorecard alongside a rendered résumé and trend sparkline](docs/assets/reviewer_audit.png)
 
 After rendering, score the output against the same 8-point checklist a real
 reviewer applies:

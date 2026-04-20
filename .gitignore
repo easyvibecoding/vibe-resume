@@ -19,3 +19,4 @@ profile.yaml
 .claude/scheduled_tasks.lock
 .claude/agents/
 .claude/cache/
+.secrets/
