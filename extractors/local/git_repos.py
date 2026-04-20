@@ -6,6 +6,7 @@ preserving the temporal signal.
 from __future__ import annotations
 
 import subprocess
+import time
 from collections import defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
@@ -14,6 +15,10 @@ from typing import Any
 from core.schema import Activity, ActivityType, Source
 
 NAME = "git_repos"
+
+# Wall-clock budget for scanning $HOME. FUSE mounts / broken symlinks can stall
+# rglob indefinitely; once the budget is exceeded we return what we have.
+SCAN_TIMEOUT_SECONDS = 120
 
 
 def _git_user_email() -> str | None:
@@ -36,12 +41,21 @@ def _scan_roots(cfg: dict[str, Any]) -> list[Path]:
     return [Path(r) for r in (cfg.get("scan", {}).get("roots") or [])]
 
 
-def _find_repos(roots: list[Path], excludes: list[str]) -> list[Path]:
+def _find_repos(
+    roots: list[Path],
+    excludes: list[str],
+    timeout_seconds: float = SCAN_TIMEOUT_SECONDS,
+) -> list[Path]:
+    deadline = time.monotonic() + timeout_seconds
     repos: set[Path] = set()
     for root in roots:
         if not root.exists():
             continue
+        if time.monotonic() > deadline:
+            break
         for git_dir in root.rglob(".git"):
+            if time.monotonic() > deadline:
+                break
             s = str(git_dir)
             if any(ex.strip("*") in s for ex in excludes):
                 continue

@@ -11,6 +11,7 @@ data/resume_history/
 data/drafts/
 data/reviews/
 profile.yaml
+config.yaml
 *.secret.yaml
 .env
 

@@ -3,10 +3,19 @@ from __future__ import annotations
 
 import importlib
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
 from rich.console import Console
+from rich.progress import (
+    BarColumn,
+    MofNCompleteColumn,
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+    TimeElapsedColumn,
+)
 
 from extractors.base import save_activities
 
@@ -47,6 +56,8 @@ AIGC_EXTRACTORS = [
     "heygen",
 ]
 
+DEFAULT_PARALLELISM = 4
+
 
 def _load(kind: str, name: str):
     if kind == "local":
@@ -65,6 +76,19 @@ def _enabled(cfg: dict[str, Any], key: str) -> bool:
     return bool(ex.get("enabled", True))
 
 
+def _run_one(kind: str, mod_name: str, cfg: dict[str, Any]):
+    """Execute one extractor. Returns (kind, mod_name, acts | None, elapsed, err_token)."""
+    t0 = time.time()
+    try:
+        mod = _load(kind, mod_name)
+        acts = mod.extract(cfg)
+    except ModuleNotFoundError:
+        return (kind, mod_name, None, time.time() - t0, "not_implemented")
+    except Exception as e:  # noqa: BLE001 — per-extractor isolation; failure of one must not abort the batch
+        return (kind, mod_name, None, time.time() - t0, f"error: {e}")
+    return (kind, mod_name, acts, time.time() - t0, None)
+
+
 def run_extractors(cfg: dict[str, Any], only: list[str] | None = None) -> None:
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -79,23 +103,44 @@ def run_extractors(cfg: dict[str, Any], only: list[str] | None = None) -> None:
         if _enabled(cfg, n) and (not only or n in only):
             plan.append(("aigc", n, n))
 
-    for kind, mod_name, _cfg_key in plan:
-        console.print(f"[cyan]▶[/cyan] {kind}/{mod_name}")
-        t0 = time.time()
-        try:
-            mod = _load(kind, mod_name)
-            acts = mod.extract(cfg)
-        except ModuleNotFoundError:
-            console.print("  [yellow]skip[/yellow] (module not yet implemented)")
-            continue
-        except Exception as e:
-            console.print(f"  [red]error[/red] {e}")
-            continue
-        out = CACHE_DIR / f"{mod_name}.json"
-        save_activities(acts, out)
-        console.print(
-            f"  [green]✓[/green] {len(acts)} activities → {out.name} ({time.time()-t0:.1f}s)"
+    if not plan:
+        console.print("[yellow]no extractors enabled[/yellow]")
+        return
+
+    workers = int(cfg.get("scan", {}).get("parallelism") or DEFAULT_PARALLELISM)
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        MofNCompleteColumn(),
+        TimeElapsedColumn(),
+        console=console,
+        transient=False,
+    ) as progress:
+        overall = progress.add_task(
+            f"[cyan]Extracting ({workers}× parallel)",
+            total=len(plan),
         )
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futures = {
+                pool.submit(_run_one, kind, mod_name, cfg): (kind, mod_name)
+                for kind, mod_name, _ in plan
+            }
+            for fut in as_completed(futures):
+                kind, mod_name, acts, elapsed, err = fut.result()
+                if err == "not_implemented":
+                    console.print(f"  [yellow]skip[/yellow] {kind}/{mod_name} (not implemented)")
+                elif err:
+                    console.print(f"  [red]✗[/red] {kind}/{mod_name}: {err} ({elapsed:.1f}s)")
+                elif acts is not None:
+                    out = CACHE_DIR / f"{mod_name}.json"
+                    save_activities(acts, out)
+                    console.print(
+                        f"  [green]✓[/green] {kind}/{mod_name} — "
+                        f"{len(acts)} activities ({elapsed:.1f}s)"
+                    )
+                progress.update(overall, advance=1)
 
 
 def run_aggregator(cfg: dict[str, Any]) -> None:

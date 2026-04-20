@@ -35,6 +35,7 @@
 | **JD tailoring** | `enrich --tailor JD.txt` (LLM prompt injection) | — | ✅ LLM rewrite | — |
 | **Privacy** | Fully local; `claude -p` headless; nothing leaves your machine | Varies (OpenAI-key optional) | Cloud API required | Fully local |
 | **Shape** | Python CLI pipeline | Web UI | Web UI | Node CLI |
+| **Agent-Skill hosts** | **8** (Claude Code · Gemini CLI · Copilot CLI · Cursor · Warp · OpenClaw · OpenCode · Hermes) — single canonical SKILL.md | — | — | — |
 
 ## Why
 
@@ -155,6 +156,9 @@ uv run python cli.py render -f all    # md + docx + pdf + git snapshot
 
 `vibe-resume` ships per-locale templates so the same `profile.yaml` + project
 data renders into reviewer-appropriate output in each market.
+
+**See [`docs/samples/`](docs/samples/README.md)** for illustrative outputs in
+`en_EU` (Europass), `ja_JP` (職務経歴書), and `zh_TW` (繁中).
 
 ```bash
 uv run python cli.py render -f md  --locale en_US     # ATS-optimized US default
