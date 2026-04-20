@@ -92,7 +92,7 @@ The skill follows the 2026 converged `SKILL.md` convention, so **one canonical f
 | **Warp** (agentic terminal) | reads `.claude/skills/` + `.agents/skills/` + `.warp/skills/` | Zero config (`.agents/skills/` symlink added defensively) |
 | **OpenClaw** (250k⭐ in 60 days) | `~/.openclaw/skills/` (user scope only) | User-scope symlink — see below |
 | **OpenCode** (terminal CLI agent) | `.opencode/skills/` + `~/.opencode/skills/` | Project-scope symlink included |
-| **Hermes Agent** (Nous Research) | `~/.hermes/skills/<category>/<name>/SKILL.md` (5-section body) | Native skill at [`.hermes/skills/ai-used-resume/SKILL.md`](.hermes/skills/ai-used-resume/SKILL.md); install with `hermes skills install easyvibecoding/vibe-resume/.hermes/skills/ai-used-resume --force --yes` |
+| **Hermes Agent** (Nous Research) | repo `skills/<name>/SKILL.md` → installed to `~/.hermes/skills/<category>/<name>/` | Native skill at [`skills/ai-used-resume/SKILL.md`](skills/ai-used-resume/SKILL.md); `hermes skills tap add easyvibecoding/vibe-resume && hermes skills install easyvibecoding/vibe-resume/ai-used-resume` |
 
 Activate the skill system-wide (so it fires anywhere, not just inside this clone):
 
