@@ -1,0 +1,98 @@
+{# UK CV — diff vs en_US:
+   - Personal statement (not Summary), Work experience (not Experience)
+   - 2 pages standard (junior 1 page); UK spellings ("organised", "optimised")
+   - Languages with CEFR scale appended when present
+   - Interests section optional
+   - No photo, no DOB
+-#}
+# {{ profile.name }}
+{% if profile.title %}{{ profile.title }}{% endif %}
+
+{% set primary = [] -%}
+{%- if profile.location %}{%- set _ = primary.append(profile.location) %}{% endif %}
+{%- if profile.email %}{%- set _ = primary.append(profile.email) %}{% endif %}
+{%- if profile.phone %}{%- set _ = primary.append(profile.phone) %}{% endif %}
+{{ primary | join(' | ') }}
+{% set links = [] -%}
+{%- if profile.linkedin %}{%- set _ = links.append('LinkedIn: ' ~ profile.linkedin) %}{% endif %}
+{%- if profile.github %}{%- set _ = links.append('GitHub: ' ~ profile.github) %}{% endif %}
+{%- if profile.website %}{%- set _ = links.append(profile.website) %}{% endif %}
+{% if links %}{{ links | join(' | ') }}
+{% endif %}
+
+{% if profile.target_role %}**{{ T.target_role }}:** {{ profile.target_role }}
+{% endif %}
+
+{% if profile.summary %}
+## {{ T.summary }}
+{{ profile.summary | trim }}
+{% endif %}
+
+{% if skills %}
+## {{ T.skills }}
+{{ skills | join(', ') }}
+{% endif %}
+
+{% if profile.experience %}
+## {{ T.experience }}
+
+{% for e in profile.experience if e.title or e.company %}
+**{{ e.title }}**, {{ e.company }} — _{{ e.start | date }} – {{ e.end | date }}_
+
+{% for b in e.bullets %}- {{ b }}
+{% endfor %}
+
+{% endfor %}
+{% endif %}
+
+## {{ T.projects }}
+{% set w30 = window_stats.get('last_30d') %}
+{% if total_sessions > 0 %}
+_Aggregated from {{ ai_overview | map(attribute='tool') | join(' / ') }} across {{ groups|length }} projects between {{ timespan_start | date }} and {{ timespan_end | date }} ({{ total_sessions }} AI-assisted sessions{% if w30 and w30.sessions > 0 %}; last 30 days: {{ w30.active_days }}/{{ w30.window_days }} active days, peak {{ w30.peak_day_sessions }}/day, longest streak {{ w30.longest_streak_days }}d{% endif %}){% if top_capabilities %}. Breadth: {{ top_capabilities | join(', ') }}{% endif %}._
+{% endif %}
+
+{% set top_n = 6 %}
+{% for g in groups[:top_n] %}
+**{{ g.name }}**{% if g.headline %} — {{ g.headline }}{% endif %} · _{{ g.first_activity[:7] | date }} – {{ g.last_activity[:7] | date }}_{% if g.tech_stack %} · {{ g.tech_stack[:6] | join(', ') }}{% endif %}
+
+{% if g.achievements %}{% for a in g.achievements %}- {{ a }}
+{% endfor %}{% elif g.summary %}- {{ g.summary }}
+{% endif %}
+
+{% endfor %}
+
+{% if groups|length > top_n %}
+_Additional projects ({{ groups|length - top_n }}): {% for g in groups[top_n:] %}{{ g.name }}{% if g.tech_stack %} ({{ g.tech_stack[:2] | join(', ') }}){% endif %}{% if not loop.last %}; {% endif %}{% endfor %}._
+{% endif %}
+
+{% if profile.education %}
+## {{ T.education }}
+{% for ed in profile.education if ed.degree or ed.school %}- {{ ed.degree }}, {{ ed.school }} ({{ ed.year }})
+{% endfor %}
+{% endif %}
+
+{% if profile.certifications %}
+## {{ T.certifications }}
+{% for c in profile.certifications %}- {{ c.name }} ({{ c.year }})
+{% endfor %}
+{% endif %}
+
+{% if profile.languages %}
+## Languages
+{% for lang in profile.languages %}- {{ lang }}
+{% endfor %}
+{% endif %}
+
+{% if profile.custom_sections %}
+{% set hobbies = profile.custom_sections.get('hobbies') %}
+{% if hobbies %}
+## {{ T.hobbies }}
+{% for item in hobbies %}- {{ item }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+{% if tailored_for %}
+---
+_{{ T.tailored_for }}: {{ tailored_for }}_
+{% endif %}

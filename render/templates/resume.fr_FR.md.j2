@@ -1,0 +1,114 @@
+{# CV — French conventions:
+   - 1 page (junior/mid) / 2 pages (senior)
+   - État civil → Profil → Compétences → Expérience → Formation → Centres d'intérêt
+   - Photo optional, declining; markdown skips it
+   - Noun-phrase, elegant, factual
+-#}
+# {{ (profile | localized('name')) or profile.name }}
+{% set _title = (profile | localized('title')) or profile.title %}
+{% if _title %}_{{ _title }}_{% endif %}
+
+{% set contacts = [] -%}
+{%- set _loc = (profile | localized('location')) or profile.location -%}
+{%- if _loc %}{%- set _ = contacts.append(_loc) %}{% endif %}
+{%- if profile.email %}{%- set _ = contacts.append(profile.email) %}{% endif %}
+{%- if profile.phone %}{%- set _ = contacts.append(profile.phone) %}{% endif %}
+{%- if profile.linkedin %}{%- set _ = contacts.append('LinkedIn : ' ~ profile.linkedin) %}{% endif %}
+{%- if profile.github %}{%- set _ = contacts.append('GitHub : ' ~ profile.github) %}{% endif %}
+{{ contacts | join(' · ') }}
+
+{% set _target = (profile | localized('target_role')) or profile.target_role %}
+{% if _target %}> **{{ T.target_role }}** : {{ _target }}
+{% endif %}
+
+{% set _summary = (profile | localized('summary')) or profile.summary %}
+{% if _summary %}
+## {{ T.summary }}
+{{ _summary | trim }}
+{% endif %}
+
+{% if skills_grouped %}
+## {{ T.skills }}
+{% for cat, items in skills_grouped.items() %}- **{{ cat }}** : {{ items | join(', ') }}
+{% endfor %}
+{% endif %}
+
+{% if profile.experience %}
+## {{ T.experience }}
+
+{% for e in profile.experience if e.title or e.company %}
+**{{ e | localized('title') }}** — {{ e | localized('company') }}　·　_{{ e.start | date }} – {{ e.end | date }}_
+
+{% for b in (e | localized('bullets')) or [] %}- {{ b }}
+{% endfor %}
+
+{% endfor %}
+{% endif %}
+
+## {{ T.projects }}
+{% set w30 = window_stats.get('last_30d') %}
+_{{ ai_overview | map(attribute='tool') | join(' / ') }} mobilisés sur {{ groups|length }} projets, {{ total_sessions }} sessions au total ({{ timespan_start | date }} – {{ timespan_end | date }}){% if w30 and w30.sessions > 0 %} ; 30 derniers jours : {{ w30.active_days }}/{{ w30.window_days }} jours actifs, plus longue série {{ w30.longest_streak_days }} jours{% endif %}{% if top_capabilities %} ; {{ T.capabilities }} : {{ top_capabilities | join(' · ') }}{% endif %}._
+
+{% set top_n = 6 %}
+{% for g in groups[:top_n] %}
+### {{ loop.index }}. {{ g.name }}{% if g.headline %} — _{{ g.headline }}_{% endif %}
+
+- **{{ T.period }}** : {{ g.first_activity[:10] | date }} – {{ g.last_activity[:10] | date }}　·　**{{ T.sessions }}** : {{ g.total_sessions }}　·　**{{ T.breadth }}** : {{ g.capability_breadth }} domaines
+{% if g.tech_stack %}- **{{ T.stack }}** : {{ g.tech_stack | join(', ') }}
+{% endif %}
+{% if g.domain_tags %}- **{{ T.domain_tags }}** : {{ g.domain_tags | join(', ') }}
+{% endif %}
+{% if g.achievements %}
+**{{ T.key_achievements }}**
+
+{% for a in g.achievements %}- {{ a }}
+{% endfor %}
+{% elif g.summary %}
+{{ g.summary }}
+{% endif %}
+
+{% endfor %}
+
+{% if groups|length > top_n %}
+### {{ T.other_short }} ({{ groups|length - top_n }})
+{% for g in groups[top_n:] %}- **{{ g.name }}** ({{ g.first_activity[:10] | date }} ; {{ g.capability_breadth }} domaines{% if g.tech_stack %} ; {{ g.tech_stack[:3] | join(', ') }}{% endif %})
+{% endfor %}
+{% endif %}
+
+{% if profile.education %}
+## {{ T.education }}
+{% for ed in profile.education if ed.degree or ed.school %}- **{{ ed.degree }}** — {{ ed.school }} ({{ ed.year }})
+{% endfor %}
+{% endif %}
+
+{% if profile.certifications %}
+## {{ T.certifications }}
+{% for c in profile.certifications %}- {{ c.name }} ({{ c.year }})
+{% endfor %}
+{% endif %}
+
+{% if profile.languages %}
+## Langues
+{% for lang in profile.languages %}- {{ lang }}
+{% endfor %}
+{% endif %}
+
+{% if profile.custom_sections %}
+{% set awards = profile.custom_sections.get('awards') %}
+{% if awards %}
+## {{ T.awards }}
+{% for item in awards %}- {{ item }}
+{% endfor %}
+{% endif %}
+{% set hobbies = profile.custom_sections.get('hobbies') %}
+{% if hobbies %}
+## {{ T.hobbies }}
+{% for item in hobbies %}- {{ item }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+{% if tailored_for %}
+---
+_{{ T.tailored_for }} : {{ tailored_for }}_
+{% endif %}

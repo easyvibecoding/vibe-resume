@@ -1,0 +1,45 @@
+[project]
+name = "vibe-resume"
+version = "0.1.0"
+description = "Turn your AI coding history (Claude Code, Cursor, Copilot, ChatGPT exports, git commits) into a versioned MD/DOCX/PDF résumé — for the vibe coding era."
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [{ name = "easyvibecoding" }]
+dependencies = [
+    "pydantic>=2.7",
+    "pyyaml>=6.0",
+    "jinja2>=3.1",
+    "python-docx>=1.1",
+    "click>=8.1",
+    "rich>=13.7",
+    "pygit2>=1.15",
+    "pillow>=10.3",
+    "mutagen>=1.47",
+    "orjson>=3.10",
+]
+
+[project.optional-dependencies]
+pdf = ["weasyprint>=62.0"]
+dev = ["pytest>=8.2", "ruff>=0.5"]
+
+[project.urls]
+Homepage = "https://github.com/easyvibecoding/vibe-resume"
+Repository = "https://github.com/easyvibecoding/vibe-resume"
+Issues = "https://github.com/easyvibecoding/vibe-resume/issues"
+
+[project.scripts]
+vibe-resume = "cli:cli"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["core", "extractors", "render"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

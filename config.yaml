@@ -1,0 +1,133 @@
+# Extractor toggles & path overrides. All paths are expanded via os.path.expanduser.
+scan:
+  # When scan_mode = "auto", agent decides the root based on profile.
+  # When "full", scan $HOME for every .git. When "whitelist", use scan.roots.
+  mode: "full"
+  roots:
+    - "~/Projects"
+    - "~/Code"
+    - "~/Developer"
+    - "~/sideProject"
+  exclude_globs:
+    - "**/node_modules/**"
+    - "**/.venv/**"
+    - "**/venv/**"
+    - "**/.next/**"
+    - "**/dist/**"
+    - "**/build/**"
+
+extractors:
+  claude_code:
+    enabled: true
+    path: "~/.claude/projects"
+  claude_code_archive:
+    enabled: true
+    path: "~/ClaudeCodeArchive/current"
+  cursor:
+    enabled: true
+    path: "~/Library/Application Support/Cursor/User"
+  cline:
+    enabled: true
+    path: "~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev"
+  continue_dev:
+    enabled: true
+    path: "~/.continue/sessions"
+  aider:
+    enabled: true
+  windsurf:
+    enabled: true
+    path: "~/.codeium/windsurf/cascade"
+  copilot_vscode:
+    enabled: true
+    path: "~/Library/Application Support/Code/User/workspaceStorage"
+  zed:
+    enabled: true
+  claude_desktop:
+    enabled: true
+    path: "~/Library/Application Support/Claude"
+  git_repos:
+    enabled: true
+    # commits authored by these emails count. Leave empty to auto-fill from
+    # `git config --global user.email`.
+    author_emails: []
+  cloud_chatgpt:
+    enabled: true
+    import_dir: "./data/imports/chatgpt"
+  cloud_claude_ai:
+    enabled: true
+    import_dir: "./data/imports/claude"
+  cloud_gemini:
+    enabled: true
+    import_dir: "./data/imports/gemini-takeout"
+  cloud_grok:
+    enabled: true
+    import_dir: "./data/imports/grok"
+  cloud_perplexity:
+    enabled: true
+    import_dir: "./data/imports/perplexity"
+  cloud_mistral:
+    enabled: true
+    import_dir: "./data/imports/mistral"
+  cloud_poe:
+    enabled: true
+    import_dir: "./data/imports/poe"
+  image_local:
+    enabled: true
+    roots:
+      - "~/Pictures"
+      - "~/Documents"
+  suno:
+    enabled: false
+    api_key_env: "SUNO_API_KEY"
+    local_roots:
+      - "~/Music/Suno"
+      - "~/Downloads"
+  elevenlabs:
+    enabled: false
+    api_key_env: "ELEVENLABS_API_KEY"
+  midjourney:
+    enabled: true
+  runway:
+    enabled: false
+    api_key_env: "RUNWAY_API_KEY"
+  heygen:
+    enabled: false
+    api_key_env: "HEYGEN_API_KEY"
+
+privacy:
+  # Strings matching these patterns are redacted from summaries and keywords.
+  redact_patterns:
+    - "(?i)api[_-]?key[\"':= ]+[A-Za-z0-9_\\-]{16,}"
+    - "(?i)secret[\"':= ]+[A-Za-z0-9_\\-]{16,}"
+    - "sk-[A-Za-z0-9]{20,}"
+    - "cfut_[A-Za-z0-9]{20,}"
+    - "xox[abpsr]-[A-Za-z0-9\\-]{10,}"
+    - "(?i)password[\"':= ]+\\S+"
+    - "[A-Za-z0-9._%+\\-]+@[A-Za-z0-9.\\-]+\\.[A-Za-z]{2,}"
+  # project names / paths to exclude entirely
+  blocklist:
+    - "delegation-eval"
+    - "task0"
+  # when true, enricher replaces concrete tech names with abstract descriptions.
+  # e.g. "PostgreSQL with pgvector" -> "relational DB with vector search"
+  abstract_tech: false
+
+enrich:
+  mode: "claude-code-agent"
+  batch_size: 20
+  include_snippets: false
+
+stats:
+  # Windows (in days) to roll up. 30 matches Claude Code's default cleanup window,
+  # so lifetime numbers and last-30d numbers should be contrasted.
+  windows:
+    - 30
+    - 7
+
+render:
+  default_format: "md"
+  templates_dir: "./render/templates"
+  output_dir: "./data/resume_history"
+  draft_dir: "./data/drafts"
+  # keep last N versions before auto-prune (0 = keep all)
+  max_versions: 0

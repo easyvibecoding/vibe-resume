@@ -1,0 +1,85 @@
+{# 職務経歴書 (shokumu keirekisho) — pairs with the rirekisho DOCX rendered
+   by render/japan.py. Markdown-first, reviewer reads top-to-bottom.
+   Style: 名詞終止 / 客観事実中心 / 数字を伴う成果。
+-#}
+# 職務経歴書
+
+{% set _today_year = '20' ~ (timespan_end[:4] if timespan_end else '26')[-2:] %}
+{{ _today_year }}年現在　{{ (profile | localized('name')) or profile.name }}
+
+{% set _target = (profile | localized('target_role')) or profile.target_role %}
+{% if _target %}> **{{ T.target_role }}**：{{ _target }}
+{% endif %}
+
+{% set _summary = (profile | localized('summary')) or profile.summary %}
+{% if _summary %}
+## {{ T.summary }}
+{{ _summary | trim }}
+{% endif %}
+
+## {{ T.skills }}
+{% if skills_grouped %}
+{% for cat, items in skills_grouped.items() %}- **{{ cat }}**：{{ items | join('、') }}
+{% endfor %}
+{% else %}
+{{ skills | join('、') }}
+{% endif %}
+
+## {{ T.experience }}
+
+{% for e in profile.experience if e.title or e.company %}
+### {{ e | localized('company') }}　（{{ e.start | date }}{{ '～' }}{{ e.end | date }}）
+**{{ T.target_role }}**：{{ e | localized('title') }}
+
+{% set _bullets = (e | localized('bullets')) or [] %}
+{% if _bullets %}**主な業務内容**
+
+{% for b in _bullets %}- {{ b }}
+{% endfor %}
+{% endif %}
+
+{% endfor %}
+
+## {{ T.projects }}
+{% set w30 = window_stats.get('last_30d') %}
+_{{ ai_overview | map(attribute='tool') | join(' / ') }} を活用し、{{ groups|length }} プロジェクト・累計 {{ total_sessions }} セッションのAI協働を実施（{{ timespan_start | date }} ～ {{ timespan_end | date }}）{% if w30 and w30.sessions > 0 %}。直近30日：{{ w30.active_days }}/{{ w30.window_days }} 日稼働、最長連続 {{ w30.longest_streak_days }} 日{% endif %}{% if top_capabilities %}。{{ T.capabilities }}：{{ top_capabilities | join('・') }}{% endif %}。_
+
+{% set top_n = 6 %}
+{% for g in groups[:top_n] %}
+### {{ loop.index }}. {{ g.name }}{% if g.headline %} — _{{ g.headline }}_{% endif %}
+
+- **{{ T.period }}**：{{ g.first_activity[:10] | date }} ～ {{ g.last_activity[:10] | date }}　|　**{{ T.sessions }}**：{{ g.total_sessions }}　|　**{{ T.breadth }}**：{{ g.capability_breadth }} 領域
+{% if g.tech_stack %}- **{{ T.stack }}**：{{ g.tech_stack | join('、') }}
+{% endif %}
+{% if g.domain_tags %}- **{{ T.domain_tags }}**：{{ g.domain_tags | join('、') }}
+{% endif %}
+{% if g.achievements %}
+**{{ T.key_achievements }}**
+
+{% for a in g.achievements %}- {{ a }}
+{% endfor %}
+{% elif g.summary %}
+{{ g.summary }}
+{% endif %}
+
+{% endfor %}
+
+{% if groups|length > top_n %}
+### {{ T.other_short }}（{{ groups|length - top_n }}件）
+{% for g in groups[top_n:] %}- **{{ g.name }}**（{{ g.first_activity[:10] | date }}；{{ g.capability_breadth }} 領域{% if g.tech_stack %}；{{ g.tech_stack[:3] | join('、') }}{% endif %}）
+{% endfor %}
+{% endif %}
+
+{% if profile.education %}
+## {{ T.education }}
+{% for ed in profile.education if ed.degree or ed.school %}- {{ ed.school }}　{{ ed.degree }}（{{ ed.year }}年）
+{% endfor %}
+{% endif %}
+
+{% if profile.certifications %}
+## {{ T.certifications }}
+{% for c in profile.certifications %}- {{ c.name }}（{{ c.year }}年）
+{% endfor %}
+{% endif %}
+
+以上

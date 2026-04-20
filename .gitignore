@@ -1,0 +1,20 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.DS_Store
+data/cache/
+data/imports/
+data/resume_history/
+data/drafts/
+data/reviews/
+profile.yaml
+*.secret.yaml
+.env
+
+# Claude Code local session state — keep only committed skill definitions
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+.claude/agents/
+.claude/cache/

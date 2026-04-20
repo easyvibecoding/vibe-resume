@@ -1,0 +1,96 @@
+{# US ATS-optimized template.
+   Design choices (see docs/resume_locales.md):
+   - Human-readable summary in the top fold (first 1/3 of page 1)
+   - Skills as a flat comma-separated list for ATS parsing (no tables/columns)
+   - Past-tense action verbs, XYZ bullets, no photos/DOB/marital status
+   - Single column, standard headings the ATS recognizes
+   - AI-assisted activity stats compressed to a single line; narrative > dashboard
+-#}
+# {{ profile.name }}
+{% if profile.title %}{{ profile.title }}{% endif %}
+
+{% set contacts = [] -%}
+{%- if profile.location %}{%- set _ = contacts.append(profile.location) %}{% endif %}
+{%- if profile.email %}{%- set _ = contacts.append(profile.email) %}{% endif %}
+{%- if profile.phone %}{%- set _ = contacts.append(profile.phone) %}{% endif %}
+{%- if profile.linkedin %}{%- set _ = contacts.append('LinkedIn: ' ~ profile.linkedin) %}{% endif %}
+{%- if profile.github %}{%- set _ = contacts.append('GitHub: ' ~ profile.github) %}{% endif %}
+{%- if profile.website %}{%- set _ = contacts.append(profile.website) %}{% endif %}
+{{ contacts | join(' | ') }}
+
+{% if profile.target_role %}**{{ T.target_role }}:** {{ profile.target_role }}
+{% endif %}
+
+{% if profile.summary %}
+## {{ T.summary }}
+{{ profile.summary | trim }}
+{% endif %}
+
+{% if skills %}
+## {{ T.skills }}
+{{ skills | join(', ') }}
+{% endif %}
+
+{% if profile.experience %}
+## {{ T.experience }}
+
+{% for e in profile.experience if e.title or e.company %}
+**{{ e | localized('title') }}**, {{ e | localized('company') }} — _{{ e.start | date }} – {{ e.end | date }}_
+
+{% for b in (e | localized('bullets')) or [] %}- {{ b }}
+{% endfor %}
+
+{% endfor %}
+{% endif %}
+
+## {{ T.projects }}
+{% set w30 = window_stats.get('last_30d') %}
+{% if total_sessions > 0 %}
+_Aggregated from {{ ai_overview | map(attribute='tool') | join(' / ') }} across {{ groups|length }} projects between {{ timespan_start }} and {{ timespan_end }} ({{ total_sessions }} AI-assisted sessions{% if w30 and w30.sessions > 0 %}; last 30d: {{ w30.active_days }}/{{ w30.window_days }} active days, peak {{ w30.peak_day_sessions }}/day, longest streak {{ w30.longest_streak_days }}d{% endif %}){% if top_capabilities %}. Breadth: {{ top_capabilities | join(', ') }}{% endif %}._
+{% endif %}
+
+{% set top_n = 6 %}
+{% for g in groups[:top_n] %}
+**{{ g.name }}**{% if g.headline %} — {{ g.headline }}{% endif %} · _{{ g.first_activity[:7] | date }} – {{ g.last_activity[:7] | date }}_{% if g.tech_stack %} · {{ g.tech_stack[:6] | join(', ') }}{% endif %}
+
+{% if g.achievements %}{% for a in g.achievements %}- {{ a }}
+{% endfor %}{% elif g.summary %}- {{ g.summary }}
+{% endif %}
+
+{% endfor %}
+
+{% if groups|length > top_n %}
+_Additional projects ({{ groups|length - top_n }}): {% for g in groups[top_n:] %}{{ g.name }}{% if g.tech_stack %} ({{ g.tech_stack[:2] | join(', ') }}){% endif %}{% if not loop.last %}; {% endif %}{% endfor %}._
+{% endif %}
+
+{% if profile.education %}
+## {{ T.education }}
+{% for ed in profile.education if ed.degree or ed.school %}- {{ ed.degree }}, {{ ed.school }} ({{ ed.year }})
+{% endfor %}
+{% endif %}
+
+{% if profile.certifications %}
+## {{ T.certifications }}
+{% for c in profile.certifications %}- {{ c.name }} ({{ c.year }})
+{% endfor %}
+{% endif %}
+
+{% if profile.custom_sections %}
+{% set awards = profile.custom_sections.get('awards') %}
+{% if awards %}
+## {{ T.awards }}
+{% for item in awards %}- {{ item }}
+{% endfor %}
+{% endif %}
+{% set talks = profile.custom_sections.get('talks') %}
+{% if talks %}
+## {{ T.talks }}
+{% for item in talks %}- {{ item }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+{% if tailored_for %}
+---
+_{{ T.tailored_for }}: {{ tailored_for }}_
+{% endif %}

@@ -1,0 +1,124 @@
+# {{ profile.name }}
+{% if profile.title %}**{{ profile.title }}**{% endif %}
+
+{% set contacts = [] -%}
+{%- if profile.email %}{%- set _ = contacts.append(profile.email) %}{% endif %}
+{%- if profile.phone %}{%- set _ = contacts.append(profile.phone) %}{% endif %}
+{%- if profile.location %}{%- set _ = contacts.append(profile.location) %}{% endif %}
+{%- if profile.linkedin %}{%- set _ = contacts.append('[LinkedIn](' ~ profile.linkedin ~ ')') %}{% endif %}
+{%- if profile.github %}{%- set _ = contacts.append('[GitHub](' ~ profile.github ~ ')') %}{% endif %}
+{%- if profile.website %}{%- set _ = contacts.append(profile.website) %}{% endif %}
+{{ contacts | join(' · ') }}
+
+{% if profile.target_role %}> Target role: **{{ profile.target_role }}**{% endif %}
+
+{% if profile.summary %}
+## Summary
+{{ profile.summary | trim }}
+{% endif %}
+
+{% if observed_summary %}
+> _Observed: {{ observed_summary }}_
+{% endif %}
+
+## AI-assisted workflow overview
+Between {{ timespan_start }} and {{ timespan_end }}, accumulated **{{ total_sessions }} AI-assisted sessions** across **{{ groups|length }} projects**.
+
+{% set w30 = window_stats.get('last_30d') %}
+{% set w7 = window_stats.get('last_7d') %}
+{% if w30 and w30.sessions > 0 %}
+### Last 30-day intensity
+_Claude Code prunes session transcripts older than 30 days by default; this block captures the still-trackable recent intensity._
+
+- **Active days**: {{ w30.active_days }}/{{ w30.window_days }} days with sessions (**{{ w30.active_day_ratio_pct }}%**)
+- **Rate**: **{{ w30.daily_avg }}** sessions/day · **{{ w30.per_active_day_avg }}** per active day
+- **Peak day**: {{ w30.peak_day }} (**{{ w30.peak_day_sessions }}** sessions)
+- **Longest active streak**: **{{ w30.longest_streak_days }}** days
+- **Projects touched**: {{ w30.projects_touched }}
+{% if w7 %}- **Last 7 days**: {{ w7.sessions }} sessions across {{ w7.active_days }} active days
+{% endif %}
+{% if w30.top_projects %}- **Top projects**: {% for p in w30.top_projects %}{{ p.name }} ({{ p.sessions }}){% if not loop.last %} · {% endif %}{% endfor %}
+{% endif %}
+{% endif %}
+
+**AI tools used**:
+{% for t in ai_overview %}- {{ t.tool }} ({{ t.projects }} projects, {{ t.percent }}%)
+{% endfor %}
+
+{% if top_capabilities %}**Cross-discipline capabilities** (by frequency): {{ top_capabilities | join(' · ') }}
+{% endif %}
+
+{% if skills_grouped %}
+## Technical skills
+{% for cat, items in skills_grouped.items() %}- **{{ cat }}**: {{ items | join(', ') }}
+{% endfor %}
+{% endif %}
+
+## AI-assisted project work
+_Ranked by significance (sessions × capability breadth × duration)._
+
+{% set top_n = 8 %}
+{% for g in groups[:top_n] %}
+### {{ loop.index }}. {{ g.name }}{% if g.headline %} — _{{ g.headline }}_{% endif %}
+
+- **Period**: {{ g.first_activity[:10] }} – {{ g.last_activity[:10] }}　|　**Sessions**: {{ g.total_sessions }}　|　**Breadth**: {{ g.capability_breadth }} distinct task categories
+{% if g.tech_stack %}- **Stack**: {{ g.tech_stack | join(', ') }}
+{% endif %}
+{% if g.domain_tags %}- **Domain tags**: {{ g.domain_tags | join(', ') }}
+{% endif %}
+{% if g.metrics %}- **Impact**: {{ g.metrics | join(' · ') }}
+{% endif %}
+{% if g.summary %}
+{{ g.summary }}
+{% endif %}
+{% if g.achievements %}
+**Key achievements**
+
+{% for a in g.achievements %}- {{ a }}
+{% endfor %}
+{% endif %}
+{% endfor %}
+
+{% if groups|length > top_n %}
+### Other short collaborations ({{ groups|length - top_n }})
+{% for g in groups[top_n:] %}- **{{ g.name }}** ({{ g.first_activity[:10] }}; {{ g.capability_breadth }} categories{% if g.tech_stack %}; {{ g.tech_stack[:3] | join(', ') }}{% endif %})
+{% endfor %}
+{% endif %}
+
+{% if profile.experience %}
+## Experience
+{% for e in profile.experience if e.title or e.company %}
+### {{ e.title }} @ {{ e.company }}
+_{{ e.start }} – {{ e.end }}_
+{% for b in e.bullets %}- {{ b }}
+{% endfor %}
+{% endfor %}
+{% endif %}
+
+{% if profile.education %}
+## Education
+{% for ed in profile.education if ed.degree or ed.school %}- **{{ ed.degree }}** — {{ ed.school }} ({{ ed.year }})
+{% endfor %}
+{% endif %}
+
+{% if profile.certifications %}
+## Certifications
+{% for c in profile.certifications %}- {{ c.name }} ({{ c.year }})
+{% endfor %}
+{% endif %}
+
+{% if profile.custom_sections %}
+{% for section_name, items in profile.custom_sections.items() if items %}
+
+## {% if section_name == 'awards' %}Awards{% elif section_name == 'talks' %}Talks{% elif section_name == 'hobbies' %}Interests{% else %}{{ section_name | capitalize }}{% endif %}
+
+{% if items is string %}{{ items }}
+{% else %}{% for item in items %}- {{ item }}
+{% endfor %}{% endif %}
+{% endfor %}
+{% endif %}
+
+{% if tailored_for %}
+---
+_Tailored for: {{ tailored_for }}_
+{% endif %}

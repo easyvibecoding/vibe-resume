@@ -1,0 +1,56 @@
+name: "Your Name"
+title: ""
+email: ""
+phone: ""
+location: ""
+website: ""
+linkedin: ""
+github: ""
+target_role: ""
+summary: |
+  Write 2-3 sentences about yourself. Leave empty to let the enricher draft one from your activity.
+
+# --- locale-conditional personal data ---------------------------------------
+# Only emitted when the active locale's `personal_fields` includes them.
+# Leaving any of these blank is always safe — US/UK templates ignore them by design.
+photo_path: ""        # path to JPEG/PNG headshot — required for ja_JP, expected for de_DE/ko_KR
+dob: ""               # YYYY-MM-DD — used by de_DE / ja_JP / ko_KR; never rendered for en_US/en_GB
+gender: ""            # free-form — only rendered in ja_JP/ko_KR rirekisho-style layouts
+nationality: ""       # rendered on de_DE Lebenslauf when set
+marital_status: ""    # legacy field; only rendered when locale + value both present
+mil_service: ""       # 兵役狀態 — relevant for TW/KR male candidates only
+
+# --- locale-overridden text fields ------------------------------------------
+# Add a `<field>_<locale>` key to override the canonical English value.
+# Example for a Taipei-based candidate also applying in Tokyo:
+#   summary_zh_TW: "繁體中文版自我介紹..."
+#   summary_ja_JP: "日本語の自己紹介..."
+#   experience[0].title_ja_JP: "シニアフルスタックエンジニア"
+#   experience[0].bullets_zh_TW: ["繁中 bullet 1", ...]
+
+languages:
+  - ""
+education:
+  - degree: ""
+    school: ""
+    year: ""
+experience:
+  - title: ""
+    company: ""
+    start: ""
+    end: ""
+    bullets: []
+certifications: []
+custom_sections:
+  awards: []
+  talks: []
+  hobbies: []
+
+# Attach hard numbers to specific projects. Key matches any substring of the
+# project's display name.
+# Example:
+# project_metrics:
+#   my-project:
+#     - "MAU 5,000+"
+#     - "40% faster iteration"
+project_metrics: {}
