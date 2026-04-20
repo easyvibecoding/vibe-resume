@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTD/PropertyList-1.0.dtd">
+<!--
+launchd agent for weekly Claude Code session backup.
+Install: cp this file to ~/Library/LaunchAgents/ then `launchctl load` it.
+Edit ProgramArguments to point at the absolute path of your repo clone.
+StartCalendarInterval below = every Sunday at 03:00 local time.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.vibe-resume.backup</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-c</string>
+        <!-- Absolute path required: launchd does NOT expand $HOME from a relative cwd. -->
+        <string>$HOME/sideProject/AI-used-resume/scripts/backup_claude_projects.sh</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>/Users/REPLACE_ME</string>
+        <key>PATH</key>
+        <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin</string>
+    </dict>
+
+    <!-- Sundays at 03:00 local. Change Weekday (0=Sun) / Hour / Minute as needed. -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Weekday</key>
+        <integer>0</integer>
+        <key>Hour</key>
+        <integer>3</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <!-- If the Mac was asleep at the scheduled time, run on next wake. -->
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/vibe-resume-backup.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/vibe-resume-backup.err.log</string>
+</dict>
+</plist>

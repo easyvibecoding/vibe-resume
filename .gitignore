@@ -5,7 +5,8 @@ __pycache__/
 .ruff_cache/
 .DS_Store
 data/cache/
-data/imports/
+data/imports/*
+!data/imports/sample_jd.txt
 data/resume_history/
 data/drafts/
 data/reviews/

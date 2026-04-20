@@ -1,12 +1,25 @@
 #!/usr/bin/env bash
 # Periodically rsync ~/.claude/projects to a persistent archive.
-# Install as a cron job or launchd agent to run daily/weekly so Claude Code's
+# Install as a launchd agent (macOS) or cron job (Linux) so Claude Code's
 # 30-day cleanup doesn't erase your session history.
 #
 # Usage:
 #   ./scripts/backup_claude_projects.sh [archive_dir]
 #
 # Default archive: ~/ClaudeCodeArchive
+#
+# ── macOS: launchd ─────────────────────────────────────────────────────────
+# 1. cp scripts/com.vibe-resume.backup.plist ~/Library/LaunchAgents/
+# 2. launchctl load ~/Library/LaunchAgents/com.vibe-resume.backup.plist
+# 3. (verify) launchctl list | grep vibe-resume
+# Edit StartCalendarInterval in the plist to change cadence
+# (default = Sundays 03:00 local).
+#
+# ── Linux: cron ────────────────────────────────────────────────────────────
+# Add to `crontab -e`:
+#   0 3 * * 0  /full/path/to/scripts/backup_claude_projects.sh >> ~/.cache/vibe-resume-backup.log 2>&1
+# Cron field order = m h dom mon dow → above runs Sundays 03:00.
+# For daily backups use `0 3 * * *`.
 
 set -euo pipefail
 

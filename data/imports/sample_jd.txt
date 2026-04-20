@@ -1,0 +1,36 @@
+Senior Full-stack Engineer · AI Platform — Lumen Labs (Remote / Taipei)
+
+About the role
+We are hiring a Senior Full-stack Engineer to own end-to-end delivery of our
+RAG-backed enterprise search product. You will work across React (Next.js)
+on the frontend and FastAPI + PostgreSQL on the backend, deploying to AWS
+via Docker and GitHub Actions, and shaping the agentic developer workflows
+the team uses every day.
+
+What you'll do
+- Design and ship features across the stack: Next.js + TypeScript on the
+  client, FastAPI + Pydantic services on the server, PostgreSQL with
+  pgvector for retrieval, Redis for cache.
+- Operate Kubernetes-on-EKS deployments and tighten the CI/CD loop in
+  GitHub Actions.
+- Integrate Stripe for billing and Sentry for observability.
+- Drive AI-augmented productivity: orchestrate Claude Code, Cursor, and
+  Copilot agent workflows so the team ships faster without losing review
+  quality.
+- Partner with PM and design on RAG features such as semantic search,
+  prompt-ensemble rerank, and streaming answer UIs.
+
+What we look for
+- 5+ years of full-stack engineering with React / Next.js and a
+  Python/FastAPI (or Node.js) backend.
+- Strong PostgreSQL fundamentals; pgvector or similar vector-search
+  experience is a plus.
+- Comfortable shipping Docker images to AWS, debugging Kubernetes pods,
+  and reading Terraform.
+- Hands-on with at least one of Claude Code, Cursor, GitHub Copilot.
+- Bonus: experience with NATS / Kafka, Stripe, or RAG / LLM
+  orchestration.
+
+Tech keywords (for your reference): React, Next.js, TypeScript, Python,
+FastAPI, PostgreSQL, pgvector, Redis, Docker, Kubernetes, AWS, GitHub
+Actions, Terraform, Sentry, Stripe, RAG, Claude Code, Cursor, Copilot.
