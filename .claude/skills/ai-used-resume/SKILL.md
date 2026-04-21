@@ -126,15 +126,12 @@ in [references/troubleshooting.md](references/troubleshooting.md).
 Consult it when the user reports an issue or asks how to extend the
 pipeline.
 
-## Schema contract (for adding an extractor)
+## Extending the pipeline
 
-All extractors return `list[core.schema.Activity]`:
-- `source` (enum), `session_id`, `timestamp_start`, `timestamp_end`
-- `project`, `activity_type`, `tech_stack`, `keywords`, `summary`
-- `user_prompts_count`, `tool_calls_count`, `files_touched`
-- `raw_ref` (file:line for traceability), `extra`
-
-Never invent activities. If a tool's data isn't reachable, return `[]` silently.
+When the user asks to add a new extractor, locale, or persona, consult
+[references/extending.md](references/extending.md) for the `Activity`
+schema contract, registration steps, and the "never invent activities"
+rule.
 
 ## End-to-end example: "one JD, every market"
 
