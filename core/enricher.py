@@ -19,6 +19,17 @@ from core.aggregator import groups_path_for, load_groups
 from core.schema import ProjectGroup
 from render.i18n import get_locale
 
+# --- field caps applied after LLM parse -------------------------------------
+# All limits are chosen so a malformed/oversized LLM response can never blow
+# past the template's layout budget. Values are string length for text fields
+# and list length for list fields.
+SUMMARY_MAX_LEN = 300           # group-level summary sentence
+ACHIEVEMENT_MAX_LEN = 200       # per-bullet length cap
+ACHIEVEMENTS_MAX_COUNT = 4      # bullets per project group
+TECH_STACK_MAX_LEN = 15         # raw stack (pre-canonical-split) cap
+TECH_HARD_MAX_LEN = 20          # post-canonical hard-skill list cap
+TECH_DOMAIN_MAX_LEN = 12        # post-canonical domain-tag list cap
+
 console = Console()
 
 
@@ -222,6 +233,48 @@ def _parse_yaml(s: str) -> dict[str, Any] | None:
     return data if isinstance(data, dict) else None
 
 
+def _apply_parsed_output(g: ProjectGroup, parsed: dict[str, Any]) -> None:
+    """Merge an LLM/fallback response dict into a ProjectGroup in-place.
+
+    Extracted from `_enrich_one_persona` so the coerce-truncate-split logic
+    has a single testable seam. Silently drops fields that aren't the
+    expected type — the LLM is upstream-untrusted input.
+    """
+    from core.tech_canonical import split_hard_skills
+
+    g.summary = str(parsed.get("summary") or "")[:SUMMARY_MAX_LEN]
+
+    ach = parsed.get("achievements") or []
+    if isinstance(ach, list):
+        g.achievements = [str(a)[:ACHIEVEMENT_MAX_LEN] for a in ach if a][:ACHIEVEMENTS_MAX_COUNT]
+
+    tech = parsed.get("tech_stack") or []
+    if isinstance(tech, list) and tech:
+        g.tech_stack = [str(t) for t in tech][:TECH_STACK_MAX_LEN]
+
+    role = parsed.get("role_label")
+    if role:
+        old_tail = g.headline or ""
+        if " / " in old_tail:
+            _, _, rest = old_tail.partition(" / ")
+            g.headline = f"{role} · {rest}"
+        else:
+            g.headline = str(role)
+
+    # Merge any extra ATS keywords into the raw stack, then split canonically
+    # into hard skills vs domain tags. Done after the stack update above so
+    # the LLM's keywords_for_ats extras land alongside its stack proposal.
+    merged = list(g.tech_stack or [])
+    kw = parsed.get("keywords_for_ats")
+    if isinstance(kw, list) and kw:
+        for k in kw:
+            if isinstance(k, str) and k.strip():
+                merged.append(k.strip())
+    hard, domain = split_hard_skills(merged)
+    g.tech_stack = hard[:TECH_HARD_MAX_LEN]
+    g.domain_tags = domain[:TECH_DOMAIN_MAX_LEN]
+
+
 def _fallback_summary(g: ProjectGroup) -> dict[str, Any]:
     top_terms = g.tech_stack[:5] or ["general"]
     srcs = ", ".join(s.value for s in g.sources[:3])
@@ -346,32 +399,7 @@ def _enrich_one_persona(
         if not parsed:
             parsed = _fallback_summary(g)
 
-        g.summary = str(parsed.get("summary") or "")[:300]
-        ach = parsed.get("achievements") or []
-        if isinstance(ach, list):
-            g.achievements = [str(a)[:200] for a in ach if a][:4]
-        tech = parsed.get("tech_stack") or []
-        if isinstance(tech, list) and tech:
-            g.tech_stack = [str(t) for t in tech][:15]
-        role = parsed.get("role_label")
-        if role:
-            old_tail = g.headline or ""
-            if " / " in old_tail:
-                _, _, rest = old_tail.partition(" / ")
-                g.headline = f"{role} · {rest}"
-            else:
-                g.headline = str(role)
-        kw = parsed.get("keywords_for_ats")
-        merged = list(g.tech_stack or [])
-        if isinstance(kw, list) and kw:
-            for k in kw:
-                if isinstance(k, str) and k.strip():
-                    merged.append(k.strip())
-        from core.tech_canonical import split_hard_skills
-
-        hard, domain = split_hard_skills(merged)
-        g.tech_stack = hard[:20]
-        g.domain_tags = domain[:12]
+        _apply_parsed_output(g, parsed)
         enriched.append(g.model_dump(mode="json"))
 
     out_path = groups_path_for(persona_key)
