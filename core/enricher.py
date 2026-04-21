@@ -16,6 +16,7 @@ import yaml
 from rich.console import Console
 
 from core.aggregator import groups_path_for, load_groups
+from core.personas import Persona
 from core.schema import ProjectGroup
 from render.i18n import get_locale
 
@@ -29,6 +30,34 @@ ACHIEVEMENTS_MAX_COUNT = 4      # bullets per project group
 TECH_STACK_MAX_LEN = 15         # raw stack (pre-canonical-split) cap
 TECH_HARD_MAX_LEN = 20          # post-canonical hard-skill list cap
 TECH_DOMAIN_MAX_LEN = 12        # post-canonical domain-tag list cap
+
+# How many JD keywords to quote into the tailor block. Keeping this modest
+# prevents the model from trying to cram every keyword into one bullet.
+TAILOR_KEYWORDS_MAX = 12
+
+# Appended to the end of the locale prompt so the model re-reads it right
+# before emitting YAML. Never invent matches — always framed as conditional
+# on what the raw activity already supports.
+TAILOR_BLOCK_TEMPLATE = """
+
+Tailor hint — the target JD emphasises these keywords:
+    {keywords}
+If any of these genuinely describe the project activity above, surface them \
+verbatim in at least one achievement (e.g. if `RAG` is listed and the project \
+is a retrieval pipeline, prefer 'RAG' over a generic phrase like 'search stack'). \
+Never invent a match that isn't supported by the raw activity.
+"""
+
+# Fires *after* the tailor block (if any) so the persona bias wins tie-breaks
+# against the default voice. Upstream locale-script rules still dominate
+# (see the "書寫系統檢查" / script-consistency line in the noun-phrase prompt).
+PERSONA_BLOCK_TEMPLATE = """
+
+Reviewer persona — {label}:
+{bias}
+Apply this lens *when the raw activity supports it*. Never fabricate numbers, \
+people, or decisions that the input doesn't show.
+"""
 
 console = Console()
 
@@ -143,7 +172,7 @@ def _build_prompt(
     g: ProjectGroup,
     locale_meta: dict[str, Any] | None = None,
     tailor_keywords: list[str] | None = None,
-    persona: Any = None,
+    persona: Persona | None = None,
 ) -> str:
     raw_lines: list[str] = []
     for a in g.activities[:12]:
@@ -175,27 +204,13 @@ def _build_prompt(
         lang_label=lang_label,
     )
     if tailor_keywords:
-        # Append the tailor block *after* the locale prompt so it acts as a
-        # final instruction the model re-reads right before emitting YAML.
-        kw_str = ", ".join(tailor_keywords[:12])
-        body += (
-            "\n\n"
-            "Tailor hint — the target JD emphasises these keywords:\n"
-            f"    {kw_str}\n"
-            "If any of these genuinely describe the project activity above, surface them "
-            "verbatim in at least one achievement (e.g. if `RAG` is listed and the project "
-            "is a retrieval pipeline, prefer 'RAG' over a generic phrase like 'search stack'). "
-            "Never invent a match that isn't supported by the raw activity.\n"
+        body += TAILOR_BLOCK_TEMPLATE.format(
+            keywords=", ".join(tailor_keywords[:TAILOR_KEYWORDS_MAX])
         )
     if persona is not None:
-        # Persona bias fires last so it wins tie-breaks against the default voice
-        # without overriding locale script rules (which are upstream).
-        body += (
-            "\n\n"
-            f"Reviewer persona — {persona.label}:\n"
-            f"{persona.enrich_bias}\n"
-            "Apply this lens *when the raw activity supports it*. Never fabricate "
-            "numbers, people, or decisions that the input doesn't show.\n"
+        body += PERSONA_BLOCK_TEMPLATE.format(
+            label=persona.label,
+            bias=persona.enrich_bias,
         )
     return body
 

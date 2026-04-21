@@ -42,17 +42,13 @@ def test_list_persona_keys_matches_registry() -> None:
     assert set(list_persona_keys()) == set(PERSONAS.keys())
 
 
-def test_enrich_prompt_injects_persona_bias_block() -> None:
-    """The bias block must land at the tail of the prompt so the model reads
-    it right before emitting YAML (same rationale as the tailor block)."""
+def _make_demo_group():
     from datetime import UTC, datetime
 
-    from core.enricher import _build_prompt
     from core.schema import ProjectGroup, Source
-    from render.i18n import get_locale
 
     now = datetime(2026, 3, 1, tzinfo=UTC)
-    g = ProjectGroup(
+    return ProjectGroup(
         name="demo",
         path="/tmp/demo",
         total_sessions=5,
@@ -64,11 +60,39 @@ def test_enrich_prompt_injects_persona_bias_block() -> None:
         capability_breadth=1,
         activities=[],
     )
-    prompt = _build_prompt(g, get_locale("en_US"), persona=PERSONAS["tech_lead"])
+
+
+def test_enrich_prompt_injects_persona_bias_block() -> None:
+    """The bias block must land at the tail of the prompt so the model reads
+    it right before emitting YAML (same rationale as the tailor block)."""
+    from core.enricher import _build_prompt
+    from render.i18n import get_locale
+
+    prompt = _build_prompt(_make_demo_group(), get_locale("en_US"), persona=PERSONAS["tech_lead"])
     assert "Reviewer persona — Tech Lead" in prompt
     # The persona block must come after the locale template so the model
     # re-reads it just before emitting YAML.
     assert prompt.rindex("Reviewer persona") > prompt.index("Project:")
+
+
+def test_tailor_and_persona_blocks_coexist_with_persona_last() -> None:
+    """Realistic multi-audience scenario: render a résumé tailored to a JD
+    AND biased toward a Tech Lead reader. Both blocks must appear, and the
+    persona block must come *after* tailor so it wins tie-breaks."""
+    from core.enricher import _build_prompt
+    from render.i18n import get_locale
+
+    prompt = _build_prompt(
+        _make_demo_group(),
+        get_locale("en_US"),
+        tailor_keywords=["RAG", "Postgres"],
+        persona=PERSONAS["executive"],
+    )
+    assert "Tailor hint" in prompt
+    assert "Reviewer persona — Executive" in prompt
+    assert "RAG, Postgres" in prompt
+    # Persona block must fire last.
+    assert prompt.rindex("Reviewer persona") > prompt.rindex("Tailor hint")
 
 
 def test_review_file_attaches_persona_tips(tmp_path) -> None:
