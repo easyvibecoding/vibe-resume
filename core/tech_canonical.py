@@ -99,8 +99,19 @@ CATEGORIES: dict[str, list[str]] = {
 
 
 def canonicalize(raw: str) -> str:
-    key = raw.strip().lower()
-    return CANONICAL.get(key, raw.strip() if raw.strip() else raw)
+    """Map a raw tech string to its canonical display form.
+
+    - ``"postgres"`` / ``"POSTGRES"`` / ``"postgresql"`` → ``"PostgreSQL"``
+    - Unknown but non-empty input passes through stripped (the enricher may
+      legitimately emit a fresh 2026 stack name we haven't aliased yet).
+    - Empty / whitespace-only input returns ``""`` — both downstream callers
+      (``split_hard_skills`` and ``canonical_list``) already skip falsy
+      returns, so this keeps stray blanks out of the Skills section.
+    """
+    stripped = raw.strip()
+    if not stripped:
+        return ""
+    return CANONICAL.get(stripped.lower(), stripped)
 
 
 # Set of canonical display names that count as "hard technical skills".
