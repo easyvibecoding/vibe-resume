@@ -135,7 +135,7 @@ render:
   # Supported: en_US | en_GB | zh_TW | zh_CN | ja_JP | ko_KR | de_DE | fr_FR
   # Resolution priority: CLI --locale  >  profile.preferred_locale  >  this value  >  en_US.
   locale: "en_US"
-  # When `cli.py render --all-locales` runs, produce each locale in these
+  # When `vibe-resume render --all-locales` runs, produce each locale in these
   # formats. Use ["md"] for the fastest batch (default). Set ["md", "docx"]
   # to also get the Word doc per locale, or ["all"] for md + docx + pdf.
   # CLI `--format` overrides this for a single run.

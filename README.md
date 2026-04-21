@@ -236,17 +236,17 @@ uv run vibe-resume render -f all    # md + docx + pdf + git snapshot
 
 | Command | What it does |
 |---|---|
-| `cli.py extract [--only NAME]` | run extractors, cache to `data/cache/*.json` |
-| `cli.py aggregate` | group by project, classify task types, infer stack |
-| `cli.py enrich [-n N] [--locale L] [--tailor JD.txt] [--persona KEY]` | generate summary + achievements (XYZ for en, noun-phrase for zh/ja/de/fr/ko); `--tailor` biases toward a JD's keywords; `--persona` biases toward a reviewer archetype (see § *Reviewer personas*) |
-| `cli.py render -f md\|docx\|pdf\|all [--locale L]` | render + git snapshot |
-| `cli.py render --all-locales [-f FMT]` | fan out across every registered locale in one pass |
-| `cli.py render --tailor data/imports/jd.txt` | tailor for a specific job description |
-| `cli.py review [-v N \| --file PATH] [--locale L] [--jd JD.txt] [--persona KEY]` | score against the 8-point checklist; `--persona` appends a persona-specific lens at the end of the report |
-| `cli.py trend [--locale L]` | score history per locale with ASCII sparkline + mean + latest grade |
-| `cli.py completion {bash\|zsh\|fish} [--install]` | print or install a shell completion script so `--locale <tab>` expands |
-| `cli.py status` | show per-source activity counts |
-| `cli.py list-versions` / `cli.py diff 1 2` | resume version history |
+| `vibe-resume extract [--only NAME]` | run extractors, cache to `data/cache/*.json` |
+| `vibe-resume aggregate` | group by project, classify task types, infer stack |
+| `vibe-resume enrich [-n N] [--locale L] [--tailor JD.txt] [--persona KEY]` | generate summary + achievements (XYZ for en, noun-phrase for zh/ja/de/fr/ko); `--tailor` biases toward a JD's keywords; `--persona` biases toward a reviewer archetype (see § *Reviewer personas*) |
+| `vibe-resume render -f md\|docx\|pdf\|all [--locale L]` | render + git snapshot |
+| `vibe-resume render --all-locales [-f FMT]` | fan out across every registered locale in one pass |
+| `vibe-resume render --tailor data/imports/jd.txt` | tailor for a specific job description |
+| `vibe-resume review [-v N \| --file PATH] [--locale L] [--jd JD.txt] [--persona KEY]` | score against the 8-point checklist; `--persona` appends a persona-specific lens at the end of the report |
+| `vibe-resume trend [--locale L]` | score history per locale with ASCII sparkline + mean + latest grade |
+| `vibe-resume completion {bash\|zsh\|fish} [--install]` | print or install a shell completion script so `--locale <tab>` expands |
+| `vibe-resume status` | show per-source activity counts |
+| `vibe-resume list-versions` / `vibe-resume diff 1 2` | resume version history |
 
 ## Multi-locale rendering
 
@@ -257,10 +257,10 @@ data renders into reviewer-appropriate output in each market.
 `en_EU` (Europass), `ja_JP` (職務経歴書), and `zh_TW` (繁中).
 
 ```bash
-uv run python cli.py render -f md  --locale en_US     # ATS-optimized US default
-uv run python cli.py render -f md  --locale zh_TW     # 台灣繁中履歷
-uv run python cli.py render -f all --locale ja_JP     # 履歴書 (DOCX grid) + 職務経歴書 (md/pdf)
-uv run python cli.py render -f md  --locale de_DE     # Lebenslauf with Persönliche Daten block
+uv run vibe-resume render -f md  --locale en_US     # ATS-optimized US default
+uv run vibe-resume render -f md  --locale zh_TW     # 台灣繁中履歷
+uv run vibe-resume render -f all --locale ja_JP     # 履歴書 (DOCX grid) + 職務経歴書 (md/pdf)
+uv run vibe-resume render -f md  --locale de_DE     # Lebenslauf with Persönliche Daten block
 ```
 
 | Locale | Style | Photo | Headings | Special |
@@ -329,7 +329,7 @@ render:
   all_locales_formats: ["md", "docx"]   # what --all-locales produces per locale
 ```
 
-Running `cli.py render --locale zh_TW` always wins over `preferred_locale`;
+Running `vibe-resume render --locale zh_TW` always wins over `preferred_locale`;
 omit it and `profile.preferred_locale` takes over. The same chain applies
 when `enrich` dispatches the LLM prompt, so the right language label is
 injected regardless of which knob you turn.
@@ -339,9 +339,9 @@ injected regardless of which knob you turn.
 For final-cut day when you need the full pack for different markets:
 
 ```bash
-uv run python cli.py render --all-locales                 # defaults to config.render.all_locales_formats
-uv run python cli.py render --all-locales -f docx         # force a specific format
-uv run python cli.py render --all-locales --tailor jd.txt # one JD, every locale
+uv run vibe-resume render --all-locales                 # defaults to config.render.all_locales_formats
+uv run vibe-resume render --all-locales -f docx         # force a specific format
+uv run vibe-resume render --all-locales --tailor jd.txt # one JD, every locale
 ```
 
 `--all-locales` iterates the full `LOCALES` registry (currently 10 locales).
@@ -487,7 +487,7 @@ Career levels (`--level`): `new_grad` · `junior` · `mid` · `senior` ·
 lead-bullet signal the reviewer expects at that bracket, so mid-level
 bullets don't get promoted into staff claims the candidate cannot defend.
 
-## Reviewer-view audit (`cli.py review`)
+## Reviewer-view audit (`vibe-resume review`)
 
 ![8-point automated reviewer scorecard alongside a rendered résumé and trend sparkline](docs/assets/reviewer_audit.png)
 
@@ -495,9 +495,9 @@ After rendering, score the output against the same 8-point checklist a real
 reviewer applies:
 
 ```bash
-uv run python cli.py review                    # latest version
-uv run python cli.py review -v 9               # specific version
-uv run python cli.py review -v 12 --jd jd.txt  # add JD-keyword echo scoring
+uv run vibe-resume review                    # latest version
+uv run vibe-resume review -v 9               # specific version
+uv run vibe-resume review -v 12 --jd jd.txt  # add JD-keyword echo scoring
 ```
 
 Each draft is graded on:
@@ -515,15 +515,15 @@ Outputs `data/reviews/<draft>_review.md` and `.json` for diffing across
 iterations. A grade ≥ B/(80%) is the bar before sending the draft to a real
 reviewer.
 
-### Score trend (`cli.py trend`)
+### Score trend (`vibe-resume trend`)
 
 Every review run drops a JSON artefact into `data/reviews/`, and `trend`
 folds them into one per-locale summary so you can see whether each market
 version is improving or regressing as you iterate:
 
 ```bash
-uv run python cli.py trend               # all locales
-uv run python cli.py trend --locale zh_TW
+uv run vibe-resume trend               # all locales
+uv run vibe-resume trend --locale zh_TW
 ```
 
 ```

@@ -212,17 +212,17 @@ uv run vibe-resume render -f all    # md + docx + pdf + git 快照
 
 | 指令 | 功能 |
 |---|---|
-| `cli.py extract [--only NAME]` | 執行 extractor,快取到 `data/cache/*.json` |
-| `cli.py aggregate` | 依專案分組、分類任務、推斷技術棧 |
-| `cli.py enrich [-n N] [--locale L] [--tailor JD.txt]` | 產生 summary + achievements(英文用 XYZ、中日德法韓用名詞片語);`--tailor` 讓 bullet 偏向 JD 關鍵字 |
-| `cli.py render -f md\|docx\|pdf\|all [--locale L]` | 渲染 + git 快照 |
-| `cli.py render --all-locales [-f FMT]` | 一次渲染所有已註冊 locale |
-| `cli.py render --tailor data/imports/jd.txt` | 針對特定 JD 客製 |
-| `cli.py review [-v N \| --file PATH] [--locale L] [--jd JD.txt]` | 以 8 項 reviewer 檢查表評分 |
-| `cli.py trend [--locale L]` | 依 locale 顯示歷次評分 + 平均 + 最新等第 |
-| `cli.py completion {bash\|zsh\|fish} [--install]` | 產生或安裝 shell 補全腳本 |
-| `cli.py status` | 顯示各來源的活動數量 |
-| `cli.py list-versions` / `cli.py diff 1 2` | 履歷版本歷史 |
+| `vibe-resume extract [--only NAME]` | 執行 extractor,快取到 `data/cache/*.json` |
+| `vibe-resume aggregate` | 依專案分組、分類任務、推斷技術棧 |
+| `vibe-resume enrich [-n N] [--locale L] [--tailor JD.txt]` | 產生 summary + achievements(英文用 XYZ、中日德法韓用名詞片語);`--tailor` 讓 bullet 偏向 JD 關鍵字 |
+| `vibe-resume render -f md\|docx\|pdf\|all [--locale L]` | 渲染 + git 快照 |
+| `vibe-resume render --all-locales [-f FMT]` | 一次渲染所有已註冊 locale |
+| `vibe-resume render --tailor data/imports/jd.txt` | 針對特定 JD 客製 |
+| `vibe-resume review [-v N \| --file PATH] [--locale L] [--jd JD.txt]` | 以 8 項 reviewer 檢查表評分 |
+| `vibe-resume trend [--locale L]` | 依 locale 顯示歷次評分 + 平均 + 最新等第 |
+| `vibe-resume completion {bash\|zsh\|fish} [--install]` | 產生或安裝 shell 補全腳本 |
+| `vibe-resume status` | 顯示各來源的活動數量 |
+| `vibe-resume list-versions` / `vibe-resume diff 1 2` | 履歷版本歷史 |
 
 ## 多語 locale 渲染
 
@@ -231,10 +231,10 @@ uv run vibe-resume render -f all    # md + docx + pdf + git 快照
 **示範輸出請見 [`docs/samples/`](docs/samples/README.md)**:`en_EU`(Europass)、`ja_JP`(職務経歴書)、`zh_TW`(繁中)三份對照範例。
 
 ```bash
-uv run python cli.py render -f md  --locale en_US     # ATS 優化美式預設
-uv run python cli.py render -f md  --locale zh_TW     # 台灣繁中履歷
-uv run python cli.py render -f all --locale ja_JP     # 履歴書 (DOCX 格子) + 職務経歴書 (md/pdf)
-uv run python cli.py render -f md  --locale de_DE     # Lebenslauf 含 Persönliche Daten 區塊
+uv run vibe-resume render -f md  --locale en_US     # ATS 優化美式預設
+uv run vibe-resume render -f md  --locale zh_TW     # 台灣繁中履歷
+uv run vibe-resume render -f all --locale ja_JP     # 履歴書 (DOCX 格子) + 職務経歴書 (md/pdf)
+uv run vibe-resume render -f md  --locale de_DE     # Lebenslauf 含 Persönliche Daten 區塊
 ```
 
 | Locale | 風格 | 照片 | 標題範例 | 特殊點 |
@@ -296,16 +296,16 @@ render:
   all_locales_formats: ["md", "docx"]   # --all-locales 每個 locale 的格式
 ```
 
-`cli.py render --locale zh_TW` 永遠勝過 `preferred_locale`;省略 `--locale` 則由 `preferred_locale` 接手。`enrich` 呼叫 LLM 時也走同一條鏈,確保語言標籤正確注入。
+`vibe-resume render --locale zh_TW` 永遠勝過 `preferred_locale`;省略 `--locale` 則由 `preferred_locale` 接手。`enrich` 呼叫 LLM 時也走同一條鏈,確保語言標籤正確注入。
 
 ### 一次渲染所有 locale
 
 需要為各地區打包完整版時:
 
 ```bash
-uv run python cli.py render --all-locales                 # 使用 config.render.all_locales_formats
-uv run python cli.py render --all-locales -f docx         # 強制特定格式
-uv run python cli.py render --all-locales --tailor jd.txt # 一份 JD 應用到所有 locale
+uv run vibe-resume render --all-locales                 # 使用 config.render.all_locales_formats
+uv run vibe-resume render --all-locales -f docx         # 強制特定格式
+uv run vibe-resume render --all-locales --tailor jd.txt # 一份 JD 應用到所有 locale
 ```
 
 `--all-locales` 會走完 `LOCALES` 註冊表(目前 10 個)。每個 locale 輸出的格式由 `config.render.all_locales_formats` 控制(預設 `["md"]`),改成 `["md", "docx", "pdf"]` 就能一次產齊全部包。`--locale` 與 `--all-locales` 互斥。
@@ -396,16 +396,16 @@ uv run vibe-resume company mark-verified openai --date 2027-01-15 --yes
 
 職涯層級(`--level`):`new_grad` · `junior` · `mid` · `senior` · `staff_plus` · `research_scientist`。每個原型內建該層級 reviewer 期待看到的 lead-bullet 訊號,避免把 mid 的任務膨脹成 staff 都守不住的 scope claim。
 
-## Reviewer-view 審核(`cli.py review`)
+## Reviewer-view 審核(`vibe-resume review`)
 
 ![8 項自動 reviewer 評分表,旁邊是一份已渲染履歷與趨勢稀疏圖](docs/assets/reviewer_audit.png)
 
 渲染完之後,用與真 reviewer 一致的 8 項清單評分:
 
 ```bash
-uv run python cli.py review                    # 最新版
-uv run python cli.py review -v 9               # 指定版本
-uv run python cli.py review -v 12 --jd jd.txt  # 加入 JD 關鍵字覆蓋率
+uv run vibe-resume review                    # 最新版
+uv run vibe-resume review -v 9               # 指定版本
+uv run vibe-resume review -v 12 --jd jd.txt  # 加入 JD 關鍵字覆蓋率
 ```
 
 每份草稿按以下 8 項評:
@@ -421,13 +421,13 @@ uv run python cli.py review -v 12 --jd jd.txt  # 加入 JD 關鍵字覆蓋率
 
 輸出 `data/reviews/<draft>_review.md` 與 `.json` 可跨版 diff。送出真 reviewer 前建議至少拿到 B/(80%) 等第。
 
-### 評分趨勢(`cli.py trend`)
+### 評分趨勢(`vibe-resume trend`)
 
 每次 review 都會在 `data/reviews/` 留下 JSON 檔,`trend` 把它們依 locale 摺疊成一份總覽,讓你看出每個市場版本是在進步還是退步:
 
 ```bash
-uv run python cli.py trend               # 所有 locale
-uv run python cli.py trend --locale zh_TW
+uv run vibe-resume trend               # 所有 locale
+uv run vibe-resume trend --locale zh_TW
 ```
 
 ```

@@ -217,7 +217,7 @@ largest engineering investment of all locales.
    - `style="xyz"` (US/UK/SG) — action-verb + metric
    - `style="noun_phrase"` (JP/DE/CN/TW) — fact-first, understated
    Switched by the target locale.
-4. **CLI flag** — `cli.py render --locale ja_JP --style shokumu` and
+4. **CLI flag** — `vibe-resume render --locale ja_JP --style shokumu` and
    `--locale zh_TW`. Default resolves from `profile.yaml:preferred_locale`.
 5. **Japan is a separate sub-project** — grid-based DOCX rendering is not a
    Jinja template, plan a dedicated `render/japan.py` using

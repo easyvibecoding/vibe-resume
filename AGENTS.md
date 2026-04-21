@@ -1,6 +1,6 @@
 # Agent Skill — vibe-resume
 
-This repository ships an [Agent Skill](.claude/skills/ai-used-resume/SKILL.md)
+This repository ships an [Agent Skill](skills/ai-used-resume/SKILL.md)
 that drives the full `extract → aggregate → enrich → render → review → trend`
 pipeline for an agentic coding CLI. In 2026 the `SKILL.md` format has become
 an industry convention — so a single canonical file works across every host
@@ -54,7 +54,7 @@ All hosts receive byte-identical SKILL.md content because every path resolves (d
 ## For the agent reading this file
 
 If the user is asking about generating, rendering, tailoring, reviewing, or
-trending their résumé — open [`.claude/skills/ai-used-resume/SKILL.md`](.claude/skills/ai-used-resume/SKILL.md)
+trending their résumé — open [`skills/ai-used-resume/SKILL.md`](skills/ai-used-resume/SKILL.md)
 and follow its workflow. The CLI binary is `vibe-resume` (installed via
 `uv pip install -e ".[dev]"`); the same commands also work as
 `uv run python cli.py <command>`.
@@ -143,8 +143,9 @@ full 27-agent slug table, per-host behaviour notes, and manual symlink fallback
 
 ### Why one skill, many hosts
 
-- **Single source of truth** — edit `.claude/skills/ai-used-resume/SKILL.md`
-  and every host sees the change. No CI, no codegen, no duplicate reviews.
+- **Single source of truth** — edit `skills/ai-used-resume/SKILL.md`
+  and every host sees the change(`.claude/skills/` and the other agent
+  directories are symlinks to it). No CI, no codegen, no duplicate reviews.
 - **Lazy load** — the `description` frontmatter is what each host matches
   against the user's prompt. The body is only pulled into context when
   the skill actually fires, so vibe-resume doesn't bloat every session.
