@@ -43,38 +43,33 @@ and follow its workflow. The CLI binary is `vibe-resume` (installed via
 See the main [README](README.md) (or [繁體中文](README.zh-TW.md) /
 [简体中文](README.zh-CN.md) / [日本語](README.ja.md)) for setup and usage.
 
-### Activate system-wide in your host
+### Install system-wide
 
-Project-scope paths (`.claude/skills/`, `.gemini/skills/`, `.opencode/skills/`,
-`.agents/skills/`) only fire when an agent runs inside this repo. To enable
-the skill's trigger phrases anywhere on your machine, symlink the skill into
-each host's user-scope folder:
+Project-scope paths only fire when the agent runs inside this clone. To make
+the skill's trigger phrases available anywhere, use whichever installer matches
+your agent's ecosystem:
 
+**Tier 1 — 27+ `agentskills.io`-standard hosts** (Claude Code, Cursor,
+Windsurf, Gemini CLI, GitHub Copilot, Codex, Qwen, Kimi, Roo, Kilo, Goose,
+Trae, OpenCode, Amp, Antigravity, …):
 ```bash
-# Claude Code
-mkdir -p ~/.claude/skills && \
-  ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.claude/skills/ai-used-resume
-
-# Gemini CLI
-mkdir -p ~/.gemini/skills && \
-  ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.gemini/skills/ai-used-resume
-
-# OpenClaw (project-scope paths are ignored — user scope is the only option)
-mkdir -p ~/.openclaw/skills && \
-  ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.openclaw/skills/ai-used-resume
-
-# OpenCode
-mkdir -p ~/.opencode/skills && \
-  ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.opencode/skills/ai-used-resume
+npx skills add easyvibecoding/vibe-resume --skill ai-used-resume
 ```
 
-Windows (elevated PowerShell):
-
-```powershell
-New-Item -ItemType SymbolicLink -Path $HOME\.claude\skills\ai-used-resume `
-  -Value (Resolve-Path .claude\skills\ai-used-resume)
-# repeat for .gemini / .openclaw / .opencode
+**Tier 2 — OpenClaw** (own ClawHub marketplace):
+```bash
+openclaw skills install easyvibecoding/vibe-resume/ai-used-resume
 ```
+
+**Tier 3 — Hermes Agent** (own skills.sh registry + 5-section body):
+```bash
+hermes skills tap add easyvibecoding/vibe-resume
+hermes skills install easyvibecoding/vibe-resume/ai-used-resume --force --yes
+```
+
+See the [main README](README.md) § *Install — three ecosystem tiers* for the
+full 27-agent slug table, per-host behaviour notes, and manual symlink fallback
+(Windows, no-Node environments).
 
 ### Why one skill, many hosts
 

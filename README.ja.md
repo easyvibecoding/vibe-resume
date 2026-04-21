@@ -35,6 +35,7 @@
 | **JD テーラリング** | `enrich --tailor JD.txt`(LLM プロンプト注入) | — | ✅ LLM 書き直し | — |
 | **プライバシー** | 完全ローカル;`claude -p` ヘッドレス、データは手元から出ない | 状況による(OpenAI キー任意) | クラウド API 必須 | 完全ローカル |
 | **形態** | Python CLI パイプライン | Web UI | Web UI | Node CLI |
+| **Agent-Skill 対応ホスト数** | **8**(Claude Code · Gemini CLI · Copilot CLI · Cursor · Warp · OpenClaw · OpenCode · Hermes)—— 単一 canonical SKILL.md | — | — | — |
 
 ## なぜ
 
@@ -73,6 +74,108 @@ ChatGPT · Claude.ai · Gemini Takeout · Grok · Perplexity · Mistral Le Chat 
 - **プライバシーフィルタ** —— regex 遮蔽 + プロジェクトブロックリスト + 任意の技術抽象化
 - **バージョン管理出力** —— `data/resume_history/` 配下の内部 git リポに `list-versions` / `diff v1 v2` / `rollback`
 
+## Agent Skill として使う(Claude Code · Gemini CLI · Copilot CLI · Cursor · Warp · OpenClaw · OpenCode · Hermes)
+
+本リポは **Agent Skill** としてもインストールできます。ユーザーの発話が `description` フロントマターと一致すると、ホストが SKILL.md 全文を読み込み、指示通りにパイプラインを実行します。
+
+| ホスト | 発見パス | 本リポでの設定 |
+|---|---|---|
+| **Claude Code** | `.claude/skills/<name>/SKILL.md` | Canonical —— 自動ロード |
+| **Gemini CLI**(Google) | `.gemini/skills/<name>/SKILL.md` | canonical への symlink |
+| **GitHub Copilot CLI** | ネイティブで `.claude/skills/` を読む(2026-04 changelog) | 設定不要 |
+| **Cursor CLI** | `AGENTS.md` + `.cursor/rules/` | `AGENTS.md` が SKILL.md を指す |
+| **Warp**(エージェント型ターミナル) | `.claude/skills/` + `.agents/skills/` + `.warp/skills/` を読む | 設定不要;防御的に `.agents/skills/` symlink も追加済み |
+| **OpenClaw**(250k⭐) | `~/.openclaw/skills/`(ユーザースコープのみ) | ユーザースコープ symlink が必要 |
+| **OpenCode**(端末 CLI エージェント) | `.opencode/skills/` + `~/.opencode/skills/` | プロジェクトスコープ symlink 同梱 |
+| **Hermes Agent**(Nous Research) | リポ `skills/<name>/SKILL.md` → `~/.hermes/skills/<category>/<name>/` にインストール | ネイティブ skill は [`skills/ai-used-resume/SKILL.md`](skills/ai-used-resume/SKILL.md);`hermes skills tap add` + `hermes skills install` で導入 |
+
+### インストール —— 3 つのエコシステム Tier
+
+2026 年の agent-skills エコシステムは**3 つのインストール経路**に収斂しました。ご自身の agent に合わせて 1 本選ぶだけ。8 個の `ln -s` を書く必要はありません。
+
+**Tier 1 —— 27 以上の `agentskills.io` 標準ホスト(一行で全部に入る)**
+```bash
+npx skills add easyvibecoding/vibe-resume --skill ai-used-resume
+```
+`npx skills` はインストール済みの CLI / IDE エージェントを自動検出し、対応ディレクトリに振り分けます。この一行で Claude Code、Cursor、Windsurf、Gemini CLI、GitHub Copilot、Codex、Qwen Code、Kimi Code、Roo Code、Kilo Code、Goose、Trae、OpenCode、Amp、Antigravity などを一括カバー。特定のエージェントに限定する場合は `-a <slug>`:
+```bash
+npx skills add easyvibecoding/vibe-resume -a claude -a cursor-agent -a windsurf
+```
+
+<details>
+<summary>Tier-1 対応エージェント slug 一覧(<code>-a</code> 用)</summary>
+
+| Agent | slug |  | Agent | slug |
+|---|---|---|---|---|
+| Amp | `amp` |  | Kilo Code | `kilocode` |
+| Antigravity | `agy` |  | Kimi Code | `kimi` |
+| Auggie CLI | `auggie` |  | Kiro CLI | `kiro-cli` |
+| Claude Code | `claude` |  | Mistral Vibe | `vibe` |
+| CodeBuddy CLI | `codebuddy` |  | opencode | `opencode` |
+| Codex CLI | `codex` |  | Pi Coding Agent | `pi` |
+| Cursor | `cursor-agent` |  | Qoder CLI | `qodercli` |
+| Forge | `forge` |  | Qwen Code | `qwen` |
+| Gemini CLI | `gemini` |  | Roo Code | `roo` |
+| GitHub Copilot | `copilot` |  | SHAI (OVHcloud) | `shai` |
+| Goose | `goose` |  | Tabnine CLI | `tabnine` |
+| IBM Bob | `bob` |  | Trae | `trae` |
+| iFlow CLI | `iflow` |  | Windsurf | `windsurf` |
+| Junie | `junie` |  |  |  |
+
+最新のリストは [vercel-labs/skills](https://github.com/vercel-labs/skills) を参照。
+</details>
+
+**Tier 2 —— OpenClaw(独自 ClawHub marketplace + 5,400+ skill registry)**
+```bash
+openclaw skills install easyvibecoding/vibe-resume/ai-used-resume
+```
+
+**Tier 3 —— Hermes Agent(独自 `skills.sh` registry + ネイティブ 5-section body 形式)**
+```bash
+hermes skills tap add easyvibecoding/vibe-resume
+hermes skills install easyvibecoding/vibe-resume/ai-used-resume --force --yes
+```
+
+<details>
+<summary>手動インストール / symlink フォールバック(Node 不要・パス自由・Windows)</summary>
+
+`npx skills` を使わない、または symlink の配置を完全にコントロールしたい場合:
+
+```bash
+# Tier 1 ホスト —— リポの canonical SKILL.md から symlink
+mkdir -p ~/.claude/skills && ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.claude/skills/ai-used-resume
+mkdir -p ~/.gemini/skills && ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.gemini/skills/ai-used-resume
+mkdir -p ~/.warp/skills && ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.warp/skills/ai-used-resume
+mkdir -p ~/.opencode/skills && ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.opencode/skills/ai-used-resume
+
+# Cursor はプロジェクトルートの AGENTS.md を設定不要で読みます。横断利用は ~/.cursor/rules/ へコピー。
+```
+
+Windows(管理者 PowerShell):
+```powershell
+New-Item -ItemType SymbolicLink -Path $HOME\.claude\skills\ai-used-resume `
+  -Value (Resolve-Path .claude\skills\ai-used-resume)
+# .gemini / .warp / .opencode も同様に
+```
+</details>
+
+### インストール後の呼び出し方
+
+**2026 年時点のすべてのホストが** `description` 一致による自動トリガーに対応しています。自然言語で十分です:**「AI 利用履歴から職務経歴書を生成して」**、**「日本語で履歴書をレンダリングして」**、**「この JD 向けにテーラリングして」**、**「履歴書を採点して」**、**「履歴書のスコア推移を見せて」**。多くのホストは明示呼び出しにも対応:
+
+| ホスト | 自動トリガー | 明示呼び出し |
+|---|---|---|
+| **Claude Code** | ✅ `description` 一致 | `/ai-used-resume` スラッシュコマンド |
+| **Gemini CLI** | ✅ `activate_skill` ツールがロード | インストール後 `/agents refresh` を一度 |
+| **GitHub Copilot CLI** | ✅ description 一致 | `gh skill install easyvibecoding/vibe-resume` |
+| **Cursor CLI** | ✅ プロジェクトルートの `AGENTS.md` が自動適用 | 内容を `.cursor/rules/` にコピー可 |
+| **Warp** | ✅ エージェントが利用可能な skill から選択 | `/ai-used-resume` または skill 検索メニュー |
+| **OpenClaw** | ✅ ロード時に description で判定 | `/ai-used-resume` または `openclaw skills install` |
+| **OpenCode** | ✅ 内蔵 `SkillTool` 経由 | `/ai-used-resume` スラッシュコマンド |
+| **Hermes Agent** | ✅ description 一致 | `hermes chat -s ai-used-resume -q "履歴書を生成して"` でプリロード |
+
+インストールが成功したかは、任意のホストに次を投げてください:**「実際に走らせず、AI 利用履歴から履歴書を生成する 6 つのコマンドを順に説明して」**。応答が `extract → aggregate → enrich → render → review → trend` を挙げ、`uv run vibe-resume` 構文を使えば正しくロードされています(Hermes では `hermes chat -Q -s ai-used-resume` で実機検証済み)。
+
 ## クイックスタート
 
 ```bash
@@ -82,14 +185,15 @@ uv venv && uv pip install -e ".[dev]"
 # 2. プロフィール入力
 cp profile.example.yaml profile.yaml
 $EDITOR profile.yaml        # 最低でも name / target_role
+# config.yaml が無い場合は初回実行時に config.example.yaml から自動 bootstrap
 
 # 3. (任意)クラウド ZIP エクスポートを data/imports/<tool>/ に配置
 
 # 4. パイプライン実行
-uv run python cli.py extract          # 有効化されているすべての extractor
-uv run python cli.py aggregate        # プロジェクト分類 + スタック推定
-uv run python cli.py enrich           # claude -p で XYZ 箇条書き生成
-uv run python cli.py render -f all    # md + docx + pdf + git スナップショット
+uv run vibe-resume extract          # 4× 並列 extract + プログレスバー
+uv run vibe-resume aggregate        # プロジェクト分類 + スタック推定
+uv run vibe-resume enrich           # claude -p で XYZ 箇条書き生成
+uv run vibe-resume render -f all    # md + docx + pdf + git スナップショット
 ```
 
 ## コマンド
@@ -111,6 +215,8 @@ uv run python cli.py render -f all    # md + docx + pdf + git スナップショ
 ## 多言語ロケールレンダリング
 
 `vibe-resume` は各ロケール専用テンプレートを内蔵し、同じ `profile.yaml` とプロジェクトデータから、各地域のレビュアーが期待する版面を出力します。
+
+**サンプル出力は [`docs/samples/`](docs/samples/README.md) を参照**:`en_EU`(Europass)、`ja_JP`(職務経歴書)、`zh_TW`(繁中)の 3 ロケール対照例があります。
 
 ```bash
 uv run python cli.py render -f md  --locale en_US     # ATS 最適化 US デフォルト
@@ -272,9 +378,11 @@ schtasks /Create /TN "vibe-resume backup" /XML scripts\vibe-resume-backup.xml
 
 ```
 vibe-resume/
+├── profile.example.yaml   # コミット済みテンプレート —— profile.yaml にコピー
+├── config.example.yaml    # コミット済みテンプレート —— 初回実行時に config.yaml へ自動コピー
 ├── profile.yaml           # 個人情報(gitignored)
-├── config.yaml            # extractor スイッチ、パス、プライバシー規則、ウィンドウ
-├── cli.py                 # エントリーポイント
+├── config.yaml            # 個人の extractor パスとプライバシー規則(gitignored)
+├── cli.py                 # エントリーポイント(`vibe-resume` としてもインストール)
 ├── core/
 │   ├── schema.py          # Pydantic v2: Activity、ProjectGroup、UserProfile
 │   ├── classifier.py      # 18 タスクカテゴリ(バイリンガル regex)
@@ -282,26 +390,32 @@ vibe-resume/
 │   ├── stats.py           # ローリング統計(30d/7d)
 │   ├── privacy.py         # 遮蔽 + ブロックリスト + 技術抽象
 │   ├── aggregator.py      # 分類 + headline + 重要度ランキング
-│   ├── enricher.py        # claude -p → XYZ bullet
+│   ├── enricher.py        # claude -p → ロケール別 XYZ / 名詞句 bullet
+│   ├── review.py          # 8 項目スコアカード + トレンドスパークライン
 │   ├── versioning.py      # 草稿の git スナップショット
-│   └── runner.py
+│   └── runner.py          # ThreadPoolExecutor パイプライン + rich.progress
 ├── extractors/
 │   ├── local/             # 11 個のローカル extractor
 │   ├── cloud_export/      # 7 個の ZIP インポーター
 │   └── api/               # 6 個の AIGC extractor
 ├── render/
 │   ├── renderer.py        # md / docx / pdf
-│   └── templates/resume.md.j2
+│   ├── japan.py           # JIS Z 8303 履歴書グリッド(ja_JP DOCX 専用)
+│   ├── i18n.py            # LOCALES レジストリ + ロケール別ラベル辞書
+│   └── templates/resume.<locale>.md.j2
 ├── scripts/
 │   ├── backup_claude_projects.sh       # macOS / Linux rsync
 │   ├── backup_claude_projects.ps1      # Windows PowerShell 7(robocopy)
 │   ├── vibe-resume-backup.xml          # Task Scheduler 取り込みテンプレート
 │   └── com.vibe-resume.backup.plist    # macOS launchd agent
 ├── data/
-│   ├── imports/           # ダウンロードした ZIP を置く
+│   ├── imports/           # ダウンロードした ZIP を置く(gitignored、sample_jd.txt のみ保持)
 │   ├── cache/             # ソース別 extractor JSON(gitignored)
-│   └── resume_history/    # レンダリング出力 + 内部 git(gitignored)
-└── .claude/skills/ai-used-resume/SKILL.md   # Claude Code Agent Skill
+│   ├── resume_history/    # レンダリング出力 + 内部 git(gitignored)
+│   └── reviews/           # レビュー結果と履歴(gitignored)
+├── docs/samples/          # ロケール別サンプル出力
+├── .claude/skills/ai-used-resume/SKILL.md   # ホスト 1–7 用 canonical skill
+└── skills/ai-used-resume/SKILL.md           # Hermes ネイティブ skill(8 番目のホスト)
 ```
 
 ## 新しい extractor を追加する
@@ -318,7 +432,7 @@ def extract(cfg: dict) -> list[Activity]:
 
 ## 既知の制約
 
-- 全 `$HOME` スキャン(`git_repos`、`aider`)は初回 1–3 分かかります —— `scan.mode: whitelist` に切り替えると範囲を絞れます。
+- 全 `$HOME` スキャン(`git_repos`、`aider`)は 4× 並列 extractor でも初回 1–3 分かかります —— `scan.mode: whitelist` に切り替えると範囲を絞れます。`_find_repos` には 120 秒の壁時計デッドラインがあり、FUSE マウントや壊れた symlink でも全体が止まりません。
 - Grok / Perplexity / Mistral のエクスポート schema は**緩く解析**しています(公式スキーマが未公開のため)。フィールドが合わない場合は `data/imports/` に実サンプルを置いてください。
 - Claude Desktop のチャット本文は Local Storage に暗号化されています —— MCP 設定 + extensions のみ取得可能です。
 - PDF レンダリングで CJK を出すには `pandoc` + XeLaTeX が必要です。無い場合は素の pandoc にフォールバックします。

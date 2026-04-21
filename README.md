@@ -95,25 +95,106 @@ The skill follows the 2026 converged `SKILL.md` convention, so **one canonical f
 | **OpenCode** (terminal CLI agent) | `.opencode/skills/` + `~/.opencode/skills/` | Project-scope symlink included |
 | **Hermes Agent** (Nous Research) | repo `skills/<name>/SKILL.md` → installed to `~/.hermes/skills/<category>/<name>/` | Native skill at [`skills/ai-used-resume/SKILL.md`](skills/ai-used-resume/SKILL.md); `hermes skills tap add easyvibecoding/vibe-resume && hermes skills install easyvibecoding/vibe-resume/ai-used-resume` |
 
-Activate the skill system-wide (so it fires anywhere, not just inside this clone):
+### Install — three ecosystem tiers
+
+The 2026 agent-skills ecosystem has converged into **three install paths** —
+pick the one that matches your agent, not eight separate `ln -s` commands.
+
+**Tier 1 — 27+ `agentskills.io`-standard hosts (one line installs to all)**
+```bash
+npx skills add easyvibecoding/vibe-resume --skill ai-used-resume
+```
+`npx skills` auto-detects every installed CLI/IDE agent on your machine and
+routes the skill to the correct directory. This one command covers Claude
+Code, Cursor, Windsurf, Gemini CLI, GitHub Copilot, Codex, Qwen Code, Kimi
+Code, Roo Code, Kilo Code, Goose, Trae, OpenCode, Amp, Antigravity, and
+more. To restrict, pass `-a <slug>`:
+```bash
+npx skills add easyvibecoding/vibe-resume -a claude -a cursor-agent -a windsurf
+```
+
+<details>
+<summary>Full list of Tier-1 agent slugs (for <code>-a</code> flag)</summary>
+
+| Agent | slug |  | Agent | slug |
+|---|---|---|---|---|
+| Amp | `amp` |  | Kilo Code | `kilocode` |
+| Antigravity | `agy` |  | Kimi Code | `kimi` |
+| Auggie CLI | `auggie` |  | Kiro CLI | `kiro-cli` |
+| Claude Code | `claude` |  | Mistral Vibe | `vibe` |
+| CodeBuddy CLI | `codebuddy` |  | opencode | `opencode` |
+| Codex CLI | `codex` |  | Pi Coding Agent | `pi` |
+| Cursor | `cursor-agent` |  | Qoder CLI | `qodercli` |
+| Forge | `forge` |  | Qwen Code | `qwen` |
+| Gemini CLI | `gemini` |  | Roo Code | `roo` |
+| GitHub Copilot | `copilot` |  | SHAI (OVHcloud) | `shai` |
+| Goose | `goose` |  | Tabnine CLI | `tabnine` |
+| IBM Bob | `bob` |  | Trae | `trae` |
+| iFlow CLI | `iflow` |  | Windsurf | `windsurf` |
+| Junie | `junie` |  |  |  |
+
+Latest list: [vercel-labs/skills](https://github.com/vercel-labs/skills).
+</details>
+
+**Tier 2 — OpenClaw (own ClawHub marketplace + 5,400+ skill registry)**
+```bash
+openclaw skills install easyvibecoding/vibe-resume/ai-used-resume
+```
+
+**Tier 3 — Hermes Agent (own `skills.sh` registry + native 5-section body format)**
+```bash
+hermes skills tap add easyvibecoding/vibe-resume
+hermes skills install easyvibecoding/vibe-resume/ai-used-resume --force --yes
+```
+
+<details>
+<summary>Manual install / symlink fallback (no Node, custom paths, Windows)</summary>
+
+If you can't run `npx skills` or want full control over symlink locations:
 
 ```bash
-# Claude Code
-mkdir -p ~/.claude/skills && \
-  ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.claude/skills/ai-used-resume
+# Tier 1 hosts — symlink from this repo's canonical SKILL.md
+mkdir -p ~/.claude/skills && ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.claude/skills/ai-used-resume
+mkdir -p ~/.gemini/skills && ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.gemini/skills/ai-used-resume
+mkdir -p ~/.warp/skills && ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.warp/skills/ai-used-resume
+mkdir -p ~/.opencode/skills && ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.opencode/skills/ai-used-resume
 
-# Gemini CLI
-mkdir -p ~/.gemini/skills && \
-  ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.gemini/skills/ai-used-resume
-
-# OpenClaw (only honours user-scope paths)
-mkdir -p ~/.openclaw/skills && \
-  ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.openclaw/skills/ai-used-resume
-
-# OpenCode
-mkdir -p ~/.opencode/skills && \
-  ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.opencode/skills/ai-used-resume
+# Cursor reads project-root AGENTS.md zero-config. For system-wide, copy to ~/.cursor/rules/.
 ```
+
+Windows (elevated PowerShell):
+```powershell
+New-Item -ItemType SymbolicLink -Path $HOME\.claude\skills\ai-used-resume `
+  -Value (Resolve-Path .claude\skills\ai-used-resume)
+# repeat for .gemini / .warp / .opencode
+```
+</details>
+
+### How to trigger the skill once installed
+
+In **every 2026 host**, the skill auto-fires when your prompt matches the
+description line of the SKILL.md frontmatter — so natural-language trigger
+phrases like **"generate my résumé from my AI usage"**, **"render my résumé
+in Japanese"**, **"tailor my résumé for this JD"**, **"score my résumé"**, or
+**"show my résumé trend"** are enough in most tools. Most hosts also expose
+an explicit invocation path:
+
+| Host | Auto-trigger | Explicit invocation |
+|---|---|---|
+| **Claude Code** | ✅ via `description` match | `/ai-used-resume` slash command |
+| **Gemini CLI** | ✅ `activate_skill` tool loads on match | after install, run `/agents refresh` once to index |
+| **GitHub Copilot CLI** | ✅ description match | `gh skill install easyvibecoding/vibe-resume` (uses repo `skills/` layout) |
+| **Cursor CLI** | ✅ `AGENTS.md` at project root auto-applies | content also copyable into `.cursor/rules/` |
+| **Warp** | ✅ agent picks from available skills | `/ai-used-resume` slash command or searchable skills menu |
+| **OpenClaw** | ✅ matches description at load | `/ai-used-resume` or `openclaw skills install easyvibecoding/vibe-resume` |
+| **OpenCode** | ✅ via internal `SkillTool` | `/ai-used-resume` slash command |
+| **Hermes Agent** | ✅ matches description | `hermes chat -s ai-used-resume -q "generate my résumé"` preload form |
+
+A quick verification prompt for any host: **"Walk me through generating my
+résumé from AI usage — don't run anything, just describe the 6 commands in
+order."** If the skill is correctly loaded, the response names `extract →
+aggregate → enrich → render → review → trend` and matches `uv run vibe-resume`
+syntax. End-to-end verified in Hermes with `hermes chat -Q -s ai-used-resume`.
 
 See [`AGENTS.md`](AGENTS.md) for the full matrix, Windows symlink commands, and Hermes Agent install notes.
 
@@ -126,14 +207,15 @@ uv venv && uv pip install -e ".[dev]"
 # 2. fill your profile
 cp profile.example.yaml profile.yaml
 $EDITOR profile.yaml        # at least name / target_role
+# config.yaml auto-bootstraps from config.example.yaml on first run
 
 # 3. (optional) drop cloud ZIP exports into data/imports/<tool>/
 
 # 4. run pipeline
-uv run python cli.py extract          # all enabled extractors
-uv run python cli.py aggregate        # group by project + infer stack
-uv run python cli.py enrich           # XYZ bullets via claude -p
-uv run python cli.py render -f all    # md + docx + pdf + git snapshot
+uv run vibe-resume extract          # parallel extract with progress bar
+uv run vibe-resume aggregate        # group by project + infer stack
+uv run vibe-resume enrich           # XYZ bullets via claude -p
+uv run vibe-resume render -f all    # md + docx + pdf + git snapshot
 ```
 
 ## Commands
@@ -346,9 +428,11 @@ on `windows-latest`, and the `-WhatIf` branch is also exercised there.
 
 ```
 vibe-resume/
-├── profile.yaml           # your personal info (gitignored)
-├── config.yaml            # extractor toggles, paths, privacy rules, windows
-├── cli.py                 # entry point
+├── profile.example.yaml   # committed template — copy to profile.yaml
+├── config.example.yaml    # committed template — auto-copied to config.yaml on first run
+├── profile.yaml           # your PII (gitignored)
+├── config.yaml            # your extractor paths + privacy rules (gitignored)
+├── cli.py                 # entry point (also installed as `vibe-resume`)
 ├── core/
 │   ├── schema.py          # Pydantic v2: Activity, ProjectGroup, UserProfile
 │   ├── classifier.py      # 18 task categories with bilingual regex
@@ -356,26 +440,32 @@ vibe-resume/
 │   ├── stats.py           # rolling window stats (30d/7d)
 │   ├── privacy.py         # redaction + blocklist + tech abstraction
 │   ├── aggregator.py      # grouping + headline + significance ranking
-│   ├── enricher.py        # claude -p → XYZ bullets
+│   ├── enricher.py        # claude -p → XYZ / noun-phrase bullets per locale
+│   ├── review.py          # 8-point scorecard + trend sparkline
 │   ├── versioning.py      # git snapshots of drafts
-│   └── runner.py
+│   └── runner.py          # ThreadPoolExecutor pipeline + rich.progress
 ├── extractors/
 │   ├── local/             # 11 local extractors
 │   ├── cloud_export/      # 7 ZIP importers
 │   └── api/               # 6 AIGC extractors
 ├── render/
 │   ├── renderer.py        # md / docx / pdf
-│   └── templates/resume.md.j2
+│   ├── japan.py           # JIS Z 8303 履歴書 grid (ja_JP DOCX path)
+│   ├── i18n.py            # LOCALES registry + per-locale label dicts
+│   └── templates/resume.<locale>.md.j2
 ├── scripts/
 │   ├── backup_claude_projects.sh       # macOS / Linux rsync
 │   ├── backup_claude_projects.ps1      # Windows PowerShell 7 (robocopy)
 │   ├── vibe-resume-backup.xml          # Task Scheduler import template
 │   └── com.vibe-resume.backup.plist    # macOS launchd agent
 ├── data/
-│   ├── imports/           # put downloaded ZIPs here
+│   ├── imports/           # put downloaded ZIPs here (gitignored except sample_jd.txt)
 │   ├── cache/             # per-source extracted JSON (gitignored)
-│   └── resume_history/    # rendered outputs + internal git (gitignored)
-└── .claude/skills/ai-used-resume/SKILL.md   # Claude Code Agent Skill
+│   ├── resume_history/    # rendered outputs + internal git (gitignored)
+│   └── reviews/           # review reports + history (gitignored)
+├── docs/samples/          # illustrative locale-specific sample outputs
+├── .claude/skills/ai-used-resume/SKILL.md   # canonical Agent Skill (7 hosts)
+└── skills/ai-used-resume/SKILL.md           # Hermes-native Agent Skill (8th host)
 ```
 
 ## Add a new extractor
@@ -392,7 +482,7 @@ Register in `core/runner.py` → `LOCAL_EXTRACTORS` and enable in `config.yaml`.
 
 ## Known limits
 
-- Full `$HOME` scan (`git_repos`, `aider`) takes 1-3 min first run — switch to `scan.mode: whitelist` to scope it.
+- Full `$HOME` scan (`git_repos`, `aider`) takes 1-3 min first run even with 4× parallel extractors — switch to `scan.mode: whitelist` to scope it. `_find_repos` has a 120s wall-clock deadline to survive FUSE mounts / broken symlinks.
 - Grok / Perplexity / Mistral export schemas are **lenient parsed** (schema not officially published); drop a real sample into `data/imports/` if fields don't match.
 - Claude Desktop chat contents are encrypted in Local Storage — only MCP config + extensions are extractable.
 - PDF rendering requires `pandoc` + XeLaTeX for CJK; falls back to plain pandoc otherwise.

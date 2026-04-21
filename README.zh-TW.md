@@ -35,6 +35,7 @@
 | **JD 客製化** | `enrich --tailor JD.txt`(LLM prompt 注入) | — | ✅ LLM 重寫 | — |
 | **隱私** | 全本地;`claude -p` 無頭模式,資料不出本機 | 視情況(OpenAI key 可選) | 必須雲端 API | 全本地 |
 | **形態** | Python CLI pipeline | Web UI | Web UI | Node CLI |
+| **Agent-Skill 相容 host 數** | **8**(Claude Code · Gemini CLI · Copilot CLI · Cursor · Warp · OpenClaw · OpenCode · Hermes)—— 單一 canonical SKILL.md | — | — | — |
 
 ## 為什麼
 
@@ -73,6 +74,108 @@ ChatGPT · Claude.ai · Gemini Takeout · Grok · Perplexity · Mistral Le Chat 
 - **隱私過濾** —— regex 遮蔽 + 專案黑名單 + 可選技術抽象化
 - **版本化輸出** —— `data/resume_history/` 下的內部 git repo,含 `list-versions` / `diff v1 v2` / `rollback`
 
+## 以 Agent Skill 形式使用(Claude Code · Gemini CLI · Copilot CLI · Cursor · Warp · OpenClaw · OpenCode · Hermes)
+
+本 repo 同時是 **Agent Skill**。`description` frontmatter 符合使用者提問時,host 會自動載入整份 SKILL.md 並依指示執行完整 pipeline。
+
+| Host | 探索路徑 | 本 repo 的設定 |
+|---|---|---|
+| **Claude Code** | `.claude/skills/<name>/SKILL.md` | Canonical —— 自動載入 |
+| **Gemini CLI**(Google) | `.gemini/skills/<name>/SKILL.md` | 已以 symlink 指向 canonical |
+| **GitHub Copilot CLI** | 原生讀 `.claude/skills/`(2026-04 changelog) | 零設定 |
+| **Cursor CLI** | `AGENTS.md` + `.cursor/rules/` | `AGENTS.md` 指向 SKILL.md |
+| **Warp**(agentic terminal) | 讀 `.claude/skills/` + `.agents/skills/` + `.warp/skills/` | 零設定;已補 `.agents/skills/` symlink |
+| **OpenClaw**(250k⭐) | `~/.openclaw/skills/`(僅 user scope) | 需 user-scope symlink |
+| **OpenCode**(終端 CLI agent) | `.opencode/skills/` + `~/.opencode/skills/` | 已含 project-scope symlink |
+| **Hermes Agent**(Nous Research) | repo `skills/<name>/SKILL.md` → 裝到 `~/.hermes/skills/<category>/<name>/` | 原生 skill 在 [`skills/ai-used-resume/SKILL.md`](skills/ai-used-resume/SKILL.md);走 `hermes skills tap add` + `hermes skills install` |
+
+### 安裝 —— 三條生態血統
+
+2026 年 agent-skills 生態已收斂成**三條安裝路徑** —— 依你的 agent 選一條,不用再寫八條 `ln -s`。
+
+**Tier 1 —— 27+ 家 `agentskills.io` 標準 host(一行裝到全部)**
+```bash
+npx skills add easyvibecoding/vibe-resume --skill ai-used-resume
+```
+`npx skills` 會自動偵測機器上裝了哪些 CLI / IDE agent,並路由到對應目錄。這一行就涵蓋 Claude Code、Cursor、Windsurf、Gemini CLI、GitHub Copilot、Codex、Qwen Code、Kimi Code、Roo Code、Kilo Code、Goose、Trae、OpenCode、Amp、Antigravity 等等。要限定特定 agent,加 `-a <slug>`:
+```bash
+npx skills add easyvibecoding/vibe-resume -a claude -a cursor-agent -a windsurf
+```
+
+<details>
+<summary>Tier-1 完整 agent slug 對照表(<code>-a</code> 參數用)</summary>
+
+| Agent | slug |  | Agent | slug |
+|---|---|---|---|---|
+| Amp | `amp` |  | Kilo Code | `kilocode` |
+| Antigravity | `agy` |  | Kimi Code | `kimi` |
+| Auggie CLI | `auggie` |  | Kiro CLI | `kiro-cli` |
+| Claude Code | `claude` |  | Mistral Vibe | `vibe` |
+| CodeBuddy CLI | `codebuddy` |  | opencode | `opencode` |
+| Codex CLI | `codex` |  | Pi Coding Agent | `pi` |
+| Cursor | `cursor-agent` |  | Qoder CLI | `qodercli` |
+| Forge | `forge` |  | Qwen Code | `qwen` |
+| Gemini CLI | `gemini` |  | Roo Code | `roo` |
+| GitHub Copilot | `copilot` |  | SHAI (OVHcloud) | `shai` |
+| Goose | `goose` |  | Tabnine CLI | `tabnine` |
+| IBM Bob | `bob` |  | Trae | `trae` |
+| iFlow CLI | `iflow` |  | Windsurf | `windsurf` |
+| Junie | `junie` |  |  |  |
+
+最新清單請查 [vercel-labs/skills](https://github.com/vercel-labs/skills)。
+</details>
+
+**Tier 2 —— OpenClaw(自有 ClawHub marketplace + 5,400+ skill registry)**
+```bash
+openclaw skills install easyvibecoding/vibe-resume/ai-used-resume
+```
+
+**Tier 3 —— Hermes Agent(自有 `skills.sh` registry + 原生 5-section body 格式)**
+```bash
+hermes skills tap add easyvibecoding/vibe-resume
+hermes skills install easyvibecoding/vibe-resume/ai-used-resume --force --yes
+```
+
+<details>
+<summary>手動安裝 / symlink 備援(沒裝 Node、路徑客製、Windows)</summary>
+
+若不想用 `npx skills`,或需要完全控制 symlink 位置:
+
+```bash
+# Tier 1 host —— 從 repo canonical SKILL.md symlink 出去
+mkdir -p ~/.claude/skills && ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.claude/skills/ai-used-resume
+mkdir -p ~/.gemini/skills && ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.gemini/skills/ai-used-resume
+mkdir -p ~/.warp/skills && ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.warp/skills/ai-used-resume
+mkdir -p ~/.opencode/skills && ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.opencode/skills/ai-used-resume
+
+# Cursor 讀 project root 的 AGENTS.md 零設定。要跨專案用就複製到 ~/.cursor/rules/。
+```
+
+Windows(管理員 PowerShell):
+```powershell
+New-Item -ItemType SymbolicLink -Path $HOME\.claude\skills\ai-used-resume `
+  -Value (Resolve-Path .claude\skills\ai-used-resume)
+# .gemini / .warp / .opencode 同樣處理
+```
+</details>
+
+### 安裝後怎麼觸發
+
+**所有 2026 host 都**支援 `description` 比對自動觸發 —— 自然語言就夠,例如:**「幫我從 AI 使用紀錄產生履歷」**、**「渲染成日文履歷」**、**「針對這份 JD 客製履歷」**、**「評分我的履歷」**、**「秀履歷分數趨勢」**。多數 host 同時提供顯式呼叫:
+
+| Host | 自動觸發 | 顯式呼叫 |
+|---|---|---|
+| **Claude Code** | ✅ 靠 `description` 比對 | `/ai-used-resume` slash command |
+| **Gemini CLI** | ✅ `activate_skill` 工具載入 | 安裝後在 REPL 跑一次 `/agents refresh` 建索引 |
+| **GitHub Copilot CLI** | ✅ description 比對 | `gh skill install easyvibecoding/vibe-resume` |
+| **Cursor CLI** | ✅ project root 的 `AGENTS.md` 自動生效 | 內容也可複製到 `.cursor/rules/` |
+| **Warp** | ✅ agent 會從可用 skill 清單挑 | `/ai-used-resume` 或搜尋 skill 選單 |
+| **OpenClaw** | ✅ 載入時比對 description | `/ai-used-resume` 或 `openclaw skills install` |
+| **OpenCode** | ✅ 內建 `SkillTool` | `/ai-used-resume` slash command |
+| **Hermes Agent** | ✅ description 比對 | `hermes chat -s ai-used-resume -q "幫我產生履歷"` 預載形式 |
+
+快速驗證安裝是否成功,丟這句給任一 host:**「不用真的跑,只要依序描述從 AI 使用紀錄產生履歷需要哪 6 個指令」**。回應若能說出 `extract → aggregate → enrich → render → review → trend` 並用 `uv run vibe-resume` 語法,代表 skill 已正確載入(已在 Hermes 透過 `hermes chat -Q -s ai-used-resume` 實測驗證)。
+
 ## 快速上手
 
 ```bash
@@ -82,14 +185,15 @@ uv venv && uv pip install -e ".[dev]"
 # 2. 填入個人檔
 cp profile.example.yaml profile.yaml
 $EDITOR profile.yaml        # 至少填 name / target_role
+# config.yaml 不存在時會首跑自動從 config.example.yaml bootstrap
 
 # 3. (可選)把雲端 ZIP 匯出丟到 data/imports/<tool>/
 
 # 4. 跑 pipeline
-uv run python cli.py extract          # 所有啟用的 extractor
-uv run python cli.py aggregate        # 依專案分組 + 推斷技術棧
-uv run python cli.py enrich           # 透過 claude -p 產生 XYZ bullet
-uv run python cli.py render -f all    # md + docx + pdf + git 快照
+uv run vibe-resume extract          # 4× 並行 extract + 進度條
+uv run vibe-resume aggregate        # 依專案分組 + 推斷技術棧
+uv run vibe-resume enrich           # 透過 claude -p 產生 XYZ bullet
+uv run vibe-resume render -f all    # md + docx + pdf + git 快照
 ```
 
 ## 指令
@@ -111,6 +215,8 @@ uv run python cli.py render -f all    # md + docx + pdf + git 快照
 ## 多語 locale 渲染
 
 `vibe-resume` 內建每個 locale 專用模板,讓同一份 `profile.yaml` 與專案資料能渲染成各地區審核者習慣的版型。
+
+**示範輸出請見 [`docs/samples/`](docs/samples/README.md)**:`en_EU`(Europass)、`ja_JP`(職務経歴書)、`zh_TW`(繁中)三份對照範例。
 
 ```bash
 uv run python cli.py render -f md  --locale en_US     # ATS 優化美式預設
@@ -272,9 +378,11 @@ schtasks /Create /TN "vibe-resume backup" /XML scripts\vibe-resume-backup.xml
 
 ```
 vibe-resume/
-├── profile.yaml           # 你的個人檔(gitignored)
-├── config.yaml            # extractor 開關、路徑、隱私規則、時間窗
-├── cli.py                 # 進入點
+├── profile.example.yaml   # 已提交的模板 —— 複製成 profile.yaml
+├── config.example.yaml    # 已提交的模板 —— 首跑自動複製成 config.yaml
+├── profile.yaml           # 你的 PII(gitignored)
+├── config.yaml            # 你的 extractor 路徑與隱私規則(gitignored)
+├── cli.py                 # 進入點(亦以 `vibe-resume` 安裝為 entry)
 ├── core/
 │   ├── schema.py          # Pydantic v2: Activity、ProjectGroup、UserProfile
 │   ├── classifier.py      # 18 類任務標籤(雙語 regex)
@@ -282,26 +390,32 @@ vibe-resume/
 │   ├── stats.py           # 滾動時間窗統計(30d/7d)
 │   ├── privacy.py         # 遮蔽 + 黑名單 + 技術抽象
 │   ├── aggregator.py      # 分組 + headline + 重要度排序
-│   ├── enricher.py        # claude -p → XYZ bullet
+│   ├── enricher.py        # claude -p → 各 locale 的 XYZ / 名詞片語 bullet
+│   ├── review.py          # 8 項評分 + 趨勢 sparkline
 │   ├── versioning.py      # 草稿 git 快照
-│   └── runner.py
+│   └── runner.py          # ThreadPoolExecutor pipeline + rich.progress
 ├── extractors/
 │   ├── local/             # 11 個本地 extractor
 │   ├── cloud_export/      # 7 個 ZIP 匯入器
 │   └── api/               # 6 個 AIGC extractor
 ├── render/
 │   ├── renderer.py        # md / docx / pdf
-│   └── templates/resume.md.j2
+│   ├── japan.py           # JIS Z 8303 履歴書格子(ja_JP DOCX 專用)
+│   ├── i18n.py            # LOCALES 註冊表 + 各 locale 標籤字典
+│   └── templates/resume.<locale>.md.j2
 ├── scripts/
 │   ├── backup_claude_projects.sh       # macOS / Linux rsync
 │   ├── backup_claude_projects.ps1      # Windows PowerShell 7 (robocopy)
 │   ├── vibe-resume-backup.xml          # Task Scheduler 匯入模板
 │   └── com.vibe-resume.backup.plist    # macOS launchd agent
 ├── data/
-│   ├── imports/           # 把下載的 ZIP 放這
+│   ├── imports/           # 把下載的 ZIP 放這(gitignored,僅保留 sample_jd.txt)
 │   ├── cache/             # 各來源 extractor JSON(gitignored)
-│   └── resume_history/    # 渲染輸出 + 內部 git(gitignored)
-└── .claude/skills/ai-used-resume/SKILL.md   # Claude Code Agent Skill
+│   ├── resume_history/    # 渲染輸出 + 內部 git(gitignored)
+│   └── reviews/           # 評分報告與歷史(gitignored)
+├── docs/samples/          # 各 locale 示範輸出
+├── .claude/skills/ai-used-resume/SKILL.md   # 第 1–7 個 host 的 canonical skill
+└── skills/ai-used-resume/SKILL.md           # Hermes 原生 skill(第 8 個 host)
 ```
 
 ## 新增一個 extractor
@@ -318,7 +432,7 @@ def extract(cfg: dict) -> list[Activity]:
 
 ## 已知限制
 
-- 全 `$HOME` 掃描(`git_repos`、`aider`)首次要 1–3 分鐘 —— 改成 `scan.mode: whitelist` 可縮小範圍。
+- 全 `$HOME` 掃描(`git_repos`、`aider`)首次要 1–3 分鐘,即便 4× 並行 extractor 也一樣 —— 改成 `scan.mode: whitelist` 可縮小範圍。`_find_repos` 有 120 秒牆鐘死線,FUSE 掛載 / 斷掉的 symlink 不會卡死整個流程。
 - Grok / Perplexity / Mistral 匯出 schema 採**寬鬆解析**(官方未公開 schema);遇到欄位對不上時,把真 sample 丟到 `data/imports/` 協助修正。
 - Claude Desktop 聊天內容在 Local Storage 以加密形式存 —— 只能抽 MCP 設定 + extensions。
 - PDF 渲染中日韓字元需要 `pandoc` + XeLaTeX;沒裝則 fallback 到純 pandoc。
