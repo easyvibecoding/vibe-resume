@@ -483,6 +483,43 @@ def review(
     )
 
 
+def resolve_resume_path(
+    hist_dir: Path,
+    *,
+    version: int | None = None,
+    file: Path | str | None = None,
+) -> Path:
+    """Pick the rendered résumé markdown to review.
+
+    Exactly one of `version` or `file` may be set; both absent means "latest".
+    Raises `ValueError` if both are set and `FileNotFoundError` if nothing on
+    disk satisfies the request. Mutual-exclusion framing + domain errors keep
+    CLI-side `click.UsageError` mapping a one-line wrapper concern.
+
+    Version resolution globs ``resume_v<NNN>*.md`` and returns the lexically
+    first match, so a bare ``resume_v042.md`` wins over persona/locale-suffixed
+    siblings. "Latest" mode returns the last entry of the sorted glob, which
+    in practice is the highest version number.
+    """
+    if version is not None and file is not None:
+        raise ValueError("pass either `version` or `file`, not both")
+    if file is not None:
+        return Path(file)
+    if version is not None:
+        matches = sorted(hist_dir.glob(f"resume_v{version:03d}*.md"))
+        if not matches:
+            raise FileNotFoundError(
+                f"no resume file for v{version:03d} in {hist_dir}"
+            )
+        return matches[0]
+    versioned = sorted(hist_dir.glob("resume_v*.md"))
+    if not versioned:
+        raise FileNotFoundError(
+            f"no rendered resumes in {hist_dir} — run `render` first"
+        )
+    return versioned[-1]
+
+
 def review_file(
     md_path: Path,
     locale_key: str | None = None,

@@ -266,24 +266,20 @@ def review(
     persona: str | None,
 ) -> None:
     """Score a rendered resume against the 8-point reviewer checklist."""
-    from core.review import find_previous_review, parse_jd_keywords, review_file, write_report
+    from core.review import (
+        find_previous_review,
+        parse_jd_keywords,
+        resolve_resume_path,
+        review_file,
+        write_report,
+    )
 
     hist_dir = ROOT / (ctx.obj["config"].get("render", {}).get("output_dir") or "data/resume_history")
-    if version is not None and file_:
-        raise click.UsageError("pass --version or --file, not both")
-    if file_:
-        md_path = Path(file_)
-    elif version is not None:
-        matches = sorted(hist_dir.glob(f"resume_v{version:03d}*.md"))
-        if not matches:
-            raise click.UsageError(f"no resume file found for v{version:03d} in {hist_dir}")
-        md_path = matches[0]
-    else:
-        # latest
-        versioned = sorted(hist_dir.glob("resume_v*.md"))
-        if not versioned:
-            raise click.UsageError(f"no rendered resumes in {hist_dir} — run `render` first")
-        md_path = versioned[-1]
+    try:
+        md_path = resolve_resume_path(hist_dir, version=version, file=file_)
+    except (ValueError, FileNotFoundError) as e:
+        # Map domain errors to click's user-facing error type.
+        raise click.UsageError(str(e)) from e
 
     jd_keywords = parse_jd_keywords(Path(jd)) if jd else None
     report = review_file(md_path, locale_key=locale, jd_keywords=jd_keywords, persona=persona)
