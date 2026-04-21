@@ -82,7 +82,7 @@ Beyond the CLI, `vibe-resume` ships as an [Agent Skill](AGENTS.md) that drives t
 > *"Render my résumé in Japanese and German and review both."*
 > *"Tailor my résumé for this JD: data/imports/lumen_labs.txt."*
 
-The skill follows the 2026 converged `SKILL.md` convention, so **one canonical file** ([`.claude/skills/ai-used-resume/SKILL.md`](.claude/skills/ai-used-resume/SKILL.md)) works across every host below. Everything else — the other `skills/` folders, `AGENTS.md` — just points back at it.
+The skill follows the 2026 converged `SKILL.md` convention: **one canonical file** at [`skills/ai-used-resume/SKILL.md`](skills/ai-used-resume/SKILL.md); every other host path (`.claude/skills/`, `.gemini/skills/`, `.agents/skills/`, `.opencode/skills/`) is a symlink pointing at it. For marketplace installs, [`.claude-plugin/plugin.json`](.claude-plugin/plugin.json) and [`.codex-plugin/plugin.json`](.codex-plugin/plugin.json) wrap the skill as a Claude Code / OpenAI Codex plugin.
 
 | Host | Discovery | Setup in this repo |
 |---|---|---|
@@ -602,12 +602,15 @@ vibe-resume/
 │   ├── resume_history/    # rendered outputs + internal git (gitignored)
 │   └── reviews/           # review reports + history (gitignored)
 ├── docs/samples/          # illustrative locale-specific sample outputs
-├── .claude/skills/ai-used-resume/           # canonical Agent Skill (7 hosts)
-│   ├── SKILL.md
+├── skills/ai-used-resume/                   # canonical Agent Skill (all 8 hosts, via symlinks)
+│   ├── SKILL.md                             # 5-section body, agentskills.io compliant
 │   └── references/                          # strategic-resume · troubleshooting · extending
-└── skills/ai-used-resume/                   # Hermes-native Agent Skill (8th host)
-    ├── SKILL.md
-    └── references/                          # strategic-resume · troubleshooting
+├── .claude/skills/ai-used-resume/           → symlink → skills/ai-used-resume/
+├── .gemini/skills/ai-used-resume/           → symlink → skills/ai-used-resume/
+├── .agents/skills/ai-used-resume/           → symlink → skills/ai-used-resume/ (Codex + Warp)
+├── .opencode/skills/ai-used-resume/         → symlink → skills/ai-used-resume/
+├── .claude-plugin/plugin.json               # Claude Code plugin manifest (marketplace)
+└── .codex-plugin/plugin.json                # OpenAI Codex plugin manifest (marketplace)
 ```
 
 ## Add a new extractor

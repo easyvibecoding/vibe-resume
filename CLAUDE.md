@@ -95,29 +95,42 @@ if the review pitfalls (e.g. contact-line width) apply — a template tweak.
 
 ## Agent-Skill duality
 
-This repo **is** an installable Agent Skill in addition to being a CLI tool:
+This repo **is** an installable Agent Skill + Plugin in addition to being
+a CLI tool.
 
-- `.claude/skills/ai-used-resume/SKILL.md` — Claude Code / Gemini CLI / Copilot
-  CLI / Cursor / Warp / OpenClaw / OpenCode all load from this canonical path
-  (some via symlinks under `.gemini/skills/`, `.agents/skills/`, `.opencode/skills/`).
-- `skills/ai-used-resume/SKILL.md` — Hermes Agent uses a different 5-section
-  body format (When to Use / Quick Reference / Procedure / Pitfalls /
-  Verification) and indexes via `skills.sh` (needs `hermes-agent` GitHub topic).
+**Canonical skill**: `skills/ai-used-resume/SKILL.md`. Body follows the
+Hermes 5-section convention (When to Use / Quick Reference / Procedure /
+Pitfalls / Verification) — compatible with every agentskills.io host per
+Anthropic's own skill best-practice guide. Advanced content lives under
+`skills/ai-used-resume/references/` (one-level-deep per spec):
+`strategic-resume.md`, `troubleshooting.md`, `extending.md`.
 
-Both skill directories follow [agentskills.io](https://agentskills.io/specification)'s
-progressive-disclosure layout. Advanced content lives under
-`references/` (one-level-deep per spec) and is loaded on demand:
-`strategic-resume.md` (`--company`/`--level` axis), `troubleshooting.md`
-(failure-mode playbook), and `extending.md` (Activity schema + extractor
-registration — `.claude/` variant only). Frontmatter compliance is
-guarded by `tests/test_skill_spec.py`.
+**Host discovery paths are symlinks** to the canonical:
 
-When updating workflow documentation, update **both** SKILL.md files plus
-`AGENTS.md` (Cursor CLI reads AGENTS.md natively). If you move content
-into `references/`, update both skill variants and the spec-validator
-test if a new subdirectory pattern is introduced. The `docs/samples/`
-gallery (linked from README §Multi-locale rendering) is hand-crafted
-illustrative output — do **not** regenerate from the user's real profile.
+- `.claude/skills/ai-used-resume` → `../../skills/ai-used-resume` (Claude Code, Copilot CLI, Warp)
+- `.gemini/skills/ai-used-resume` → same (Gemini CLI)
+- `.agents/skills/ai-used-resume` → same (OpenAI Codex + Warp)
+- `.opencode/skills/ai-used-resume` → same (OpenCode)
+
+**Plugin-layer manifests** for marketplace distribution:
+
+- `.claude-plugin/plugin.json` — Claude Code plugin spec
+- `.codex-plugin/plugin.json` — OpenAI Codex plugin spec
+
+Both point at the canonical skills/ directory, so plugin-installed users
+get the same SKILL.md as symlink-discovery users.
+
+Frontmatter compliance, plugin-manifest consistency, symlink integrity,
+and reference-link correctness are guarded by `tests/test_skill_spec.py`
+(14 assertions).
+
+When updating workflow documentation, edit the canonical SKILL.md at
+`skills/ai-used-resume/` — every symlinked host sees the change
+immediately. Also update `AGENTS.md` (Cursor CLI reads it natively) and
+the two `plugin.json` manifests if you bump the plugin version. The
+`docs/samples/` gallery (linked from README §Multi-locale rendering) is
+hand-crafted illustrative output — do **not** regenerate from the
+user's real profile.
 
 ## CI & safety notes
 

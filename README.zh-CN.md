@@ -500,12 +500,15 @@ vibe-resume/
 │   ├── resume_history/    # 渲染输出 + 内部 git(gitignored)
 │   └── reviews/           # 评分报告和历史(gitignored)
 ├── docs/samples/          # 各 locale 示范输出
-├── .claude/skills/ai-used-resume/           # 第 1–7 个 host 的 canonical skill
-│   ├── SKILL.md
+├── skills/ai-used-resume/                   # 全 8 家 host 的 canonical skill(通过 symlink)
+│   ├── SKILL.md                             # 5-section body,agentskills.io 兼容
 │   └── references/                          # strategic-resume · troubleshooting · extending
-└── skills/ai-used-resume/                   # Hermes 原生 skill(第 8 个 host)
-    ├── SKILL.md
-    └── references/                          # strategic-resume · troubleshooting
+├── .claude/skills/ai-used-resume/           → symlink → skills/ai-used-resume/
+├── .gemini/skills/ai-used-resume/           → symlink → skills/ai-used-resume/
+├── .agents/skills/ai-used-resume/           → symlink → skills/ai-used-resume/(Codex + Warp)
+├── .opencode/skills/ai-used-resume/         → symlink → skills/ai-used-resume/
+├── .claude-plugin/plugin.json               # Claude Code plugin 清单(marketplace 分发)
+└── .codex-plugin/plugin.json                # OpenAI Codex plugin 清单(marketplace 分发)
 ```
 
 ## 新增一个 extractor

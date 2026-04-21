@@ -500,12 +500,15 @@ vibe-resume/
 │   ├── resume_history/    # レンダリング出力 + 内部 git(gitignored)
 │   └── reviews/           # レビュー結果と履歴(gitignored)
 ├── docs/samples/          # ロケール別サンプル出力
-├── .claude/skills/ai-used-resume/           # ホスト 1–7 用 canonical skill
-│   ├── SKILL.md
+├── skills/ai-used-resume/                   # 全 8 ホスト用 canonical skill(symlink 経由)
+│   ├── SKILL.md                             # 5-section body、agentskills.io 準拠
 │   └── references/                          # strategic-resume · troubleshooting · extending
-└── skills/ai-used-resume/                   # Hermes ネイティブ skill(8 番目のホスト)
-    ├── SKILL.md
-    └── references/                          # strategic-resume · troubleshooting
+├── .claude/skills/ai-used-resume/           → symlink → skills/ai-used-resume/
+├── .gemini/skills/ai-used-resume/           → symlink → skills/ai-used-resume/
+├── .agents/skills/ai-used-resume/           → symlink → skills/ai-used-resume/(Codex + Warp)
+├── .opencode/skills/ai-used-resume/         → symlink → skills/ai-used-resume/
+├── .claude-plugin/plugin.json               # Claude Code plugin マニフェスト(marketplace 配布)
+└── .codex-plugin/plugin.json                # OpenAI Codex plugin マニフェスト(marketplace 配布)
 ```
 
 ## 新しい extractor を追加する

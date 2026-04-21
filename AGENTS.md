@@ -8,32 +8,48 @@ below with zero content duplication.
 
 ## Canonical skill file
 
-[`.claude/skills/ai-used-resume/SKILL.md`](.claude/skills/ai-used-resume/SKILL.md)
+[`skills/ai-used-resume/SKILL.md`](skills/ai-used-resume/SKILL.md)
 
 This file has the frontmatter-typed `name` and `description` that hosts use to
-decide when to lazy-load the skill. The body walks the LLM through every step
-of the résumé pipeline, the 10-locale cheat sheet, and an end-to-end
-"one JD, every market" example. Advanced content is bundled under
-[`.claude/skills/ai-used-resume/references/`](.claude/skills/ai-used-resume/references/)
-and loaded progressively — currently `strategic-resume.md` (company /
-level axis) and `troubleshooting.md` (failure-mode playbook) — per the
-[agentskills.io](https://agentskills.io/specification) progressive-disclosure pattern.
+decide when to lazy-load the skill. The body follows the Hermes 5-section
+convention (*When to Use / Quick Reference / Procedure / Pitfalls /
+Verification*) — recognised by Anthropic's skill-authoring best practices
+and natively understood by every host below. Advanced content is bundled
+under [`skills/ai-used-resume/references/`](skills/ai-used-resume/references/)
+and loaded progressively — `strategic-resume.md` (company / level axis),
+`troubleshooting.md` (failure-mode playbook), and `extending.md` (Activity
+schema + extractor registration) — per the
+[agentskills.io](https://agentskills.io/specification) spec.
+
+Every other host path (`.claude/skills/`, `.gemini/skills/`, `.agents/skills/`,
+`.opencode/skills/`) is a relative symlink pointing at this canonical
+directory. Editing the canonical updates every host in one pass, zero drift.
+
+## Plugin-layer manifests (2026 marketplaces)
+
+This repo also ships two plugin manifests so users can install via the
+Claude Code and OpenAI Codex marketplaces:
+
+- [`.claude-plugin/plugin.json`](.claude-plugin/plugin.json) — Claude Code plugin spec
+- [`.codex-plugin/plugin.json`](.codex-plugin/plugin.json) — OpenAI Codex plugin spec
+
+Both auto-discover the bundled skill at `skills/ai-used-resume/`.
 
 ## Host discovery matrix
 
 | Host | Discovery path | Our setup |
 |---|---|---|
-| **Claude Code** | `.claude/skills/<name>/SKILL.md` | Canonical location — auto-loaded |
-| **Gemini CLI** (Google) | `.gemini/skills/<name>/SKILL.md` | Symlink → canonical |
-| **GitHub Copilot CLI** | reads `.claude/skills/` natively (per 2026-04 changelog) | Zero config |
-| **Cursor CLI** | reads `AGENTS.md` + `.cursor/rules/` | This file points at SKILL.md |
-| **Warp** (agentic terminal) | reads `.claude/skills/` + `.agents/skills/` + `.warp/skills/` | Zero config; extra `.agents/skills/` symlink added defensively |
-| **OpenAI Codex** (CLI, app, IDE ext) | `.agents/skills/<name>/SKILL.md` (repo) + `~/.agents/skills/` (user) + `.codex-plugin/plugin.json` for plugin-level bundling | Already covered by the defensive `.agents/skills/` symlink above — zero extra config to be skills-discoverable. Promoting to a full Codex plugin would add `.codex-plugin/plugin.json` + `agents/openai.yaml` (MCP deps) |
+| **Claude Code** | `.claude/skills/<name>/SKILL.md` | `../../skills/ai-used-resume` symlink. Plugin-layer install via `/plugin install easyvibecoding/vibe-resume` (uses `.claude-plugin/plugin.json`) |
+| **Gemini CLI** (Google) | `.gemini/skills/<name>/SKILL.md` | `../../skills/ai-used-resume` symlink |
+| **GitHub Copilot CLI** | reads `.claude/skills/` natively (per 2026-04 changelog) | Zero config — follows the Claude symlink |
+| **Cursor CLI** | reads `AGENTS.md` + `.cursor/rules/` | This file points at canonical SKILL.md |
+| **Warp** (agentic terminal) | reads `.claude/skills/` + `.agents/skills/` + `.warp/skills/` | Zero config; both symlinks resolve to canonical |
+| **OpenAI Codex** (CLI, app, IDE ext) | `.agents/skills/<name>/SKILL.md` (repo) + `.codex-plugin/plugin.json` for plugin-level | `.agents/skills/ai-used-resume` symlink ✓; `.codex-plugin/plugin.json` shipped ✓ — full plugin install supported |
 | **OpenClaw** (Nov 2025 → 250k ⭐ Feb 2026) | `~/.openclaw/skills/<name>/SKILL.md` (user scope only) | User-scope symlink — see below |
-| **OpenCode** (CLI agent) | `.opencode/skills/<name>/` (project) + `~/.opencode/skills/` (user) | Project-scope symlink included; user-scope optional |
-| **Hermes Agent** (Nous Research) | repo layout `<repo>/skills/<name>/SKILL.md`; installed to `~/.hermes/skills/<category>/<name>/` (body = *When to Use / Quick Reference / Procedure / Pitfalls / Verification*) | Native skill at [`skills/ai-used-resume/SKILL.md`](skills/ai-used-resume/SKILL.md); `hermes skills tap add easyvibecoding/vibe-resume && hermes skills install easyvibecoding/vibe-resume/ai-used-resume` — indexed on [skills.sh](https://skills.sh/easyvibecoding/vibe-resume/ai-used-resume) |
+| **OpenCode** (CLI agent) | `.opencode/skills/<name>/` (project) + `~/.opencode/skills/` (user) | `../../skills/ai-used-resume` symlink at project scope; user-scope optional |
+| **Hermes Agent** (Nous Research) | repo layout `<repo>/skills/<name>/SKILL.md` — this IS our canonical path; installed to `~/.hermes/skills/<category>/<name>/`; 5-section body is native | Canonical location. Install via `hermes skills tap add easyvibecoding/vibe-resume && hermes skills install easyvibecoding/vibe-resume/ai-used-resume` — indexed on [skills.sh](https://skills.sh/easyvibecoding/vibe-resume/ai-used-resume) |
 
-All four of the first five hosts receive the same SKILL.md content with zero drift because everything ultimately resolves to `.claude/skills/ai-used-resume/`.
+All hosts receive byte-identical SKILL.md content because every path resolves (directly or via symlink) to `skills/ai-used-resume/`.
 
 ## For the agent reading this file
 
