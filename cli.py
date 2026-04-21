@@ -238,7 +238,7 @@ def status(ctx: click.Context) -> None:
         for f in sorted(cache_dir.glob("*.json")):
             try:
                 n = len(orjson.loads(f.read_bytes()))
-            except Exception:
+            except (OSError, orjson.JSONDecodeError):
                 n = -1
             table.add_row(f.stem, f.name, str(n))
     console.print(table)

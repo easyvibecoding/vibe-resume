@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from jinja2 import Environment, FileSystemLoader, select_autoescape
+from jinja2 import Environment, FileSystemLoader, TemplateNotFound, select_autoescape
 from rich.console import Console
 
 from core.aggregator import load_groups, load_observed_summary, load_window_stats
@@ -47,7 +47,7 @@ def _pick_template(env: Environment, locale_key: str) -> str:
     try:
         env.get_template(candidate)
         return candidate
-    except Exception:
+    except TemplateNotFound:
         return "resume.md.j2"
 
 

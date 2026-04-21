@@ -639,7 +639,7 @@ def load_reviews_by_locale(reviews_dir: Path) -> dict[str, list[tuple[int, Revie
             continue
         try:
             data = json.loads(j.read_text(encoding="utf-8"))
-        except Exception:
+        except (OSError, json.JSONDecodeError):
             continue
         locale = data.get("locale", "en_US")
         out.setdefault(locale, []).append((int(m.group(1)), ReviewReport.from_dict(data)))
@@ -693,7 +693,7 @@ def find_previous_review(reviews_dir: Path, current_source: str, locale_key: str
             continue
         try:
             data = json.loads(j.read_text(encoding="utf-8"))
-        except Exception:
+        except (OSError, json.JSONDecodeError):
             continue
         if data.get("locale") != locale_key:
             continue

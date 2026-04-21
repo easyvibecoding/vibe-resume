@@ -93,7 +93,8 @@ def _calc_age_jp(dob: str | None) -> str:
                 continue
         else:
             return ""
-    except Exception:
+    except (AttributeError, TypeError):
+        # dob is not a string / not `.strip()`-able — treat as unknown DOB
         return ""
     today = datetime.today()
     age = today.year - d.year - ((today.month, today.day) < (d.month, d.day))

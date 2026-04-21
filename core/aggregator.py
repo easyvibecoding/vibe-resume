@@ -23,6 +23,27 @@ GROUPS_PATH = ROOT / "data" / "cache" / "_project_groups.json"
 OBSERVED_SUMMARY_PATH = ROOT / "data" / "cache" / "_observed_summary.json"
 WINDOW_STATS_PATH = ROOT / "data" / "cache" / "_window_stats.json"
 
+# --- tunable heuristics -----------------------------------------------------
+# Every threshold here was chosen empirically on the author's own machine; the
+# names are more important than the values. Tuning one means understanding
+# what it filters, not just bumping a number.
+
+# Display-truncation widths (for headline and raw-key fallback).
+NAME_MAX_LEN = 30              # raw leaf name longer than this gets trimmed
+NAME_TRUNCATED_LEN = 25        # width we trim to (leaves room for ellipsis)
+SUMMARY_PREVIEW_LEN = 25       # single-summary activity fallback width
+RAW_PREFIX_FALLBACK_LEN = 8    # "no summary" fallback: first N chars of raw
+
+# Session-count thresholds for `_is_meaningful` — a group below these is
+# treated as noise and dropped before rendering.
+MIN_SESSIONS_DEFAULT = 2       # overall minimum; bumped via config.render.min_sessions
+MIN_SESSIONS_HASH_ID = 2       # hash-named project needs at least this many sessions to survive
+MIN_SESSIONS_NO_TECH = 3       # no-tech + no-breadth project needs at least this many
+
+# Category share threshold for the headline summary. Below this, a category
+# won't be named (so "backend 4% / frontend 3% / …" never appears).
+HEADLINE_CATEGORY_PCT = 5
+
 # Simple tech-stack detector — matches against summary, keywords, files_touched.
 TECH_MARKERS = {
     "python": r"\b(?:python|\.py\b|pip|poetry|uv\b|pytest|fastapi|django|flask|pydantic|celery|langchain|llamaindex)\b",
@@ -94,12 +115,12 @@ def _humanize_name(raw: str, path: str | None, activities: list[Activity]) -> st
         for a in activities:
             s = (a.summary or "").strip()
             if s:
-                return s[:25].replace("\n", " ").rstrip(" ,.·|")
-        return raw[:8] + "…"
+                return s[:SUMMARY_PREVIEW_LEN].replace("\n", " ").rstrip(" ,.·|")
+        return raw[:RAW_PREFIX_FALLBACK_LEN] + "…"
     leaf = raw.split("/")[-1] or raw
     # "Add Required Parameter for Restaurant List Screen" → keep; but chinese long prompts → truncate
-    if len(leaf) > 30:
-        return leaf[:25].rstrip() + "…"
+    if len(leaf) > NAME_MAX_LEN:
+        return leaf[:NAME_TRUNCATED_LEN].rstrip() + "…"
     return leaf
 
 
@@ -110,11 +131,11 @@ def _is_meaningful(raw_key: str, g: ProjectGroup, min_sessions: int) -> bool:
     leaf = key_lc.split("/")[-1].lstrip(".")
     if leaf in NOISE_LEAFS:
         return False
-    if HASH_ID_RE.match(leaf) and g.total_sessions < 2:
+    if HASH_ID_RE.match(leaf) and g.total_sessions < MIN_SESSIONS_HASH_ID:
         return False
     if g.total_sessions < min_sessions and g.capability_breadth <= 1:
         return False
-    if not g.tech_stack and g.capability_breadth == 0 and g.total_sessions < 3:
+    if not g.tech_stack and g.capability_breadth == 0 and g.total_sessions < MIN_SESSIONS_NO_TECH:
         return False
     return True
 
@@ -136,7 +157,7 @@ def _make_headline(counts: dict[str, int]) -> str | None:
     # Exclude fullstack (derived) and sort by share
     filtered = {k: v for k, v in counts.items() if k != "fullstack"}
     top = sorted(filtered.items(), key=lambda kv: -kv[1])[:4]
-    parts = [f"{k} {v*100//total}%" for k, v in top if v * 100 // total >= 5]
+    parts = [f"{k} {v*100//total}%" for k, v in top if v * 100 // total >= HEADLINE_CATEGORY_PCT]
     if not parts:
         return None
     return " / ".join(parts)
@@ -189,7 +210,7 @@ def aggregate_from_cache(cfg: dict[str, Any], cache_dir: Path) -> list[ProjectGr
 
             pdata = yaml.safe_load(profile_path.read_text()) or {}
             user_metrics = pdata.get("project_metrics") or {}
-        except Exception:
+        except (OSError, yaml.YAMLError):
             pass
 
     buckets: dict[str, list[Activity]] = defaultdict(list)
@@ -247,7 +268,7 @@ def aggregate_from_cache(cfg: dict[str, Any], cache_dir: Path) -> list[ProjectGr
         )
         groups.append(grp)
 
-    min_sessions = int(cfg.get("render", {}).get("min_sessions") or 2)
+    min_sessions = int(cfg.get("render", {}).get("min_sessions") or MIN_SESSIONS_DEFAULT)
     groups = [
         g for (raw_key, g) in zip(raw_keys, groups) if _is_meaningful(raw_key, g, min_sessions)
     ]
