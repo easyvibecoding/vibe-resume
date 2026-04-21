@@ -40,21 +40,33 @@ def _compile(patterns: list[str]) -> list[re.Pattern]:
     return [re.compile(p) for p in patterns]
 
 
+# Compile the abstraction patterns once at import time — PrivacyFilter is
+# typically instantiated per aggregator run, and recompiling ~25 regexes
+# per call showed up as a noticeable startup cost before.
+_TECH_PATTERNS: list[tuple[re.Pattern, str]] = [
+    (re.compile(p, re.IGNORECASE), v) for p, v in TECH_ABSTRACT.items()
+]
+
+REDACTED = "[REDACTED]"
+
+
 class PrivacyFilter:
     def __init__(self, cfg: dict[str, Any]) -> None:
         priv = cfg.get("privacy", {})
         self.redactors = _compile(priv.get("redact_patterns") or [])
         self.blocklist = set(priv.get("blocklist") or [])
         self.abstract = bool(priv.get("abstract_tech"))
-        self.tech_patterns = [(re.compile(p, re.IGNORECASE), v) for p, v in TECH_ABSTRACT.items()]
 
     def redact(self, text: str) -> str:
+        # Extractors occasionally hand over None / "" for optional fields; we
+        # tolerate those without raising rather than forcing every call site
+        # to pre-check.
         if not text:
             return text
         for rx in self.redactors:
-            text = rx.sub("[REDACTED]", text)
+            text = rx.sub(REDACTED, text)
         if self.abstract:
-            for rx, repl in self.tech_patterns:
+            for rx, repl in _TECH_PATTERNS:
                 text = rx.sub(repl, text)
         return text
 
