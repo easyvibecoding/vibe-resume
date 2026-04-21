@@ -1,0 +1,44 @@
+key: scale_ai
+label: Scale AI
+tier: ai_unicorn
+locale_hint: en_US
+must_haves:
+- >-
+  Large-scale data pipeline experience — labeling, quality assurance, or
+  evaluation infrastructure at millions-of-rows scale
+- RLHF / preference-data / eval-harness familiarity for ML roles
+- Comfort operating at the boundary between humans-in-the-loop and model training
+plus_signals:
+- Defense / government-contract experience (Scale's growing vertical)
+- Multi-modal data ops (image, video, LIDAR, 3D, audio)
+- Crowd / workforce operations, QA systems, labeling UX design
+- Direct evaluation experience for frontier-lab customers
+red_flags:
+- ML résumé with no data-pipeline or data-quality dimension
+- Backend résumé disconnected from Scale's human-in-the-loop core
+- Missing evals / preference-data vocabulary for ML-facing roles
+format_rules:
+- 1-2 pages, no photo
+- Quantify data volume (rows / tasks / hours) and quality metrics (inter-annotator
+  agreement, throughput, defect rate) on every relevant bullet
+keyword_anchors:
+- RLHF
+- evals
+- labeling
+- data quality
+- inter-annotator agreement
+- preference data
+- multimodal
+- workforce
+enrich_bias: >-
+  This résumé will be reviewed by Scale AI. Surface the data-operations layer
+  explicitly — labeling volume, quality metrics, evaluation infrastructure, RLHF
+  / preference-data pipelines. For ML roles, pair every model bullet with the
+  data-pipeline substrate that produced training or eval data. Defense /
+  government-facing experience is a positive differentiator to call out when
+  present.
+review_tips: >-
+  Scale reviewers read for large-scale data-ops depth + eval vocabulary +
+  human-in-the-loop awareness. Flag: ML bullets with no data-pipeline dimension,
+  missing quality / throughput metrics, backend work disconnected from Scale's
+  labeling-and-evals core.

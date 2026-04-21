@@ -1,0 +1,44 @@
+key: xai
+label: xAI
+tier: frontier_ai
+locale_hint: en_US
+must_haves:
+- >-
+  Member-of-Technical-Staff-grade depth in at least one of pre-training,
+  post-training, multimodal understanding, inference, or agent systems
+- Demonstrated ability to ship fast in a small high-autonomy team
+- Strong coding velocity visible through public artefacts (GitHub, model releases)
+plus_signals:
+- Multimodal (vision / audio / video × text) experience
+- Real-time / low-latency LLM serving for consumer-scale products
+- Prior frontier-lab experience (OpenAI, Anthropic, DeepMind, Meta FAIR) or
+  equivalent research track record
+- Physics / math / hard-sciences background — xAI leans into this framing
+red_flags:
+- Purely-theoretical résumé with no shipping cadence
+- LLM work that stops at prompt engineering or API wrapping
+- Slow-moving enterprise-track career with no high-velocity signal
+format_rules:
+- 1-2 pages, no photo
+- Lead with the biggest single shipping / research result, not a summary paragraph
+- Tech-stack names must pair with concrete ownership, not tool-list soup
+keyword_anchors:
+- multimodal
+- pre-training
+- post-training
+- inference
+- agents
+- scaling
+- consumer scale
+- frontier model
+enrich_bias: >-
+  This résumé will be reviewed by xAI. Lead with the single highest-impact
+  shipping or research result and make the velocity visible — how fast did the
+  candidate go from problem to deployed model / feature? Multimodal, scaling,
+  and consumer-scale serving are xAI's stated priorities; name those explicitly
+  when relevant. Physics / math fluency or prior frontier-lab experience
+  should be surfaced early when present.
+review_tips: >-
+  xAI reviewers scan for shipping velocity + frontier-lab-grade depth + small-team
+  autonomy signals. Flag: slow-cadence enterprise narratives, LLM work that stops
+  at API usage, tech-stack lists with no ownership line attached.

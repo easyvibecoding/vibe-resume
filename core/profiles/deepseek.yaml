@@ -1,0 +1,45 @@
+key: deepseek
+label: DeepSeek / 深度求索
+tier: regional_ai
+locale_hint: en_US
+must_haves:
+- >-
+  Demonstrable ability — top-tier AI conference papers (NeurIPS / ICML / ICLR /
+  ACL) or significant open-source project ownership. DeepSeek's public stance
+  is 'ability over experience', but that ability must be provable
+- PyTorch mastery at the kernel / training-loop / distributed-training level
+- Strong initiative signal — projects the candidate scoped and drove themselves
+plus_signals:
+- Recent-graduate status (founder stated preference for 應屆生 / new graduates)
+- Open-weight model releases or OSS contributions to major ML ecosystems
+- Agent / tool-use / 'Vibe Coding' fluency (recent 2026 hiring surge targets this)
+- Competitive-programming or Kaggle top placements
+red_flags:
+- Long industry-experience résumé with no deep-research or OSS artefact
+- Vague 'managed ML teams' bullets with no technical artefact
+- Pure API-wrapping LLM work with no model-internals depth
+format_rules:
+- 1-2 pages
+- 中文 (zh_CN) or 中英對照 acceptable; English also accepted for research roles
+- Publications and OSS artefacts surfaced at the top
+keyword_anchors:
+- 大模型
+- PyTorch
+- 分布式训练
+- agent
+- 开源
+- 顶会
+- vibe coding
+- AGI
+enrich_bias: >-
+  This résumé will be reviewed by DeepSeek. Surface provable ability over
+  résumé polish — top-tier papers, open-source ownership, and self-driven
+  projects come first. Frame LLM work at the kernel / training-loop / distributed
+  level rather than at API-consumer level. For 2026 Agent-direction roles,
+  'Vibe Coding' velocity (shipping fast with LLM-assisted development) is a
+  declared positive. Recent-graduate status is explicitly preferred.
+review_tips: >-
+  DeepSeek reviewers filter on provable technical depth + self-driven project
+  ownership. Flag: résumés that lead with titles instead of artefacts, LLM
+  bullets that stop at API usage, missing open-source or publication trail
+  for candidates claiming LLM research depth.

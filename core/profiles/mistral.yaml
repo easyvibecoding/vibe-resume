@@ -1,0 +1,46 @@
+key: mistral
+label: Mistral AI
+tier: frontier_ai
+locale_hint: en_US
+must_haves:
+- >-
+  PhD or MS in Computer Science, Machine Learning, or Statistics (or equivalent
+  research portfolio)
+- >-
+  Non-negotiable Python fluency — tested on ML fundamentals and transformer internals
+- >-
+  Most-impactful publications listed at the top of the résumé — NLP / LLM /
+  transformer architecture work preferred
+plus_signals:
+- Open-weight / open-source LLM contributions (any ecosystem)
+- Multilingual NLP or European-language corpora experience
+- Pre-training or post-training at meaningful scale (7B+ parameters)
+- Data-pipeline work at the TB+ scale with tokenisation / dedup / filtering
+red_flags:
+- Publications buried under generic work experience instead of surfaced first
+- Transformer work framed only at API-consumer level
+- Missing reproducibility artefacts (no code, no model card) for cited papers
+format_rules:
+- 1-2 pages, reverse-chronological, no photo
+- Publications section sits above the work-experience section
+- Each paper entry lists venue + year + author position explicitly
+keyword_anchors:
+- transformer
+- LLM
+- pre-training
+- tokenisation
+- PyTorch
+- open weights
+- multilingual
+- dataset
+enrich_bias: >-
+  This résumé will be reviewed by Mistral. Put publications first — venue, year,
+  author position — with the most architecturally substantive papers at the very
+  top. Frame industry experience as research infrastructure enabling those papers
+  where possible. Surface open-weight / open-source contributions prominently;
+  Mistral's identity is tied to open releases. European-language / multilingual
+  work is a differentiator worth naming.
+review_tips: >-
+  Mistral reviewers filter on publication venue + author position + open-weight
+  contributions. Flag: résumés that bury publications under job descriptions,
+  papers without venue names, transformer work stated at API-consumer depth only.

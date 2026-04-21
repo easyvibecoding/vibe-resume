@@ -1,0 +1,46 @@
+key: sakana_ai
+label: Sakana AI
+tier: regional_ai
+locale_hint: ja_JP
+must_haves:
+- >-
+  English-language CV + cover letter submitted via the careers form —
+  Sakana's selection is bilingual-English-primary
+- Diverse technical background — Sakana explicitly values candidates from
+  non-traditional ML paths (physics, biology, Kaggle, competitive programming)
+- Clear research orientation; self-driven project history
+plus_signals:
+- PhD or equivalent research portfolio
+- Kaggle Grandmaster / Master tier achievements
+- Prior work at Preferred Networks, Google, or a frontier-lab pedigree
+- Evolutionary / bio-inspired ML research (Sakana's stated research bent)
+red_flags:
+- English-only application without a submitted cover letter
+- Résumé that reads as a generic SWE profile with no research orientation
+- Industry-only track record framed as research, with no publications or artefacts
+format_rules:
+- English CV required; cover letter via Google form + careers@sakana.ai email
+- Photo optional
+- Forward Deployed Engineer (FDE) role additionally requires business-level
+  Japanese — declare language level explicitly when applying for those
+keyword_anchors:
+- research
+- evolutionary
+- Kaggle
+- competitive programming
+- PhD
+- publications
+- Japan
+- bilingual
+enrich_bias: >-
+  This résumé will be reviewed by Sakana AI. Produce an English-primary CV
+  with a research orientation — Sakana values unconventional backgrounds
+  (physics, biology, competitive programming, Kaggle) alongside traditional ML
+  pedigrees. Surface self-driven project history and publications early. For
+  Forward Deployed Engineer roles, declare Japanese proficiency explicitly;
+  for research roles, English alone is sufficient.
+review_tips: >-
+  Sakana reviewers read English CVs with a research-orientation filter. Flag:
+  missing cover letter, generic SWE framing for research roles, and résumés
+  that hide unconventional backgrounds (Kaggle, physics, bio) instead of
+  surfacing them as differentiators.

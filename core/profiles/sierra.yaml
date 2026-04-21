@@ -1,0 +1,45 @@
+key: sierra
+label: Sierra
+tier: ai_unicorn
+locale_hint: en_US
+must_haves:
+- >-
+  Conversational-AI or customer-support-platform experience — Sierra's core
+  product is enterprise-grade conversational agents
+- Production LLM deployment with guardrails, tool-use, and escalation paths
+- >-
+  Ownership signals at a senior level — Sierra recruits from senior ICs at
+  Meta, Google, Stripe, Salesforce and benchmarks against that bar
+plus_signals:
+- Prior work on Gmail, Messenger, Salesforce Service Cloud, Zendesk, or
+  comparable large conversational / CX products
+- Multi-tenant enterprise deployment experience (SSO, audit, per-tenant config)
+- Voice AI (ASR / TTS / turn-taking) for hybrid text+voice agents
+red_flags:
+- Consumer-chat résumé with no enterprise-deployment dimension
+- LLM work that stops at prompt engineering for internal demos
+- Missing tool-use / function-calling vocabulary for agent roles
+format_rules:
+- 1-2 pages, no photo
+- Per agent bullet — model + tools exposed + eval metric + deployment scale
+  (tenants, seats, or conversation volume)
+keyword_anchors:
+- conversational AI
+- agent
+- tool use
+- guardrails
+- multi-tenant
+- enterprise
+- escalation
+- CX
+enrich_bias: >-
+  This résumé will be reviewed by Sierra. Surface the enterprise-grade
+  conversational-agent stack: tool-use, guardrails, escalation paths,
+  multi-tenant deployment, and eval-driven iteration. Sierra's bar targets
+  senior ICs from Meta / Google / Stripe / Salesforce, so framing should
+  emphasise ownership at that seniority rather than task-level execution.
+review_tips: >-
+  Sierra reviewers scan for enterprise conversational-AI depth at senior-IC
+  seniority. Flag: consumer-chat framing with no enterprise dimension, agent
+  bullets without tool-use or guardrail language, and missing deployment-scale
+  numbers for customer-facing work.

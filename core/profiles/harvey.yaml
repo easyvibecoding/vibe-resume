@@ -1,0 +1,43 @@
+key: harvey
+label: Harvey
+tier: ai_unicorn
+locale_hint: en_US
+must_haves:
+- Production LLM-agent experience — not demos, not notebook prototypes
+- >-
+  Domain-integration awareness — Harvey's product lives inside legal workflows
+  (contract review, due diligence, research), so bullets must show the candidate
+  can navigate a regulated, jargon-heavy vertical
+- Eval-driven development for LLMs — latency, accuracy, hallucination rates
+plus_signals:
+- Legal tech, regulated industries, or compliance-software background
+- Prior work at a frontier lab or enterprise AI company (the Harvey pipeline)
+- Multi-document / long-context LLM experience
+red_flags:
+- LLM work limited to consumer-facing chat features with no domain depth
+- Missing eval / accuracy / hallucination framing for agent roles
+- Backend-only résumé with no integration into a vertical application layer
+format_rules:
+- 1-2 pages, no photo
+- Per ML bullet — model + eval metric + deployment context (and which legal /
+  domain workflow the feature served)
+keyword_anchors:
+- legal AI
+- long context
+- RAG
+- agents
+- hallucination
+- evals
+- contract review
+- regulated
+enrich_bias: >-
+  This résumé will be reviewed by Harvey. Surface domain-anchored LLM work —
+  each agent or model bullet should name the workflow it served and the eval
+  metric that proved it worked. Harvey's customers are white-shoe law firms;
+  regulated-industry, legal-tech, or compliance-software experience is a clear
+  differentiator. Avoid framing LLM work as generic chat or consumer features.
+review_tips: >-
+  Harvey reviewers look for production agent experience, eval-driven LLM
+  development, and awareness of regulated / vertical workflows. Flag: LLM
+  résumés without eval metrics, agent work framed as demos, and missing domain
+  context on customer-facing bullets.
