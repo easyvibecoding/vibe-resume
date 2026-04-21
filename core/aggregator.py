@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 import orjson
+import yaml
 from rich.console import Console
 
 from core.classifier import capability_breadth, tally_categories
@@ -174,6 +175,65 @@ def _project_key(act: Activity) -> str:
     return f"{act.source.value}:misc"
 
 
+def _load_prior_enrichment() -> dict[str, dict[str, Any]]:
+    """Carry LLM-written achievements/summary forward across aggregate runs.
+
+    Without this, running `aggregate` after `enrich` would blow away the
+    LLM output. Only projects that actually have a summary or bullets are
+    preserved — projects aggregated-but-never-enriched shouldn't
+    resurrect themselves with blank content.
+    """
+    prior: dict[str, dict[str, Any]] = {}
+    if not GROUPS_PATH.exists():
+        return prior
+    try:
+        for g in orjson.loads(GROUPS_PATH.read_bytes()):
+            if g.get("achievements") or g.get("summary"):
+                prior[g["name"]] = {
+                    "summary": g.get("summary"),
+                    "achievements": g.get("achievements"),
+                    "headline": g.get("headline"),
+                    "tech_stack": g.get("tech_stack"),
+                    "domain_tags": g.get("domain_tags"),
+                }
+    except (orjson.JSONDecodeError, KeyError):
+        pass
+    return prior
+
+
+def _load_user_metrics() -> dict[str, list[str]]:
+    """Read `project_metrics:` from profile.yaml so users can hand-supply
+    impact numbers the extractors couldn't infer (revenue moved, users
+    reached, etc). Absent / malformed profile: empty dict, no error."""
+    profile_path = ROOT / "profile.yaml"
+    if not profile_path.exists():
+        return {}
+    try:
+        pdata = yaml.safe_load(profile_path.read_text()) or {}
+    except (OSError, yaml.YAMLError):
+        return {}
+    metrics = pdata.get("project_metrics") or {}
+    return metrics if isinstance(metrics, dict) else {}
+
+
+def _metrics_for_project(
+    display_name: str, all_metrics: dict[str, list[str]]
+) -> list[str]:
+    """Fuzzy-match lookup: profile keys don't have to exactly match the
+    extractor-inferred project name. Either side being a substring of the
+    other counts as a hit. First name-match wins (dict order) — a
+    non-list value for that key yields `[]` and we do NOT keep searching,
+    matching the pre-refactor behaviour."""
+    dn = display_name.lower()
+    for k, v in all_metrics.items():
+        k_lc = k.lower()
+        if k_lc in dn or dn in k_lc:
+            if isinstance(v, list):
+                return [str(m) for m in v]
+            return []
+    return []
+
+
 def aggregate_from_cache(cfg: dict[str, Any], cache_dir: Path) -> list[ProjectGroup]:
     pf = PrivacyFilter(cfg)
     all_acts: list[Activity] = []
@@ -185,33 +245,8 @@ def aggregate_from_cache(cfg: dict[str, Any], cache_dir: Path) -> list[ProjectGr
             if pa is not None:
                 all_acts.append(pa)
 
-    # Preserve enrichment from any previous run, keyed by display name.
-    prior_enrich: dict[str, dict[str, Any]] = {}
-    if GROUPS_PATH.exists():
-        try:
-            for g in orjson.loads(GROUPS_PATH.read_bytes()):
-                if g.get("achievements") or g.get("summary"):
-                    prior_enrich[g["name"]] = {
-                        "summary": g.get("summary"),
-                        "achievements": g.get("achievements"),
-                        "headline": g.get("headline"),
-                        "tech_stack": g.get("tech_stack"),
-                        "domain_tags": g.get("domain_tags"),
-                    }
-        except (orjson.JSONDecodeError, KeyError):
-            pass
-
-    # Load project_metrics from profile.yaml, if present.
-    user_metrics: dict[str, list[str]] = {}
-    profile_path = ROOT / "profile.yaml"
-    if profile_path.exists():
-        try:
-            import yaml
-
-            pdata = yaml.safe_load(profile_path.read_text()) or {}
-            user_metrics = pdata.get("project_metrics") or {}
-        except (OSError, yaml.YAMLError):
-            pass
+    prior_enrich = _load_prior_enrichment()
+    user_metrics = _load_user_metrics()
 
     buckets: dict[str, list[Activity]] = defaultdict(list)
     for a in all_acts:
@@ -241,13 +276,7 @@ def aggregate_from_cache(cfg: dict[str, Any], cache_dir: Path) -> list[ProjectGr
         canonical_tech = canonical_list(sorted(tech))
 
         prior = prior_enrich.get(display_name, {})
-        # Look up user-supplied metrics by project name (case/fuzzy tolerant).
-        project_metrics: list[str] = []
-        for k, v in user_metrics.items():
-            if k.lower() in display_name.lower() or display_name.lower() in k.lower():
-                if isinstance(v, list):
-                    project_metrics = [str(m) for m in v]
-                break
+        project_metrics = _metrics_for_project(display_name, user_metrics)
 
         grp = ProjectGroup(
             name=display_name,
