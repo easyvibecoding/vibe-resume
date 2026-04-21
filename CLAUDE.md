@@ -104,8 +104,18 @@ This repo **is** an installable Agent Skill in addition to being a CLI tool:
   body format (When to Use / Quick Reference / Procedure / Pitfalls /
   Verification) and indexes via `skills.sh` (needs `hermes-agent` GitHub topic).
 
+Both skill directories follow [agentskills.io](https://agentskills.io/specification)'s
+progressive-disclosure layout. Advanced content lives under
+`references/` (one-level-deep per spec) and is loaded on demand:
+`strategic-resume.md` (`--company`/`--level` axis), `troubleshooting.md`
+(failure-mode playbook), and `extending.md` (Activity schema + extractor
+registration — `.claude/` variant only). Frontmatter compliance is
+guarded by `tests/test_skill_spec.py`.
+
 When updating workflow documentation, update **both** SKILL.md files plus
-`AGENTS.md` (Cursor CLI reads AGENTS.md natively). The `docs/samples/`
+`AGENTS.md` (Cursor CLI reads AGENTS.md natively). If you move content
+into `references/`, update both skill variants and the spec-validator
+test if a new subdirectory pattern is introduced. The `docs/samples/`
 gallery (linked from README §Multi-locale rendering) is hand-crafted
 illustrative output — do **not** regenerate from the user's real profile.
 
