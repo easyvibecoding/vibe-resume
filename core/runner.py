@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib
+import os
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -20,7 +21,7 @@ from rich.progress import (
 from extractors.base import save_activities
 
 console = Console()
-ROOT = Path(__file__).parent.parent
+ROOT = Path(os.environ.get("VIBE_RESUME_ROOT") or Path(__file__).parent.parent)
 CACHE_DIR = ROOT / "data" / "cache"
 
 LOCAL_EXTRACTORS = [

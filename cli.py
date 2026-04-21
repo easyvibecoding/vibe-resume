@@ -1,6 +1,7 @@
 """AI-used-resume CLI entry point."""
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import click
@@ -10,7 +11,7 @@ from rich.table import Table
 from core.config import load_config
 
 console = Console()
-ROOT = Path(__file__).parent
+ROOT = Path(os.environ.get("VIBE_RESUME_ROOT") or Path(__file__).parent)
 
 
 @click.group()

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import math
+import os
 import re
 from collections import defaultdict
 from pathlib import Path
@@ -19,7 +20,7 @@ from extractors.base import load_activities
 
 console = Console()
 
-ROOT = Path(__file__).parent.parent
+ROOT = Path(os.environ.get("VIBE_RESUME_ROOT") or Path(__file__).parent.parent)
 GROUPS_PATH = ROOT / "data" / "cache" / "_project_groups.json"
 OBSERVED_SUMMARY_PATH = ROOT / "data" / "cache" / "_observed_summary.json"
 WINDOW_STATS_PATH = ROOT / "data" / "cache" / "_window_stats.json"
