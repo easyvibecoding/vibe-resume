@@ -31,7 +31,9 @@ class WindowStats:
     projects_touched: int
     top_projects: list[dict] = field(default_factory=list)
     by_source: dict[str, int] = field(default_factory=dict)
-    by_category: dict[str, int] = field(default_factory=dict)
+    # `by_category` was serialised as an always-empty dict from an earlier
+    # TODO placeholder. Dropped in the 2026-04 quality pass — callers should
+    # read `ProjectGroup.category_counts` directly for a category breakdown.
     git_commits: int = 0
 
     def to_dict(self) -> dict:
@@ -60,6 +62,26 @@ def _monday_of(d: datetime) -> datetime:
     return (d - timedelta(days=d.weekday())).replace(
         hour=0, minute=0, second=0, microsecond=0
     )
+
+
+def _longest_active_day_streak(iso_dates: list[str]) -> int:
+    """Longest run of consecutive active days, given a set of ISO-date strings.
+
+    Input need not be sorted or deduplicated; empty input returns 0.
+    Kept pure and side-effect free so it can be tested without constructing
+    a whole ProjectGroup tree.
+    """
+    if not iso_dates:
+        return 0
+    unique_sorted = sorted(set(iso_dates))
+    longest = current = 1
+    prev = datetime.fromisoformat(unique_sorted[0])
+    for dstr in unique_sorted[1:]:
+        d = datetime.fromisoformat(dstr)
+        current = current + 1 if (d - prev).days == 1 else 1
+        longest = max(longest, current)
+        prev = d
+    return longest
 
 
 def compute_window_stats(
@@ -93,7 +115,6 @@ def compute_window_stats(
     per_week: Counter[str] = Counter()
     per_project: Counter[str] = Counter()
     per_source: Counter[str] = Counter()
-    per_category: Counter[str] = Counter()
     git_count = 0
 
     for a, g in win:
@@ -106,22 +127,8 @@ def compute_window_stats(
         per_source[a.source.value] += 1
         if a.source == Source.GIT:
             git_count += a.extra.get("commits", 0) if a.extra else 0
-        for cat in g.category_counts:
-            # light proxy: don't double-count; credit the group's dominant categories
-            pass
 
-    # Active-day streak
-    active_days_sorted = sorted(per_day.keys())
-    longest = cur = 0
-    prev: datetime | None = None
-    for dstr in active_days_sorted:
-        d = datetime.fromisoformat(dstr)
-        if prev is not None and (d - prev).days == 1:
-            cur += 1
-        else:
-            cur = 1
-        longest = max(longest, cur)
-        prev = d
+    longest = _longest_active_day_streak(list(per_day.keys()))
 
     # peak day / week
     peak_day_str, peak_day_n = per_day.most_common(1)[0]
@@ -153,6 +160,5 @@ def compute_window_stats(
         projects_touched=len(per_project),
         top_projects=top_projects,
         by_source=dict(per_source),
-        by_category=dict(per_category),
         git_commits=git_count,
     )
