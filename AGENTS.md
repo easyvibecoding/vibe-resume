@@ -53,13 +53,61 @@ Project-scope paths only fire when the agent runs inside this clone. To make
 the skill's trigger phrases available anywhere, use whichever installer matches
 your agent's ecosystem:
 
-**Tier 1 — 35+ `agentskills.io`-standard hosts** (Claude Code, Cursor,
-Windsurf, Gemini CLI, GitHub Copilot, Codex, Qwen, Kimi, Roo, Kilo, Goose,
-Trae, OpenCode, Amp, Antigravity, Kiro, Factory, Junie, Letta, Mux,
-Emdash, Workshop, Laravel Boost, Spring AI, …):
+**Tier 1 — `agentskills.io`-standard hosts** (37 confirmed as of 2026-04,
+snapshot below):
+
 ```bash
 npx skills add easyvibecoding/vibe-resume --skill ai-used-resume
 ```
+
+<details>
+<summary>Full list (37 hosts from the agentskills.io adoption carousel)</summary>
+
+| # | Host | Type |
+|---|---|---|
+| 1 | Claude Code | Anthropic terminal/IDE agent |
+| 2 | Claude (claude.ai) | Anthropic web |
+| 3 | Cursor | AI IDE + coding agent |
+| 4 | GitHub Copilot | IDE assistant |
+| 5 | VS Code | Editor agent integration |
+| 6 | Gemini CLI | Google terminal agent |
+| 7 | OpenAI Codex | OpenAI coding agent |
+| 8 | OpenHands | Open cloud agents platform |
+| 9 | OpenCode | Terminal/IDE/desktop agent |
+| 10 | Goose | Block, extensible agent |
+| 11 | Amp | Frontier coding agent |
+| 12 | Kiro | Spec-driven development |
+| 13 | Factory | Multi-surface dev platform |
+| 14 | Junie | JetBrains IntelliJ-native agent |
+| 15 | Letta | Stateful agents w/ memory |
+| 16 | Mux | Parallel coding agents |
+| 17 | Emdash | Desktop parallel agents |
+| 18 | Workshop | Multi-LLM app builder |
+| 19 | Piebald | Desktop + web agent |
+| 20 | Firebender | Android-native agent |
+| 21 | Roo Code | Editor AI dev team |
+| 22 | TRAE | Adaptive AI IDE (ByteDance) |
+| 23 | Autohand Code CLI | Autonomous ReAct agent |
+| 24 | pi | Minimal terminal harness |
+| 25 | VT Code | Open-source coding agent |
+| 26 | Command Code | Taste-learning agent |
+| 27 | Qodo | Code-integrity platform |
+| 28 | Ona | Background agent orchestrator |
+| 29 | Agentman | Healthcare revenue-cycle agent |
+| 30 | Databricks Genie Code | Databricks data agent |
+| 31 | Snowflake Cortex Code | Snowflake data agent |
+| 32 | Spring AI | Java AI framework |
+| 33 | Laravel Boost | Laravel-specific skills |
+| 34 | Mistral AI Vibe | Mistral terminal agent |
+| 35 | Google AI Edge Gallery | On-device LLMs |
+| 36 | nanobot | Multi-platform personal agent |
+| 37 | fast-agent | Skills-dev framework |
+
+</details>
+
+Beyond this open-standard group, this repo's manual-install tier-1 table
+(the "Host discovery matrix" above) covers 7 specific hosts where we've
+wired up explicit discovery paths and symlinks.
 
 **Tier 2 — OpenClaw** (own ClawHub marketplace):
 ```bash
