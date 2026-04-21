@@ -39,6 +39,7 @@ from typing import Any
 from docx import Document
 from docx.enum.table import WD_ALIGN_VERTICAL
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.image.exceptions import UnrecognizedImageError
 from docx.shared import Cm, Pt
 from rich.console import Console
 
@@ -127,7 +128,7 @@ def _personal_info_table(doc, profile: dict[str, Any], photo_path: Path | None) 
         run = photo_cell.paragraphs[0].add_run()
         try:
             run.add_picture(str(photo_path), width=Cm(3.0), height=Cm(4.0))
-        except Exception as e:
+        except (OSError, UnrecognizedImageError) as e:
             console.print(f"[yellow]photo embed failed:[/yellow] {e}")
             _set_cell_text(photo_cell, "写真貼付欄\n40mm × 30mm",
                            size=LABEL_FONT_SIZE, align=WD_ALIGN_PARAGRAPH.CENTER)

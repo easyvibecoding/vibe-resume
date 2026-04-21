@@ -201,6 +201,7 @@ def _render_docx_header(doc, profile: dict, photo_path: str | None, photo_expect
     name + title + contacts block."""
     from docx.enum.table import WD_ALIGN_VERTICAL
     from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.image.exceptions import UnrecognizedImageError
     from docx.shared import Cm, Pt
 
     contacts = [profile.get(k) for k in ("email", "phone", "location", "linkedin", "github", "website")]
@@ -241,7 +242,7 @@ def _render_docx_header(doc, profile: dict, photo_path: str | None, photo_expect
         right_p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
         try:
             right_p.add_run().add_picture(str(photo_path), width=Cm(3.0), height=Cm(4.0))
-        except Exception as e:
+        except (OSError, UnrecognizedImageError) as e:
             console.print(f"[yellow]photo embed failed for {locale_key}:[/yellow] {e}")
         return
 
