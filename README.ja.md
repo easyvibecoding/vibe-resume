@@ -443,11 +443,13 @@ MIT —— [LICENSE](LICENSE) を参照。
 
 ## 関連プロジェクト
 
-- [sujankapadia/claude-code-analytics](https://github.com/sujankapadia/claude-code-analytics) —— セッション分析ダッシュボード
-- [yudppp/claude-code-history-mcp](https://github.com/yudppp/claude-code-history-mcp) —— MCP history server
-- [alicoding/claude-parser](https://github.com/alicoding/claude-parser) —— Git-like conversation API
-- [daaain/claude-code-log](https://github.com/daaain/claude-code-log) —— HTML タイムライン
-- [S2thend/cursor-history](https://github.com/S2thend/cursor-history) —— Cursor チャットエクスポート
-- [AndreaCadonna/resumake-mcp](https://github.com/AndreaCadonna/resumake-mcp) —— LaTeX 履歴書 MCP
+2026 年のエコシステムを徹底調査した結果、**直接的な競合は存在しません** ——
+(1) マルチソース AI ツール抽出、(2) 10 ロケール対応レンダリング、(3) レビュー監査、
+この 3 点すべてを同時に満たすツールはありません。最も近い隣接プロジェクトもいずれか 1 点のみのカバー:
 
-`vibe-resume` の差別化ポイントは、**ツールを横断して集約**し、生データの dump ではなく「履歴書向け」の bullet を生成することです。
+- [whoisjayd/gitresume](https://github.com/whoisjayd/gitresume) —— 最も近い隣接ツール;ローカル / リモートの GitHub リポから抽出 → 履歴書 bullet を生成。シングルソース(git のみ)・シングル言語。`vibe-resume` は 18 種の AI ツール extractor、10 ロケール、レビュー監査を追加。
+- [AmirhosseinOlyaei/AI-Resume-Builder](https://github.com/AmirhosseinOlyaei/AI-Resume-Builder) —— PR 説明と commit メッセージから bullet を生成。同じ thesis ですがソースが狭い(Claude Code / Cursor / ChatGPT は非対応)。
+- [AndreaCadonna/resumake-mcp](https://github.com/AndreaCadonna/resumake-mcp) —— MCP 経由で LaTeX 履歴書を生成。レンダリング専門で抽出層なし。本ツールの pipeline のレンダリング段に対する補完関係。
+- [javiera-vasquez/claude-code-job-tailor](https://github.com/javiera-vasquez/claude-code-job-tailor) —— Claude Code 内で YAML 履歴書を JD-tailored PDF に整形。JD マッチング段での補完関係;本ツールの `--tailor` と同じ発想ですが、手で書いた YAML ではなく抽出済みの活動データから開始します。
+
+`vibe-resume` は本リスト中で唯一、**複数の AI ツールからの抽出 + 10 種の文化固有ロケールでのレンダリング + トレンド追跡付きレビュー監査**をすべて同時に実現するツールです。

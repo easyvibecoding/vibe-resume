@@ -493,12 +493,14 @@ MIT — see [LICENSE](LICENSE).
 
 ## Related projects
 
-- [sujankapadia/claude-code-analytics](https://github.com/sujankapadia/claude-code-analytics) — session analytics dashboard
-- [yudppp/claude-code-history-mcp](https://github.com/yudppp/claude-code-history-mcp) — MCP history server
-- [alicoding/claude-parser](https://github.com/alicoding/claude-parser) — Git-like conversation API
-- [daaain/claude-code-log](https://github.com/daaain/claude-code-log) — HTML timeline
-- [S2thend/cursor-history](https://github.com/S2thend/cursor-history) — Cursor chat export
-- [AndreaCadonna/resumake-mcp](https://github.com/AndreaCadonna/resumake-mcp) — LaTeX résumé MCP
+Searched the 2026 landscape thoroughly — **no direct competitor** does all three of
+(1) multi-source AI-tool extraction, (2) 10-locale rendering, and (3) reviewer audit.
+The closest adjacent projects cover only one of the three:
 
-`vibe-resume` differs by **aggregating across tools** and producing resume-oriented bullets, not raw dumps.
+- [whoisjayd/gitresume](https://github.com/whoisjayd/gitresume) — closest adjacent tool; extracts from local/remote GitHub repos → résumé bullets. Single-source (git only), single-language. `vibe-resume` adds 18 AI-tool extractors, 10 locales, and the reviewer audit.
+- [AmirhosseinOlyaei/AI-Resume-Builder](https://github.com/AmirhosseinOlyaei/AI-Resume-Builder) — generates bullets from PR descriptions and commit messages. Same thesis, narrower source (no Claude Code / Cursor / ChatGPT).
+- [AndreaCadonna/resumake-mcp](https://github.com/AndreaCadonna/resumake-mcp) — LaTeX résumé via MCP; render-only, no extraction layer. Complementary to our pipeline's render stage.
+- [javiera-vasquez/claude-code-job-tailor](https://github.com/javiera-vasquez/claude-code-job-tailor) — YAML experience → JD-tailored PDF in Claude Code. Complementary at the JD-match stage; our `--tailor` is the same idea but starts from extracted activity rather than hand-maintained YAML.
+
+`vibe-resume` is the only tool in this list that **extracts from multiple AI tools + renders in 10 culture-specific locales + includes reviewer audit with trend tracking**.
 

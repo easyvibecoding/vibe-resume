@@ -443,11 +443,12 @@ MIT —— 見 [LICENSE](LICENSE)。
 
 ## 相關專案
 
-- [sujankapadia/claude-code-analytics](https://github.com/sujankapadia/claude-code-analytics) —— session 分析儀表板
-- [yudppp/claude-code-history-mcp](https://github.com/yudppp/claude-code-history-mcp) —— MCP history server
-- [alicoding/claude-parser](https://github.com/alicoding/claude-parser) —— Git-like conversation API
-- [daaain/claude-code-log](https://github.com/daaain/claude-code-log) —— HTML 時間軸
-- [S2thend/cursor-history](https://github.com/S2thend/cursor-history) —— Cursor 聊天匯出
-- [AndreaCadonna/resumake-mcp](https://github.com/AndreaCadonna/resumake-mcp) —— LaTeX 履歷 MCP
+徹底搜過 2026 的生態 —— **沒有直接對手**同時做到
+(1) 多來源 AI 工具萃取、(2) 10 locale 渲染、(3) reviewer 審計。最接近的幾家只覆蓋其中一項:
 
-`vibe-resume` 的差異在於**跨工具聚合**並產生「履歷取向」的條目,而非原始 dump。
+- [whoisjayd/gitresume](https://github.com/whoisjayd/gitresume) —— 最接近的同領域工具;從本地 / remote GitHub repo 萃取 → 履歷 bullet。單一來源(只有 git)、單語。`vibe-resume` 多了 18 個 AI 工具 extractor、10 locale、reviewer 審計。
+- [AmirhosseinOlyaei/AI-Resume-Builder](https://github.com/AmirhosseinOlyaei/AI-Resume-Builder) —— 從 PR 描述與 commit message 生 bullet。同樣的 thesis,但來源更窄(沒有 Claude Code / Cursor / ChatGPT)。
+- [AndreaCadonna/resumake-mcp](https://github.com/AndreaCadonna/resumake-mcp) —— 透過 MCP 產生 LaTeX 履歷;只做 render,沒有 extraction 層。互補我們 pipeline 的 render 階段。
+- [javiera-vasquez/claude-code-job-tailor](https://github.com/javiera-vasquez/claude-code-job-tailor) —— 在 Claude Code 內把 YAML 履歷客製成 JD-tailored PDF。互補於 JD 媒合階段;我們的 `--tailor` 概念相同,但從萃取出的活動開始,而非手動維護的 YAML。
+
+`vibe-resume` 是此清單中唯一同時做到**多 AI 工具萃取 + 10 個文化專屬 locale 渲染 + reviewer 審計含趨勢追蹤**的工具。
