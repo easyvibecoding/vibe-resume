@@ -568,6 +568,365 @@ COMPANY_PROFILES: dict[str, CompanyProfile] = {
             "backend roles without a QPS / DAU / messaging-volume scale line."
         ),
     ),
+    "nvidia": CompanyProfile(
+        key="nvidia",
+        label="NVIDIA",
+        tier=TIER_FRONTIER_AI,
+        locale_hint="en_US",
+        must_haves=(
+            "Deep-learning framework fluency (PyTorch / JAX / TensorFlow) with "
+            "a clear algorithm-implementation track record",
+            "Reverse-chronological layout with 3-6 bullets per role (more for "
+            "recent, fewer for older)",
+            "Tailored alignment to the specific JD — NVIDIA's recruiters state "
+            "they read for keyword overlap before depth",
+        ),
+        plus_signals=(
+            "CUDA / Triton / TensorRT / cuDNN low-level optimisation work",
+            "Referral from an NVIDIA insider — still a meaningful funnel advantage",
+            "GPU-adjacent research (kernels, numerics, mixed-precision, "
+            "parallelism)",
+        ),
+        red_flags=(
+            "ML-applied résumé with no systems-level depth for infra or kernel "
+            "roles",
+            "Missing framework-version specificity ('used PyTorch' without "
+            "saying which version or feature set)",
+            "Bulk-applied résumé with no keyword match to the target JD",
+        ),
+        format_rules=(
+            "1-2 pages; classic reverse-chronological",
+            "Clean header with contact details first; no photo",
+            "Tech-stack section should name frameworks + CUDA/GPU specifics "
+            "where relevant",
+        ),
+        keyword_anchors=(
+            "CUDA", "PyTorch", "JAX", "TensorRT", "cuDNN", "Triton",
+            "kernel", "mixed precision",
+        ),
+        enrich_bias=(
+            "This résumé will be reviewed by NVIDIA. Prefer algorithm-level "
+            "and kernel-level language over framework-user language: name "
+            "specific CUDA primitives, mixed-precision strategies, or "
+            "parallelism patterns the candidate implemented. For DL / ML "
+            "roles, surface the hardware substrate — which GPUs, which "
+            "interconnect, which numerics trade-off. Match the target JD's "
+            "keyword list before polishing prose."
+        ),
+        review_tips=(
+            "NVIDIA reviewers filter on framework depth + hardware-aware "
+            "language + JD keyword match. Flag: ML bullets with no hardware "
+            "or framework-version specificity; résumés that read identical "
+            "for every NVIDIA JD; reverse-chron layout violations."
+        ),
+    ),
+    "apple": CompanyProfile(
+        key="apple",
+        label="Apple (AIML / MLR)",
+        tier=TIER_FRONTIER_AI,
+        locale_hint="en_US",
+        must_haves=(
+            "PhD in CS / ML / related technical field (or equivalent "
+            "practical research experience)",
+            "Peer-reviewed publications at NeurIPS / ICML / ICLR / AAAI / "
+            "CVPR / ICCV / ECCV / ACL / EMNLP",
+            "Hands-on deep-learning toolkit fluency (PyTorch primary), with "
+            "strong linear-algebra / statistics foundation",
+        ),
+        plus_signals=(
+            "Ability to formulate a research problem from scratch — not just "
+            "execute a defined one (Apple's MLR hires curiosity-driven "
+            "researchers)",
+            "On-device / privacy-preserving ML experience (Apple's "
+            "differentiating area)",
+            "Long-term curiosity-driven research rather than quarterly-ship "
+            "cadence",
+        ),
+        red_flags=(
+            "Research résumé without publications at a recognised venue",
+            "Short-tenure jumps that imply the candidate cannot sustain the "
+            "multi-year research arcs Apple MLR is built around",
+            "Industry-shipping narrative framed as research",
+        ),
+        format_rules=(
+            "1-2 pages for ICs; publication list may overflow to extra page",
+            "No photo",
+            "Each publication entry: venue + year + role + link to paper",
+        ),
+        keyword_anchors=(
+            "publication", "PhD", "PyTorch", "on-device",
+            "privacy-preserving", "CVPR", "ICML", "research",
+        ),
+        enrich_bias=(
+            "This résumé will be reviewed by Apple's Machine Learning "
+            "Research team. Emphasise curiosity-driven long-term research — "
+            "multi-year projects with a clear research question, not "
+            "quarterly shipping wins. Publications are primary. If the "
+            "candidate has on-device or privacy-preserving ML experience, "
+            "surface it early — that is Apple's differentiator. Frame "
+            "industry work as research-infrastructure-enabling."
+        ),
+        review_tips=(
+            "Apple MLR reviewers filter on venue quality + sustained research "
+            "arcs + on-device / privacy angle when present. Flag: "
+            "publication-free research résumés; short-tenure churn; bullets "
+            "that read like product shipping rather than research contribution."
+        ),
+    ),
+    "microsoft": CompanyProfile(
+        key="microsoft",
+        label="Microsoft (Applied Scientist / ML Engineer)",
+        tier=TIER_FRONTIER_AI,
+        locale_hint="en_US",
+        must_haves=(
+            "MS/PhD in CS/EE + 2+ years ML/NLP/data-mining experience, OR "
+            "BS + 4+ years in the same",
+            "Hands-on ML-framework fluency: PyTorch, TensorFlow, HuggingFace, "
+            "ONNX at minimum",
+            "Azure / cloud experience — Microsoft expects cloud literacy "
+            "alongside ML depth",
+        ),
+        plus_signals=(
+            "ATS-friendly reverse-chronological format — Microsoft's ATS is "
+            "configured for it",
+            "Cross-functional collaboration with PM / data / research / "
+            "customer-facing roles",
+            "Responsible-AI / safety / red-teaming exposure",
+        ),
+        red_flags=(
+            "Non-standard layouts (two-column creative templates) that "
+            "confuse ATS parsers",
+            "ML-only narrative with no cloud / platform / productisation "
+            "dimension",
+            "Missing cross-functional collaboration evidence for senior roles",
+        ),
+        format_rules=(
+            "Reverse-chronological, ATS-friendly",
+            "1-2 pages",
+            "Explicit framework + Azure service names for ATS keyword "
+            "matching",
+        ),
+        keyword_anchors=(
+            "Azure", "PyTorch", "HuggingFace", "ONNX", "responsible AI",
+            "applied scientist", "cross-functional",
+        ),
+        enrich_bias=(
+            "This résumé will be reviewed by Microsoft for an Applied "
+            "Scientist or ML Engineer role. Use reverse-chronological, "
+            "ATS-friendly layout. Name ML frameworks and Azure services "
+            "explicitly — Microsoft's ATS keys on these. Surface cross-"
+            "functional collaboration (PM / data / research / customer-"
+            "facing) because Microsoft's applied-science roles sit between "
+            "research and product."
+        ),
+        review_tips=(
+            "Microsoft reviewers scan ATS-parseable reverse-chron résumés "
+            "for framework + Azure service mentions and cross-functional "
+            "language. Flag: creative layouts that ATS-misparse; pure-ML "
+            "narratives with no cloud dimension; missing PM / customer-"
+            "facing collaboration for senior candidates."
+        ),
+    ),
+    # ---------------- B. AI unicorns -----------------------------------------
+    "cohere": CompanyProfile(
+        key="cohere",
+        label="Cohere",
+        tier=TIER_AI_UNICORN,
+        locale_hint="en_US",
+        must_haves=(
+            "Production-grade LLM system experience — not just demos or "
+            "notebooks",
+            "Enterprise-integration awareness: RAG, retrieval, permissions, "
+            "on-prem / VPC deployment",
+            "Clear ML × software-engineering balance (Cohere hires engineers "
+            "who can both train and deploy)",
+        ),
+        plus_signals=(
+            "Multilingual / multi-tenant LLM product work",
+            "Open-source ML contributions with accepted PRs",
+            "Published research papers on LLM methods",
+        ),
+        red_flags=(
+            "LLM experience that tops out at OpenAI-API wrapping",
+            "No deployment / reliability dimension — Cohere's customers "
+            "are enterprises",
+            "Missing retrieval / embedding / RAG vocabulary for applied "
+            "roles",
+        ),
+        format_rules=(
+            "1-2 pages, no photo",
+            "Name the LLM family + training regime (pre-train / fine-tune / "
+            "RLHF) for each ML bullet",
+            "Surface enterprise-grade concerns (latency SLO, multi-tenant, "
+            "privacy) explicitly",
+        ),
+        keyword_anchors=(
+            "LLM", "RAG", "retrieval", "embeddings", "fine-tuning",
+            "enterprise", "on-prem", "multi-tenant",
+        ),
+        enrich_bias=(
+            "This résumé will be reviewed by Cohere. Surface production LLM "
+            "work — training, fine-tuning, RAG, evaluation — paired with "
+            "the engineering substrate that lets it serve enterprise "
+            "customers (permissions, multi-tenant, on-prem, SLOs). Avoid "
+            "framing LLM work as prompt-engineering or API-wrapping if the "
+            "real depth is there."
+        ),
+        review_tips=(
+            "Cohere reviewers read for LLM-depth + enterprise-deployment "
+            "awareness together. Flag: LLM bullets that stop at demos or "
+            "API-wrapping; missing deployment / reliability dimension; "
+            "retrieval roles without RAG / embeddings vocabulary."
+        ),
+    ),
+    "hugging_face": CompanyProfile(
+        key="hugging_face",
+        label="Hugging Face",
+        tier=TIER_AI_UNICORN,
+        locale_hint="en_US",
+        must_haves=(
+            "Substantial open-source contribution record — HF Hub, "
+            "Transformers, Datasets, Diffusers, or comparable ecosystems",
+            "Public artefact trail: merged PRs, published Spaces / models, "
+            "blog posts, community work",
+            "Democratisation mindset: work framed around enabling other "
+            "researchers / developers, not proprietary advantage",
+        ),
+        plus_signals=(
+            "Kaggle / CTF / ML-competition placements",
+            "Talks at OSS conferences (PyTorch, EuroPython, ML meetups)",
+            "Community moderation or maintainer responsibilities",
+        ),
+        red_flags=(
+            "Engineering-strong candidate with no public ML artefact — HF "
+            "treats OSS trail as baseline",
+            "Closed-source-only track record for non-infra roles",
+            "Generic résumé with no HF-ecosystem familiarity",
+        ),
+        format_rules=(
+            "1-2 pages",
+            "Link every claim to a public artefact: repo, Space, model, "
+            "paper, PR, or blog post",
+            "HF Hub username prominently displayed; no photo",
+        ),
+        keyword_anchors=(
+            "Transformers", "Datasets", "Diffusers", "HF Hub", "OSS",
+            "community", "Spaces", "accelerate",
+        ),
+        enrich_bias=(
+            "This résumé will be reviewed by Hugging Face. Every ML-related "
+            "bullet should resolve to a public artefact — a merged PR, a "
+            "published model, a Space, a blog post, a conference talk. The "
+            "review team follows the links. Frame contributions in terms "
+            "of democratising ML access, not proprietary competitive edge."
+        ),
+        review_tips=(
+            "Hugging Face reviewers follow public-artefact links. Flag: "
+            "engineering strength with no OSS / community trail; "
+            "proprietary-product-only framing for non-infra roles; "
+            "unsubstantiated ML claims (no repo, no Space, no paper)."
+        ),
+    ),
+    "databricks": CompanyProfile(
+        key="databricks",
+        label="Databricks",
+        tier=TIER_AI_UNICORN,
+        locale_hint="en_US",
+        must_haves=(
+            "Strong DSA / algorithmic problem-solving — Databricks leans on "
+            "medium-to-hard coding rounds (graphs, DP, concurrency)",
+            "Distributed-systems depth for ML infra roles (Spark, feature "
+            "stores, distributed training, serving)",
+            "2-3 references lined up — Databricks runs pre-offer reference "
+            "checks as standard",
+        ),
+        plus_signals=(
+            "Prior Spark / Lakehouse / MLflow / Unity Catalog contributions",
+            "Multi-threading and concurrency real-world experience",
+            "Recent conference talks or certifications (Databricks Summit, "
+            "SAIS, Snowflake certs all count)",
+        ),
+        red_flags=(
+            "ML résumé without distributed-systems vocabulary",
+            "Missing concurrency / multi-threading for backend / infra roles",
+            "No reference readiness — the process assumes 2-3 solid refs",
+        ),
+        format_rules=(
+            "1-2 pages, no photo",
+            "Distributed-systems terminology must appear explicitly for infra "
+            "roles (sharding, consensus, backpressure, partitioning)",
+            "Tech stack grouped by layer: data / training / serving / "
+            "feature store",
+        ),
+        keyword_anchors=(
+            "Spark", "Lakehouse", "MLflow", "Unity Catalog", "distributed",
+            "feature store", "concurrency", "DP",
+        ),
+        enrich_bias=(
+            "This résumé will be reviewed by Databricks. Lean into DSA + "
+            "distributed-systems signalling: name concurrency primitives, "
+            "sharding strategies, and specific Spark / Lakehouse / MLflow "
+            "components worked on. For ML infra roles, surface the feature-"
+            "store / distributed-training / serving triad explicitly. "
+            "Remember 2-3 references are needed pre-offer."
+        ),
+        review_tips=(
+            "Databricks reviewers filter on DSA + distributed depth + "
+            "reference readiness. Flag: ML bullets without distributed-"
+            "systems language; backend roles without concurrency signals; "
+            "candidates without 2-3 ready references."
+        ),
+    ),
+    "perplexity": CompanyProfile(
+        key="perplexity",
+        label="Perplexity",
+        tier=TIER_AI_UNICORN,
+        locale_hint="en_US",
+        must_haves=(
+            "Retrieval + LLM combined experience — Perplexity's core is "
+            "real-time search × language models",
+            "Concrete vocabulary: embeddings, beam search, inference "
+            "optimisation, re-ranking, citation handling",
+            "Latency-awareness (p50 / p95 per-query) for user-facing roles",
+        ),
+        plus_signals=(
+            "Search-quality work: relevance, query understanding, ranking "
+            "evaluation",
+            "Citation / grounding / hallucination-mitigation research",
+            "Low-latency serving experience (streaming, speculative decoding)",
+        ),
+        red_flags=(
+            "LLM-only résumé with no retrieval / search dimension",
+            "Search résumé with no LLM integration",
+            "Latency-blind bullets for a product built on sub-second "
+            "response",
+        ),
+        format_rules=(
+            "1-2 pages, no photo",
+            "Per ML bullet: model + retrieval stack + latency SLO + "
+            "evaluation metric",
+            "Tech stack must reveal the search × LLM combination, not "
+            "just one side",
+        ),
+        keyword_anchors=(
+            "retrieval", "embeddings", "beam search", "re-ranking",
+            "citation", "grounding", "streaming", "inference",
+        ),
+        enrich_bias=(
+            "This résumé will be reviewed by Perplexity. Surface the "
+            "retrieval × LLM combination — Perplexity's product sits at "
+            "that intersection. Every ML bullet should name a model, a "
+            "retrieval stack, a latency budget, and an evaluation metric "
+            "(NDCG, precision, grounding score). Avoid framing that reads "
+            "as pure-LLM or pure-search — both must be visible."
+        ),
+        review_tips=(
+            "Perplexity reviewers scan for retrieval + LLM intersection + "
+            "latency discipline. Flag: LLM-only résumés with no search "
+            "dimension; search résumés with no LLM integration; bullets "
+            "without latency or relevance metrics."
+        ),
+    ),
 }
 
 
