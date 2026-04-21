@@ -1,0 +1,47 @@
+key: krafton
+label: Krafton
+tier: kr
+locale_hint: ko_KR
+must_haves:
+- >-
+  Game-engine fluency — Unreal primary for most Krafton titles (Unity
+  acceptable for mobile); proprietary-engine contribution a bonus
+- Strong C++ depth for engine / gameplay / network roles
+- Willingness to go through a multi-stage pipeline — Krafton SWE hiring
+  averages 60 days end-to-end
+plus_signals:
+- Shipped-title credit (Steam, console, mobile release with named role)
+- Multiplayer / networking / anti-cheat / matchmaking experience
+- Live-ops experience for long-tail games (Krafton runs PUBG, TERA, etc.)
+- Bilingual English / Korean working ability (Krafton's global studios)
+red_flags:
+- Game-dev résumé with no shipped-title credit at senior level
+- Pure-mobile C# résumé for engine / console roles
+- Missing networking or multiplayer dimension for live-ops roles
+format_rules:
+- Korean or English acceptable; photo expected in Korean-track submissions
+- 1-2 pages
+- Each shipped title named with platform, team size, and candidate's role
+  (gameplay / engine / network / tools)
+keyword_anchors:
+- Unreal
+- C++
+- multiplayer
+- anti-cheat
+- live ops
+- shipped title
+- networking
+- PUBG
+enrich_bias: >-
+  This résumé will be reviewed by Krafton. Shipped-title credit is the
+  strongest single currency — name platform, role, and team size for every
+  release. C++ + Unreal depth is the default expectation for engine /
+  gameplay roles. Live-ops, multiplayer networking, and anti-cheat are
+  studio-specific positives given Krafton's PUBG-driven portfolio. Note the
+  ~60-day SWE pipeline and plan accordingly.
+review_tips: >-
+  Krafton reviewers filter on shipped-title credit + Unreal / C++ depth +
+  networking or live-ops dimension where role-relevant. Flag: game-dev
+  résumés with no shipped credit at mid-plus level, pure mobile C# for
+  console / engine tracks, and missing multiplayer experience for
+  live-service titles.

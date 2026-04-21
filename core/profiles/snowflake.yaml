@@ -1,0 +1,49 @@
+key: snowflake
+label: Snowflake
+tier: us_tier2
+locale_hint: en_US
+must_haves:
+- >-
+  Data-platform or data-warehouse depth — Snowflake's product is the
+  cloud data platform, so résumé signals should orbit data, not generic
+  backend
+- Advanced SQL fluency plus one of C++ / Rust / Java / Go / Python at
+  production depth
+- Distributed-storage or query-engine awareness (sharding, pruning,
+  vectorised execution)
+plus_signals:
+- Columnar / vectorised query-engine contributions (Arrow, DuckDB,
+  ClickHouse, Iceberg, Delta Lake)
+- Multi-cloud deployment experience (AWS + Azure + GCP) — Snowflake runs on
+  all three
+- Snowflake Summit or other data-platform conference talks
+- Cost-optimisation or workload-isolation-at-scale work
+red_flags:
+- Generic-backend résumé with no data-platform or warehouse dimension
+- SQL framed as user-level only (no query-optimisation or plan awareness)
+- Missing multi-cloud or cost-efficiency angle for platform roles
+format_rules:
+- 1-2 pages, no photo
+- Every data bullet names rows / bytes processed, query latency, or cost
+  reduction
+- Multi-cloud experience should name the clouds explicitly
+keyword_anchors:
+- data platform
+- SQL
+- Snowflake
+- columnar
+- vectorised
+- query engine
+- Iceberg
+- multi-cloud
+enrich_bias: >-
+  This résumé will be reviewed by Snowflake. Emphasise data-platform depth
+  over generic backend — columnar storage, vectorised execution, query
+  planning, workload isolation, cost efficiency. SQL should appear as a
+  platform-builder concern (plans, pruning, optimisation), not only as a
+  user interface. Multi-cloud experience is a clear differentiator.
+review_tips: >-
+  Snowflake reviewers read for data-platform depth + query-engine awareness
+  + multi-cloud experience. Flag: generic-backend résumés for platform
+  roles, SQL framed only as user-level, missing plan / pruning /
+  optimisation vocabulary for engine candidates.

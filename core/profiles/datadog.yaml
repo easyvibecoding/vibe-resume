@@ -1,0 +1,48 @@
+key: datadog
+label: Datadog
+tier: us_tier2
+locale_hint: en_US
+must_haves:
+- >-
+  Metrics / logs / traces / observability mindset — Datadog hires engineers
+  who instinctively reach for instrumentation before guessing
+- Go or Python backend depth (Datadog's dominant server languages)
+- Large-scale data ingestion / time-series / storage engine experience for
+  platform roles
+plus_signals:
+- Open-source contributions to observability ecosystems (OpenTelemetry,
+  Prometheus, Jaeger, eBPF tooling)
+- Distributed-systems deep understanding (sharding, aggregation, cardinality
+  control)
+- On-call / incident-response experience with published post-mortems
+red_flags:
+- Claims of "built monitoring" without naming what was measured or what the
+  data proved
+- Missing cardinality / retention / aggregation awareness for metrics work
+- Backend résumé without any instrumentation or observability dimension
+format_rules:
+- 1-2 pages, no photo
+- Every reliability / performance bullet names a metric (p95, SLO, error
+  budget) — Datadog engineers expect numbers
+- Tech stack includes instrumentation layer (OpenTelemetry, DD agent,
+  Prometheus) when relevant
+keyword_anchors:
+- observability
+- metrics
+- traces
+- time series
+- OpenTelemetry
+- Go
+- p95
+- SLO
+enrich_bias: >-
+  This résumé will be reviewed by Datadog. Every performance or reliability
+  claim must name the metric that proved it — p95, error budget, SLO, event
+  rate. Backend roles should show instrumentation-first thinking — what was
+  measured before the change, what was measured after. Go + Python depth
+  is the baseline for server-side roles.
+review_tips: >-
+  Datadog reviewers filter on instrumentation-first thinking + metric-dense
+  framing + Go / Python depth. Flag: reliability claims without metrics,
+  "built monitoring" bullets with no dimensional detail, missing
+  observability vocabulary for platform candidates.

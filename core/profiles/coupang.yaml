@@ -1,0 +1,45 @@
+key: coupang
+label: Coupang
+tier: kr
+locale_hint: ko_KR
+must_haves:
+- >-
+  Large-scale e-commerce or logistics backend experience — Coupang's Rocket
+  Delivery platform runs high-QPS order / inventory / routing systems
+- Hangul-first résumé with English technical terms in parentheses for Korean ATS
+- Business-model + product awareness — Coupang phone-screens for this explicitly
+plus_signals:
+- Prior NKLCB company experience (Naver / Kakao / Line / Coupang / Baedal
+  Minjok / Danggeun / Toss) — a recognised trust signal
+- Warehouse / last-mile / fulfilment optimisation work
+- AWS / cloud-native backend depth (Coupang is heavy AWS)
+- Fintech (Coupang Pay) or content (Coupang Play) cross-product exposure
+red_flags:
+- English-only résumé without Hangul fallback for Korea-based roles
+- Backend résumé at senior level without QPS / order-volume scale line
+- Generic e-commerce framing with no logistics / fulfilment dimension
+format_rules:
+- Hangul primary + English tech terms in parentheses; photo commonly expected
+- 1-2 pages, reverse-chronological with month-precision tenure
+- Per role, name the Coupang-equivalent scale (orders, SKUs, warehouses, users)
+keyword_anchors:
+- 쿠팡
+- 로켓배송
+- AWS
+- MSA
+- 대규모 트래픽
+- 풀필먼트
+- fulfilment
+- 커머스
+enrich_bias: >-
+  This résumé will be reviewed by Coupang. Produce Hangul-primary résumé
+  with English technical terms in parentheses. Emphasise scale (orders /
+  day, SKUs, QPS, warehouse count) and logistics / fulfilment awareness —
+  Coupang's differentiation is Rocket Delivery, not generic e-commerce. If
+  NKLCB lineage exists, name it plainly; if AWS depth is present, surface it
+  early since Coupang is AWS-heavy.
+review_tips: >-
+  Coupang reviewers filter on Hangul-primary + scale numbers + logistics
+  dimension + AWS depth. Flag: English-only résumé for Korea-based roles,
+  missing QPS / order-volume markers for senior backend, and generic
+  e-commerce framing with no fulfilment or last-mile exposure.

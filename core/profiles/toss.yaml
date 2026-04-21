@@ -1,0 +1,53 @@
+key: toss
+label: Toss / 비바리퍼블리카
+tier: kr
+locale_hint: ko_KR
+must_haves:
+- >-
+  Very-fast-shipping mindset + strong culture-fit signals — Toss's interview
+  process weights culture and ownership as heavily as technical depth
+- >-
+  Fintech backend depth or consumer super-app product work — Toss's core is
+  payments, investments, insurance, banking on one app
+- Strong public artefact trail (GitHub, tech blog, conference talks) for
+  engineering roles
+plus_signals:
+- Prior Toss experience itself is a network multiplier — Toss alumni are
+  recruited heavily across Korean fintech
+- High-QPS backend (payments, messaging, auth) with named SLOs
+- Experience with Toss Payments, Toss Bank, or Toss Securities cross-product
+  integration
+- Design-engineering cross-over (Toss is famous for design-heavy engineering
+  culture)
+red_flags:
+- Slow-cadence enterprise background with no rapid-shipping evidence
+- Missing ownership markers for mid-plus roles — Toss expects IC scope to be
+  large
+- Backend résumé without fintech / consumer-product dimension for applicable
+  roles
+format_rules:
+- Hangul primary with English tech terms; photo expected in traditional track
+- 1-2 pages, reverse-chronological
+- Culture-fit signals (ownership, speed, craftsmanship) need concrete examples
+  not adjectives
+keyword_anchors:
+- 토스
+- 핀테크
+- 결제
+- MSA
+- Kotlin
+- Spring
+- 대규모 트래픽
+- 컬처핏
+enrich_bias: >-
+  This résumé will be reviewed by Toss. Use Hangul-primary with English
+  tech terms. Beyond technical depth, Toss reviews heavily for culture fit —
+  ownership, speed, craftsmanship, user obsession. Frame achievements as
+  owned initiatives with clear ship dates and outcomes, not as team-wide
+  contributions. Design-engineering awareness is a Toss-specific
+  differentiator when present.
+review_tips: >-
+  Toss reviewers weigh culture-fit signals as heavily as technical depth.
+  Flag: adjective-only ownership claims with no shipped artefact, slow-
+  cadence narratives, and missing public-artefact trail for engineers with
+  non-trivial experience.

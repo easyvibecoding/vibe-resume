@@ -1,0 +1,52 @@
+key: atlassian
+label: Atlassian
+tier: us_tier2
+locale_hint: en_US
+must_haves:
+- >-
+  Comfort with structured competency-based interviews — Atlassian's pipeline
+  maps each round to a published competency (Craft, Values, Role) so bullets
+  should map cleanly to those
+- Java or Kotlin backend depth for platform roles; React / TypeScript for
+  product-frontend roles
+- SaaS collaboration / productivity domain familiarity (Jira, Confluence,
+  Bitbucket, Trello ecosystem signals)
+plus_signals:
+- Remote-first async working evidence — Atlassian is fully distributed
+- Migration from data-centre to cloud (the Atlassian Cloud platform migration
+  is the dominant multi-year theme)
+- Developer-experience / internal-platform work
+- Open-source contributions to JVM ecosystems or collaboration tools
+red_flags:
+- Résumé with no explicit values / craft / role alignment for competency-
+  based pipeline
+- In-office-only career with no async / remote-work evidence for fully-
+  distributed roles
+- Missing SaaS-collaboration domain exposure for product-team roles
+format_rules:
+- 1-2 pages, no photo
+- Bullets map to the three Atlassian interview pillars — Craft (technical
+  execution), Values (teamwork / impact), Role (level-specific scope)
+- Remote / async collaboration evidence surfaced explicitly when present
+keyword_anchors:
+- Atlassian
+- Jira
+- Confluence
+- Kotlin
+- Java
+- React
+- remote
+- async
+enrich_bias: >-
+  This résumé will be reviewed by Atlassian. Structure bullets to map to
+  Atlassian's three interview pillars — Craft, Values, Role — so each
+  round's evaluator finds a matching signal. Remote / async working
+  evidence is a Culture-first positive (Atlassian is fully distributed).
+  SaaS-collaboration domain familiarity (Jira / Confluence / Bitbucket /
+  Trello) is a clear differentiator when present.
+review_tips: >-
+  Atlassian reviewers follow a competency-based rubric — Craft, Values,
+  Role — so unmappable résumés under-signal. Flag: bullets that only
+  surface Craft with no Values (teamwork / impact) dimension, missing
+  async / remote evidence for distributed-team roles, and
+  product-frontend résumés without SaaS-collaboration context.
