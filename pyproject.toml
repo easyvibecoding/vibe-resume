@@ -1,6 +1,6 @@
 [project]
 name = "vibe-resume"
-version = "0.1.0"
+version = "0.2.0"
 description = "Turn your AI coding history (Claude Code, Cursor, Copilot, ChatGPT exports, git commits) into a versioned MD/DOCX/PDF résumé — for the vibe coding era."
 readme = "README.md"
 requires-python = ">=3.12"
