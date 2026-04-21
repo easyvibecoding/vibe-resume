@@ -7,6 +7,7 @@ Prevents accidentally breaking frontmatter in a way that would fail
 
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -31,6 +32,11 @@ SKILL_DISCOVERY_PATHS = [
 ]
 
 SKILL_PATHS = [CANONICAL_SKILL_DIR / "SKILL.md"]
+
+PLUGIN_MANIFESTS = [
+    REPO_ROOT / ".claude-plugin" / "plugin.json",
+    REPO_ROOT / ".codex-plugin" / "plugin.json",
+]
 
 ALLOWED_FRONTMATTER_KEYS = {
     "name",
@@ -104,6 +110,41 @@ def test_skill_md_body_under_500_lines(path: Path) -> None:
         f"{path.relative_to(REPO_ROOT)} body is {line_count} lines — "
         f"split advanced sections into references/ per agentskills.io spec"
     )
+
+
+@pytest.mark.parametrize(
+    "manifest_path",
+    PLUGIN_MANIFESTS,
+    ids=lambda p: str(p.relative_to(REPO_ROOT)),
+)
+def test_plugin_manifest_has_required_fields(manifest_path: Path) -> None:
+    """Claude Code and Codex both require `name`, `version`, `description` in
+    their plugin manifest. Keep the two manifests in sync on these fields so
+    the plugin identity doesn't fork across ecosystems.
+    """
+    assert manifest_path.exists(), f"Plugin manifest missing: {manifest_path.relative_to(REPO_ROOT)}"
+    data = json.loads(manifest_path.read_text(encoding="utf-8"))
+    for field in ("name", "version", "description"):
+        assert field in data and data[field], (
+            f"{manifest_path.relative_to(REPO_ROOT)} missing required field `{field}`"
+        )
+    assert re.match(r"^\d+\.\d+\.\d+", data["version"]), (
+        f"{manifest_path.relative_to(REPO_ROOT)} `version` must be semver: {data['version']!r}"
+    )
+
+
+def test_plugin_manifests_agree_on_identity() -> None:
+    """Claude Code and Codex plugin manifests must declare the same plugin
+    identity (name + version). Prevents silent drift when bumping one but
+    forgetting the other.
+    """
+    claude = json.loads((REPO_ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
+    codex = json.loads((REPO_ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))
+    for field in ("name", "version"):
+        assert claude[field] == codex[field], (
+            f"Plugin manifests disagree on `{field}`: "
+            f"Claude={claude[field]!r} vs Codex={codex[field]!r}"
+        )
 
 
 @pytest.mark.parametrize("path", SKILL_PATHS, ids=[p.parent.name + "/" + p.parent.parent.name for p in SKILL_PATHS])
