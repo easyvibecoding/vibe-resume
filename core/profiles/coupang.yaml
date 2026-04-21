@@ -9,8 +9,9 @@ must_haves:
 - Hangul-first résumé with English technical terms in parentheses for Korean ATS
 - Business-model + product awareness — Coupang phone-screens for this explicitly
 plus_signals:
-- Prior NKLCB company experience (Naver / Kakao / Line / Coupang / Baedal
-  Minjok / Danggeun / Toss) — a recognised trust signal
+- >-
+  Prior top-Korean-tech-peer experience (Naver / Kakao / Line / Coupang /
+  Baedal Minjok / Danggeun / Toss) — a recognised lineage signal
 - Warehouse / last-mile / fulfilment optimisation work
 - AWS / cloud-native backend depth (Coupang is heavy AWS)
 - Fintech (Coupang Pay) or content (Coupang Play) cross-product exposure
@@ -36,7 +37,8 @@ enrich_bias: >-
   with English technical terms in parentheses. Emphasise scale (orders /
   day, SKUs, QPS, warehouse count) and logistics / fulfilment awareness —
   Coupang's differentiation is Rocket Delivery, not generic e-commerce. If
-  NKLCB lineage exists, name it plainly; if AWS depth is present, surface it
+  top-Korean-tech-peer lineage exists (Naver / Kakao / Line / Baedal /
+  Danggeun / Toss), name it plainly; if AWS depth is present, surface it
   early since Coupang is AWS-heavy.
 review_tips: >-
   Coupang reviewers filter on Hangul-primary + scale numbers + logistics

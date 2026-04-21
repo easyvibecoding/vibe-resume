@@ -4,8 +4,11 @@ tier: regional_ai
 locale_hint: en_US
 must_haves:
 - >-
-  Provable ML competition track record — Upstage was built by Kaggle
-  Grandmasters and hires heavily from competitive-ML communities
+  Provable ML competition track record — Upstage has a Kaggle-heavy
+  engineering culture (first Korean company to reach double-digit Kaggle
+  gold medals; multiple Kaggle Grandmasters on the team) and hires from
+  competitive-ML communities. Founders are academia + ex-Naver Clova
+  lineage, so the Kaggle framing is cultural, not founder-biographical.
 - Strong LLM training or serving depth — Upstage's Solar LLM family is the
   core product
 - Publication or OSS trail for ML claims

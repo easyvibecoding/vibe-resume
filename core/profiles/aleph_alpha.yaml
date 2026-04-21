@@ -9,16 +9,19 @@ must_haves:
 - LLM training / fine-tuning / serving experience at production scale
 - Python + PyTorch + distributed-training ecosystem
 plus_signals:
-- Explainability / interpretability research (Aleph Alpha's Luminous product
-  line emphasises attribution and reasoning transparency)
+- >-
+  Explainability / interpretability research — Aleph Alpha's PhariaAI
+  enterprise AI OS (Luminous foundation models + AtMan attribution method)
+  emphasises attribution and reasoning transparency for regulated customers
 - GDPR-aware ML or regulated-industry AI deployment
 - German / European-language NLP or multilingual pretraining experience
 - Public-sector or regulated-finance AI project history
 red_flags:
 - Consumer-API LLM résumé with no on-prem or sovereign-deployment dimension
 - Missing GDPR / regulatory compliance awareness for enterprise-product roles
-- ML research with no explainability or attribution dimension for Luminous-
-  adjacent roles
+- >-
+  ML research with no explainability or attribution dimension for
+  PhariaAI / Luminous-adjacent roles
 format_rules:
 - 1-2 pages; English primary
 - Publications and OSS / model releases surfaced at the top
@@ -26,7 +29,9 @@ format_rules:
 keyword_anchors:
 - sovereign AI
 - on-prem
+- PhariaAI
 - Luminous
+- AtMan
 - explainability
 - GDPR
 - PyTorch
@@ -36,11 +41,13 @@ enrich_bias: >-
   This résumé will be reviewed by Aleph Alpha. Surface sovereign / on-prem
   AI deployment awareness and GDPR compliance — these are Aleph Alpha's
   product differentiators versus US frontier labs. Explainability and
-  attribution research aligns with the Luminous product positioning.
+  attribution research aligns with the PhariaAI / Luminous product line
+  (AtMan, attribution-as-a-service); Aleph Alpha's 2024 pivot toward the
+  PhariaAI enterprise OS should shape keyword emphasis.
   European-language / German NLP experience is a culture-fit positive.
 review_tips: >-
   Aleph Alpha reviewers filter on sovereign-deployment awareness +
   regulated-industry experience + explainability research. Flag: consumer-
   API LLM framing, missing GDPR / compliance dimension for enterprise roles,
-  ML research without attribution / interpretability angles for Luminous-
-  adjacent positions.
+  ML research without attribution / interpretability angles for
+  PhariaAI / Luminous-adjacent positions.

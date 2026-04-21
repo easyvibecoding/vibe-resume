@@ -6,7 +6,10 @@ must_haves:
 - >-
   名刺データ化 / データ抽出 / OCR / エンティティ解決のいずれかのバックグランド
   —— Sansan の中核技術はカード画像からの構造化データ抽出
-- C# / .NET または Ruby / Rails のサーバサイド経験 (Sansan はマルチスタック)
+- >-
+  Ruby / Rails 主軸のサーバサイド経験 —— Sansan の公開スタックは
+  Ruby ドミナント (Eight は Rails、Bill One は TypeScript/Express);
+  C# / .NET / Go / Kotlin は副スタックとして歓迎
 - B2B SaaS プロダクトの運用経験
 plus_signals:
 - OCR・画像処理・NLP・エンティティマッチングの研究開発経験
@@ -26,16 +29,18 @@ keyword_anchors:
 - 名刺
 - OCR
 - エンティティ解決
-- .NET
 - Rails
+- Ruby
+- TypeScript
 - B2B SaaS
 - NLP
 - データクレンジング
 enrich_bias: >-
   この履歴は Sansan 向けにレビューされる。名刺データ化・OCR・NLP・エンティ
   ティ解決のいずれかの経験を上位に配置し、データ規模と精度数字を明記する。
-  Sansan はマルチ技術スタック (.NET + Rails) のため、どちらかで深さを示す。
-  「出会い」というミッションへの共感を職務経歴書の要約で表現する。
+  Sansan の主力は Ruby / Rails (Eight / Sansan) + TypeScript (Bill One);
+  主軸での深さを示しつつ、C# / .NET / Go / Kotlin などの副スタック経験も
+  添える。「出会い」というミッションへの共感を職務経歴書の要約で表現する。
 review_tips: >-
   Sansan のレビュアーはデータ抽出 / OCR / NLP の技術深度とミッション共感の
   両方を見る。OCR・データ品質・エンティティ解決の経験がない AI 系応募、

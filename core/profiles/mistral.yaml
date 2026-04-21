@@ -14,7 +14,10 @@ must_haves:
 plus_signals:
 - Open-weight / open-source LLM contributions (any ecosystem)
 - Multilingual NLP or European-language corpora experience
-- Pre-training or post-training at meaningful scale (7B+ parameters)
+- >-
+  Pre-training or post-training at meaningful scale — contributions
+  commensurate with Mistral's open-weight range (7B and above) are a
+  useful heuristic, though not a stated Mistral hiring threshold
 - Data-pipeline work at the TB+ scale with tokenisation / dedup / filtering
 red_flags:
 - Publications buried under generic work experience instead of surfaced first

@@ -6,12 +6,16 @@ must_haves:
 - >-
   Hangul-first résumé with English technical terms in parentheses — Korean ATS scans Hangul
   first, then English equivalents
-- Demonstrated scale experience (Kakao serves 90%+ of Korean messaging traffic)
+- >-
+  Demonstrated scale experience (KakaoTalk holds ~90%+ Korean-messenger
+  user share; the parent company operates banking, pay, games, and mobility
+  at comparable domestic scale)
 - Clear tenure timeline with month-level precision
 plus_signals:
 - >-
-  Prior NKLCB experience (Naver / Kakao / Line / Coupang / Baedal Minjok / Danggeun / Toss)
-  — widely used as a trust signal across the Korean tech network
+  Prior experience at a top Korean tech peer (Naver / Kakao / Line /
+  Coupang / Baedal Minjok / Danggeun / Toss) — recognised lineage signal
+  across the Korean tech network
 - Kakao / KakaoBank / KakaoPay / KakaoGames ecosystem work
 - High-QPS backend, messaging, or payments experience
 red_flags:
@@ -37,8 +41,9 @@ enrich_bias: >-
   This résumé will be reviewed by Kakao. Produce Korean (Hangul) as the primary language with
   English technical terms in parentheses — Korean ATS scans Hangul first. Surface scale (QPS,
   DAU, messaging volume) using numerical values that match Kakao's own product scale. If the
-  candidate has prior NKLCB experience, it is a trust signal — name the company plainly.
+  candidate has prior experience at a top Korean tech peer (Naver / Line / Coupang / Baedal /
+  Danggeun / Toss), it is a recognised lineage signal — name the company plainly.
 review_tips: >-
-  Kakao reviewers scan for Hangul primary + scale numbers + NKLCB lineage. Flag: English-only
-  résumé; missing tenure months; backend roles without a QPS / DAU / messaging-volume scale
-  line.
+  Kakao reviewers scan for Hangul primary + scale numbers + top-Korean-tech lineage. Flag:
+  English-only résumé; missing tenure months; backend roles without a QPS / DAU /
+  messaging-volume scale line.

@@ -7,8 +7,10 @@ must_haves:
   Game-engine fluency — NCSoft uses proprietary engines for flagship MMORPGs
   (Lineage, Blade & Soul) alongside Unreal for newer titles
 - C++ depth for engine / gameplay / server-backend roles
-- Korean-language fluency — NCSoft strongly prefers Korean applicants and
-  interviews are typically conducted in Korean
+- >-
+  Korean-language readiness — NCSoft's Korea-HQ roles (Pangyo / Seoul)
+  typically conduct interviews in Korean; NCSoft West (Seattle) operates
+  in English
 plus_signals:
 - MMORPG server / persistence / sharding experience at named scale
 - AI / NPC behaviour / procedural generation work (NCSoft invests heavily in
@@ -16,8 +18,10 @@ plus_signals:
 - Anti-cheat, anti-bot, or account-security engineering
 - Published-title credit with platform + role + team size
 red_flags:
-- English-only applicant without Korean-language readiness for Korea-based
-  roles
+- >-
+  English-only applicant without Korean-language readiness for Korea-HQ
+  roles (NCSoft West in Seattle is English-native, so flag only applies
+  to Pangyo / Seoul)
 - Game-dev résumé with no shipped MMORPG or comparable persistent-world credit
 - Missing C++ / server-backend depth for engine or live-service tracks
 format_rules:
@@ -36,14 +40,17 @@ keyword_anchors:
 - AI NPC
 - 샤딩
 enrich_bias: >-
-  This résumé will be reviewed by NCSoft. Hangul-primary format is strongly
-  preferred; English technical terms in parentheses. Shipped-title credit
+  This résumé will be reviewed by NCSoft. For Korea-HQ (Pangyo / Seoul)
+  roles, Hangul-primary format is expected with English technical terms
+  in parentheses; NCSoft West (Seattle) operates in English. Shipped-title
+  credit
   with role specificity is the single highest-value signal — platform,
   team size, engine / gameplay / server / AI / tools sub-role. MMORPG-scale
   persistence, sharding, and live-ops are NCSoft-specific priorities.
   Korean-language readiness should be stated explicitly when present.
 review_tips: >-
-  NCSoft reviewers read Hangul-primary résumés and expect Korean-language
-  readiness. Flag: English-only applications for Korea-based roles, game-dev
+  NCSoft Korea-HQ reviewers read Hangul-primary résumés and expect
+  Korean-language interview readiness; NCSoft West is English-native.
+  Flag: English-only applications for Korea-HQ roles, game-dev
   résumés without shipped MMORPG credit at mid-plus level, missing C++ /
   server depth for engine tracks.

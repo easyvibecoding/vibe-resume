@@ -3,7 +3,10 @@ label: Amazon AWS (Applied Scientist)
 tier: frontier_ai
 locale_hint: en_US
 must_haves:
-- PhD in CS / ML / stats / related — or MS with 4+ years industry ML experience
+- >-
+  PhD in CS / ML / stats / related — or MS with several years of industry
+  ML experience (exact threshold varies by level, commonly 3-5+ for
+  Applied Scientist II and above)
 - >-
   Every past role must survive a 'Science Depth' deep-dive: what, why, how, outcome, what
   you'd do differently

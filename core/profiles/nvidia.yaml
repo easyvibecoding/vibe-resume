@@ -9,8 +9,9 @@ must_haves:
 - >-
   Reverse-chronological layout with 3-6 bullets per role (more for recent, fewer for older)
 - >-
-  Tailored alignment to the specific JD — NVIDIA's recruiters state they read for keyword
-  overlap before depth
+  Tailored alignment to the specific JD — as with most large recruiters,
+  ATS parsing rewards role-specific keyword match before depth is
+  evaluated (NVIDIA does not publicly state a keyword-first policy)
 plus_signals:
 - CUDA / Triton / TensorRT / cuDNN low-level optimisation work
 - Referral from an NVIDIA insider — still a meaningful funnel advantage

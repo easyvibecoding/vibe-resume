@@ -9,8 +9,10 @@ must_haves:
 - Java / Kotlin / Spring / JVM depth (Woowa's dominant server stack)
 - Hangul-first résumé with English tech terms in parentheses
 plus_signals:
-- Prior Woowa Tech Course graduation — the most recognised Korean engineering
-  bootcamp and a major NKLCB feeder
+- >-
+  Prior Woowa Tech Course graduation — 우아한테크코스 is Woowa Brothers'
+  own well-established engineering bootcamp and a recognised feeder both
+  into Woowa itself and into adjacent top Korean tech companies
 - Real-time dispatch / matching / ETA-prediction algorithm experience
 - Design-driven engineering mindset (Woowa is famous for craft-driven culture)
 - OSS contributions to Spring / Kotlin / reactive ecosystems

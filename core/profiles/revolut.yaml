@@ -6,7 +6,10 @@ must_haves:
 - >-
   Very-fast-shipping mindset — Revolut's engineering culture is aggressive
   cadence + large scope per IC
-- Python backend depth for most engineering roles (secondary: Java, Kotlin, Go)
+- >-
+  Java / Kotlin + Spring Boot backend depth — Revolut's dominant server
+  stack (Python is prominent for ML / data / automation, not primary
+  backend)
 - Comfort with rapid product iteration and high-ambiguity projects
 plus_signals:
 - Prior Rev-celerator graduate-programme or equivalent fast-scale fintech path
@@ -24,22 +27,24 @@ format_rules:
 - Per-role scope line — how many products, how many countries, how many users
 - Velocity evidence — time-from-idea-to-ship, shipping cadence per quarter
 keyword_anchors:
+- Java
+- Kotlin
+- Spring Boot
 - Python
 - fintech
-- rapid iteration
 - KYC
 - AML
 - multi-country
 - Rev-celerator
-- consumer scale
 enrich_bias: >-
   This résumé will be reviewed by Revolut. Lean into velocity and scope —
   how many products launched per year, how many countries, how fast from
-  concept to production. Python depth is the baseline; banking-regulation
-  fluency (KYC / AML / licence-specific work) is a clear differentiator.
-  Avoid slow-cadence enterprise framing.
+  concept to production. Java / Kotlin + Spring Boot is the backend
+  baseline; Python is strong for ML / data / automation; banking-
+  regulation fluency (KYC / AML / licence-specific work) is a clear
+  differentiator. Avoid slow-cadence enterprise framing.
 review_tips: >-
   Revolut reviewers read for velocity + per-IC scope + fintech-regulation
-  fluency. Flag: slow-cadence narratives, missing country / product breadth
-  for senior roles, and non-Python backend résumés without a clear reason to
-  be in the funnel.
+  fluency + JVM backend depth. Flag: slow-cadence narratives, missing
+  country / product breadth for senior roles, and non-JVM-dominant backend
+  résumés without a clear reason (e.g. ML / data role) to be in the funnel.

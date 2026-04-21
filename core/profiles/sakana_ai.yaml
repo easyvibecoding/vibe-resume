@@ -21,8 +21,10 @@ red_flags:
 format_rules:
 - English CV required; cover letter via Google form + careers@sakana.ai email
 - Photo optional
-- Forward Deployed Engineer (FDE) role additionally requires business-level
-  Japanese — declare language level explicitly when applying for those
+- >-
+  Forward Deployed Engineer (FDE) role strongly prefers JLPT N1 / N2 or
+  business-level Japanese (listed by Sakana as a "huge plus", not strictly
+  required) — declare language level explicitly when applying for those
 keyword_anchors:
 - research
 - evolutionary
@@ -37,7 +39,8 @@ enrich_bias: >-
   with a research orientation — Sakana values unconventional backgrounds
   (physics, biology, competitive programming, Kaggle) alongside traditional ML
   pedigrees. Surface self-driven project history and publications early. For
-  Forward Deployed Engineer roles, declare Japanese proficiency explicitly;
+  Forward Deployed Engineer roles, declare Japanese proficiency level (JLPT
+  or business-level) explicitly — Sakana positions this as a strong plus;
   for research roles, English alone is sufficient.
 review_tips: >-
   Sakana reviewers read English CVs with a research-orientation filter. Flag:

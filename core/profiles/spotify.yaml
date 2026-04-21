@@ -12,9 +12,14 @@ must_haves:
 - Named ownership of a service, feature, or platform with SLOs and on-call
 plus_signals:
 - Music / audio / recommendations / personalisation domain background
-- Experience with Spotify's published patterns (Squad / Chapter / Tribe /
-  Guild) — being able to speak that vocabulary natively
-- Backstage / Golden Path / developer-productivity tooling work
+- >-
+  Backstage / Golden Path / developer-productivity tooling work — Spotify's
+  still-actively-promoted OSS output
+- >-
+  Familiarity with the historical Squad / Tribe / Chapter / Guild model
+  that Spotify has publicly moved on from — useful as vocabulary, but
+  should not be over-referenced (Spotify engineers themselves describe it
+  as retired)
 - Public engineering writing (blog posts, conference talks)
 red_flags:
 - Résumé that reads identical for any generic SaaS company — no consumer-scale or
@@ -26,10 +31,9 @@ format_rules:
 - Each role names the squad / team mission explicitly, not just the tech stack
 - p95 / p99 latency and DAU / MAU / throughput numbers where relevant
 keyword_anchors:
-- squad
-- chapter
 - Backstage
 - golden path
+- developer platform
 - on-call
 - SLO
 - consumer scale
@@ -38,13 +42,15 @@ enrich_bias: >-
   This résumé will be reviewed by Spotify. Use consumer-scale framing —
   DAU / MAU, p95 latency, on-call rotations, SLO attainment — and make
   ownership granular (which service, which platform, which tier of user
-  traffic). Where the candidate has adjacent experience with Spotify's own
-  engineering patterns (Backstage, Golden Path, Squad-Chapter-Tribe), name
-  them in the candidate's own voice. Async / written-communication
-  signals are a plus for remote-friendly teams.
+  traffic). Where the candidate has adjacent experience with Spotify's
+  still-active OSS (Backstage, Golden Path), name it in the candidate's
+  own voice. The historical Squad / Tribe / Chapter / Guild model is now
+  publicly described by Spotify as retired, so do not lean on that
+  vocabulary as the primary signal. Async / written-communication signals
+  are a plus for remote-friendly teams.
 review_tips: >-
   Spotify reviewers read for consumer-scale reliability + async/written
-  communication + squad-level ownership. Flag: résumés without SLO / on-call
+  communication + team-level ownership. Flag: résumés without SLO / on-call
   markers at mid-plus level, enterprise-only career paths for product-team
   roles, and missing team-mission framing (tech stack listed but not what the
   team was actually building).

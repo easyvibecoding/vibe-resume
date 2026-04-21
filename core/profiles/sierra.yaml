@@ -8,8 +8,10 @@ must_haves:
   product is enterprise-grade conversational agents
 - Production LLM deployment with guardrails, tool-use, and escalation paths
 - >-
-  Ownership signals at a senior level — Sierra recruits from senior ICs at
-  Meta, Google, Stripe, Salesforce and benchmarks against that bar
+  Ownership signals at a senior level — Sierra's founding team lineage
+  (Bret Taylor ex-Google / Salesforce, Clay Bavor ex-Google) anchors a
+  senior-IC bar; candidates benchmark against the senior-IC standard
+  typical of top Silicon Valley product platforms
 plus_signals:
 - Prior work on Gmail, Messenger, Salesforce Service Cloud, Zendesk, or
   comparable large conversational / CX products
@@ -34,9 +36,10 @@ keyword_anchors:
 - CX
 enrich_bias: >-
   This résumé will be reviewed by Sierra. Surface the enterprise-grade
-  conversational-agent stack: tool-use, guardrails, escalation paths,
+  conversational-agent stack — tool-use, guardrails, escalation paths,
   multi-tenant deployment, and eval-driven iteration. Sierra's bar targets
-  senior ICs from Meta / Google / Stripe / Salesforce, so framing should
+  senior ICs typical of top Silicon-Valley product platforms (the founding
+  team's Google / Salesforce lineage anchors this), so framing should
   emphasise ownership at that seniority rather than task-level execution.
 review_tips: >-
   Sierra reviewers scan for enterprise conversational-AI depth at senior-IC

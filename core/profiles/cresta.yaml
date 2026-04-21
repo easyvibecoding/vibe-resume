@@ -12,8 +12,11 @@ must_haves:
 plus_signals:
 - ASR / speaker diarization / turn detection / real-time-transcription
   experience
-- Prior work at voice-AI companies (Deepgram, AssemblyAI, Speechmatics,
-  Rev, Twilio Voice, Gong)
+- >-
+  Prior work at voice-AI / contact-center-AI peers (Observe.AI, CallMiner,
+  Level AI, Uniphore, AssemblyAI, Speechmatics, Rev, Twilio Voice); experience
+  with ASR providers Cresta builds on (Deepgram is a documented Cresta partner)
+  is a positive bridge signal rather than a competitor transfer
 - Contact-center analytics, agent-coaching, or call-scoring research
 - Enterprise multi-tenant deployment with SLO requirements
 red_flags:

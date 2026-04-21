@@ -4,10 +4,12 @@ tier: tw_local
 locale_hint: zh_TW
 must_haves:
 - >-
-  AI + 雲端雙軌 —— iKala 的產品線橫跨 AI 網紅行銷 (KOL Radar) 與 Google
-  Cloud 顧問 (CDP),工程師常需同時涉獵兩邊
+  AI + 雲端雙軌 —— iKala 的產品線橫跨 AI 網紅行銷 Kolr (2025 自 KOL Radar
+  改名) 與 Google Cloud 顧問 (CDP),工程師常需同時涉獵兩邊
 - Python / Go / TypeScript 本番運用經驗
-- GCP 實戰深度 —— iKala 是 Google Cloud Premier Partner
+- >-
+  GCP 實戰深度 —— iKala 是 Google Cloud Premier Partner,並榮獲 2025
+  Google Cloud Taiwan Country Partner of the Year
 plus_signals:
 - GCP 官方認證 (Professional Cloud Architect / Data Engineer / ML Engineer)
 - 亞太多市場 SaaS 落地經驗 (iKala 在台灣、香港、日本、東南亞都有業務)
@@ -26,14 +28,15 @@ keyword_anchors:
 - iKala
 - GCP
 - CDP
-- KOL Radar
+- Kolr
 - AI 行銷
 - 網紅
 - Vertex AI
 - BigQuery
 enrich_bias: >-
-  這份履歷將由 iKala 審閱。建議中英對照。產品線橫跨 AI 行銷 (KOL Radar) 與
-  GCP 顧問 (CDP),所以履歷要能展現「AI + 雲端」雙軌自覺。每個雲端專案列
+  這份履歷將由 iKala 審閱。建議中英對照。產品線橫跨 AI 行銷 Kolr (原
+  KOL Radar,2025 改名) 與 GCP 顧問 (CDP),所以履歷要能展現「AI + 雲端」
+  雙軌自覺。每個雲端專案列
   GCP 組件與客戶產業,每個 AI 專案列資料規模、模型、指標、上線規模。
   GCP 官方認證前置顯示,亞太多市場交付經驗是明確差異化。
 review_tips: >-

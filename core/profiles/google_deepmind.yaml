@@ -7,7 +7,11 @@ must_haves:
   Named research projects with depth — every listed project must be something the candidate
   can discuss for 30+ minutes
 - One-page résumé unless senior/research-heavy (two pages max)
-- JD-keyword alignment — DeepMind screens with keyword overlap first
+- >-
+  JD-keyword alignment — as with most large tech recruiters, tailor to the
+  specific job description (do not fabricate to hit keywords; DeepMind does
+  not publicly state a keyword-first screening policy, but ATS pipelines
+  typically reward role-specific term match)
 plus_signals:
 - Peer-reviewed publications at NeurIPS / ICML / ICLR / JMLR
 - Gemini, AlphaFold, RL, or interpretability-adjacent contributions
@@ -34,9 +38,9 @@ keyword_anchors:
 enrich_bias: >-
   This résumé will be reviewed by Google DeepMind. Treat every project entry as a mini-abstract:
   problem statement, method, concrete result. Prefer naming specific artefacts (paper titles,
-  benchmark deltas, open-source repos) over listing frameworks. Match keywords to the target
-  job description — DeepMind's screener weights keyword overlap heavily — but never fabricate
-  experience to hit a keyword.
+  benchmark deltas, open-source repos) over listing frameworks. Tailor keywords to the target
+  job description (as with any ATS-backed pipeline), but never fabricate experience to hit a
+  keyword.
 review_tips: >-
   DeepMind reviewers expect every project to be defensible in a technical deep-dive. Flag:
   project lists without outcomes, résumés over one page without a research record, keyword-stuffed

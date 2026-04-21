@@ -8,8 +8,10 @@ must_haves:
   edge-runtime, DNS, CDN, and security at global-anycast scale
 - Rust or Go production experience for platform roles; JavaScript for
   Workers-adjacent roles
-- DSA solidity — Cloudflare runs 5 DSA rounds + 1 system-design round, so
-  algorithmic readiness is filter-grade
+- >-
+  DSA solidity — candidate reports describe a multi-round DSA-heavy loop
+  with a dedicated system-design round, so algorithmic readiness is
+  filter-grade
 plus_signals:
 - WebAssembly / V8 isolates / Workers-runtime internals
 - Networking-protocol work (HTTP/3, QUIC, DNS-over-HTTPS, BGP)
@@ -18,7 +20,9 @@ plus_signals:
 red_flags:
 - Pure application-layer résumé with no systems / network dimension for
   platform roles
-- Weak DSA recency — six-round format is unforgiving
+- >-
+  Weak DSA recency — the multi-round DSA-heavy format (typically 4-6
+  rounds per candidate reports) is unforgiving
 - Missing scale markers (QPS, anycast reach, req / sec) for senior roles
 format_rules:
 - 1-2 pages, no photo
@@ -38,10 +42,11 @@ keyword_anchors:
 enrich_bias: >-
   This résumé will be reviewed by Cloudflare. Lead with edge / network /
   systems-programming depth where present — Rust for server, JS for
-  Workers, networking protocols named explicitly. Given the interview
-  structure (5 DSA + 1 system design), any strong algorithmic contest or
-  systems-design-doc authorship is worth surfacing near the top. Scale
-  markers (QPS, anycast reach, req / sec) expected on platform bullets.
+  Workers, networking protocols named explicitly. Given the DSA-heavy
+  multi-round loop with a dedicated system-design round, any strong
+  algorithmic-contest placement or systems-design-doc authorship is worth
+  surfacing near the top. Scale markers (QPS, anycast reach, req / sec)
+  expected on platform bullets.
 review_tips: >-
   Cloudflare reviewers read for Rust / edge / network depth + DSA recency +
   scale markers. Flag: application-layer résumés for platform tracks,
