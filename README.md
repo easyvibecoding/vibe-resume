@@ -402,6 +402,76 @@ role label + bullets side by side. If two personas produce the same
 output, the bias isn't biting — revise `core/personas.py` or the raw
 activity until they differentiate.
 
+## Strategic résumé — target-employer profiles (`--company`, `--level`)
+
+70 bundled company profiles and 6 career-level archetypes let you
+tailor enrich + review output against a specific hiring bar — orthogonal
+to locale, persona, and JD tailor. Each profile is a YAML at
+`core/profiles/<key>.yaml` with fact-check metadata (`last_verified_at`)
+so stale data surfaces loudly instead of silently biasing résumés.
+
+**Inspect the bundled catalogue:**
+
+```bash
+# Grouped by tier — frontier_ai / ai_unicorn / regional_ai / tw_local /
+# us_tier2 / eu / jp / kr
+uv run vibe-resume company list
+uv run vibe-resume company list --tier jp
+
+# Full profile in human-readable form (must-haves, red flags,
+# keyword anchors, enrich_bias, review_tips, verified date)
+uv run vibe-resume company show openai
+
+# Age table across all 70 — flags profiles past the 180-day threshold
+uv run vibe-resume company audit
+uv run vibe-resume company audit --only-stale --stale-days 90
+```
+
+**Apply a company and level when enriching + reviewing:**
+
+```bash
+# Tailor bullets for an OpenAI senior-IC résumé
+uv run vibe-resume enrich  --company openai --level senior --locale en_US -n 3
+uv run vibe-resume render  -f all --locale en_US
+uv run vibe-resume review  --company openai --level senior --locale en_US
+
+# Same activity, different employer — each adds an employer-specific
+# keyword-coverage score (0/10) to the review card on top of the 8-point
+# base rubric
+uv run vibe-resume review  --company anthropic --level senior --locale en_US
+uv run vibe-resume review  --company rakuten  --level senior --locale ja_JP
+```
+
+**Every `--company` apply auto-checks verification age.** If the profile
+is older than 180 days, the CLI prints a loud warning and suggests the
+refresh path — it never silently biases a résumé against stale research.
+
+**Refresh a stale profile:**
+
+```bash
+# Delegate a fact-check to the claude CLI agent (max ~5 web queries).
+# The report lands in data/verification_reports/<key>_<YYYY-MM-DD>.md.
+uv run vibe-resume company verify openai
+
+# If the agent returns VERDICT: clean, auto-bump the verified date:
+uv run vibe-resume company verify openai --apply
+
+# After a manual web-browser fact-check, bump the date yourself:
+uv run vibe-resume company mark-verified openai
+uv run vibe-resume company mark-verified openai --date 2027-01-15 --yes
+```
+
+`mark-verified` rewrites only the one YAML line, preserving comments,
+folded-string formatting, and any hand-edited fields. Adding a brand-new
+profile is drop-in: write `core/profiles/<key>.yaml`, set
+`last_verified_at: "YYYY-MM-DD"`, and it is immediately registered,
+packaged into the wheel, and consumable by `--company`.
+
+Career levels (`--level`): `new_grad` · `junior` · `mid` · `senior` ·
+`staff_plus` · `research_scientist`. Each archetype bakes in the
+lead-bullet signal the reviewer expects at that bracket, so mid-level
+bullets don't get promoted into staff claims the candidate cannot defend.
+
 ## Reviewer-view audit (`cli.py review`)
 
 ![8-point automated reviewer scorecard alongside a rendered résumé and trend sparkline](docs/assets/reviewer_audit.png)

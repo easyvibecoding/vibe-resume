@@ -23,10 +23,12 @@ from core.company_profiles import (
     ProfileLoadError,
     days_since_verification,
     get_company,
+    is_stale,
     list_by_tier,
     list_company_keys,
     load_profiles,
     stale_profiles,
+    update_last_verified_at,
 )
 from core.levels import (
     LEVELS,
@@ -428,6 +430,150 @@ def test_review_file_injects_company_and_level_tips(tmp_path: Path):
     text2 = report2.as_markdown()
     assert "Target employer" not in text2
     assert "Career level" not in text2
+
+
+# -------- is_stale + update_last_verified_at --------------------------------
+
+
+def test_is_stale_under_threshold():
+    p = _profile_with_date("2026-04-10")
+    assert not is_stale(p, today=date(2026, 4, 21))
+
+
+def test_is_stale_over_threshold():
+    p = _profile_with_date("2025-08-01")
+    assert is_stale(p, today=date(2026, 4, 21))
+
+
+def test_is_stale_respects_custom_threshold():
+    p = _profile_with_date("2026-01-01")
+    # age ~= 110 days — fresh at default 180, stale at custom 60
+    ref = date(2026, 4, 21)
+    assert not is_stale(p, today=ref)
+    assert is_stale(p, threshold_days=60, today=ref)
+
+
+def test_update_last_verified_at_round_trips(tmp_path: Path):
+    # Seed a minimal valid profile, then rewrite its date, then re-load.
+    _write(tmp_path, "fake_co.yaml", MINIMAL_VALID_YAML)
+    update_last_verified_at("fake_co", "2026-09-15", dir=tmp_path)
+    reg = load_profiles(tmp_path)
+    assert reg["fake_co"].last_verified_at == "2026-09-15"
+
+
+def test_update_last_verified_at_accepts_date_object(tmp_path: Path):
+    _write(tmp_path, "fake_co.yaml", MINIMAL_VALID_YAML)
+    update_last_verified_at("fake_co", date(2027, 1, 1), dir=tmp_path)
+    reg = load_profiles(tmp_path)
+    assert reg["fake_co"].last_verified_at == "2027-01-01"
+
+
+def test_update_last_verified_at_rejects_bad_date_string(tmp_path: Path):
+    _write(tmp_path, "fake_co.yaml", MINIMAL_VALID_YAML)
+    with pytest.raises(ProfileLoadError, match="not a valid YYYY-MM-DD"):
+        update_last_verified_at("fake_co", "2026/09/15", dir=tmp_path)
+
+
+def test_update_last_verified_at_missing_profile(tmp_path: Path):
+    with pytest.raises(ProfileLoadError, match="profile not found"):
+        update_last_verified_at("nope", "2026-09-15", dir=tmp_path)
+
+
+def test_update_preserves_other_yaml_content(tmp_path: Path):
+    """The line-level rewrite must not touch folded strings, comments, or
+    other fields — otherwise hand-edited YAMLs would lose formatting."""
+    content_with_comment = MINIMAL_VALID_YAML + "# hand-written note kept\n"
+    _write(tmp_path, "fake_co.yaml", content_with_comment)
+    update_last_verified_at("fake_co", "2099-01-01", dir=tmp_path)
+    text = (tmp_path / "fake_co.yaml").read_text(encoding="utf-8")
+    assert "# hand-written note kept" in text
+    assert "last_verified_at: '2099-01-01'" in text
+
+
+# -------- company keyword-coverage scoring ----------------------------------
+
+
+def test_company_keyword_coverage_zero_hits():
+    from core.review import _check_company_keyword_coverage
+
+    md = "# John Doe\n\n## Experience\n\n- Did nothing relevant here.\n"
+    c = COMPANY_PROFILES["openai"]
+    score = _check_company_keyword_coverage(md, c)
+    assert score.max == 10
+    assert score.score == 0
+    # Remaining keywords listed in notes
+    assert any("missing" in n for n in score.notes)
+
+
+def test_company_keyword_coverage_full_hits():
+    from core.review import _check_company_keyword_coverage
+
+    c = COMPANY_PROFILES["openai"]
+    # build a fake résumé that mentions every anchor
+    md_lines = ["# Candidate", "", "## Experience", ""]
+    md_lines += [f"- Used {k} on a side project" for k in c.keyword_anchors]
+    md = "\n".join(md_lines)
+    score = _check_company_keyword_coverage(md, c)
+    assert score.score == 10
+    assert score.max == 10
+
+
+def test_company_keyword_coverage_partial():
+    from core.review import _check_company_keyword_coverage
+
+    c = COMPANY_PROFILES["openai"]
+    # include only the first two anchors
+    first_two = c.keyword_anchors[:2]
+    md = "# X\n\n## Experience\n\n" + "\n".join(
+        f"- mentioned {k}" for k in first_two
+    )
+    score = _check_company_keyword_coverage(md, c)
+    expected = round(10 * len(first_two) / len(c.keyword_anchors))
+    assert score.score == expected
+    assert "missing" in " ".join(score.notes)
+
+
+# -------- verify-command verdict parser ------------------------------------
+
+
+@pytest.mark.parametrize(
+    "report,expected",
+    [
+        ("...\n\nVERDICT: clean\n", "clean"),
+        ("...\n\nVERDICT: needs-update\n", "needs-update"),
+        ("...\n\nverdict: Clean\n", "clean"),  # case-insensitive
+        ("some report body\n", "unknown"),  # missing verdict line
+        ("VERDICT:   clean   ", "clean"),  # trailing whitespace
+        (
+            "intro\nVERDICT: needs-update\nextra text after\n",
+            "needs-update",
+        ),  # not the last line
+    ],
+)
+def test_parse_verdict(report: str, expected: str):
+    from cli import _parse_verdict
+
+    assert _parse_verdict(report) == expected
+
+
+def test_review_adds_company_coverage_score_when_company_supplied():
+    from core.company_profiles import COMPANY_PROFILES
+    from core.review import review
+
+    c = COMPANY_PROFILES["rakuten"]
+    # Résumé explicitly echoing several Rakuten anchors (職務経歴書 etc.)
+    md = (
+        "# 候補者\n\n"
+        "## 職歴\n\n"
+        "- 職務経歴書 と 技術スタック を整理し、成果 を量化しました\n"
+    )
+    without = review(md, "ja_JP", company=None)
+    with_company = review(md, "ja_JP", company=c)
+    # Adding company should introduce one new Score entry.
+    assert len(with_company.scores) == len(without.scores) + 1
+    assert any(
+        s.name == "Company keyword coverage" for s in with_company.scores
+    )
 
 
 # -------- levels -------------------------------------------------------------

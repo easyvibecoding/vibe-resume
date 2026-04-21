@@ -25,6 +25,37 @@ def cli(ctx: click.Context, config: str) -> None:
     ctx.obj["config"] = load_config(config)
 
 
+def _warn_if_company_stale(company_key: str | None) -> None:
+    """Emit a loud staleness warning whenever ``--company <key>`` is applied.
+
+    Both ``enrich`` and ``review`` call this right before they pass the key
+    down into their respective biasers, so operators never silently tailor a
+    résumé against a profile that is months out of date. The warning links
+    to the refresh command (``company verify``) and the local mark-clean
+    command (``company mark-verified``) so the remediation path is obvious.
+    """
+    if not company_key:
+        return
+    from core.company_profiles import days_since_verification, get_company, is_stale
+
+    c = get_company(company_key)
+    if c is None:
+        # CLI caller will print its own "unknown company" notice; skip here.
+        return
+    if is_stale(c):
+        age = days_since_verification(c)
+        console.print(
+            f"[red bold]⚠ company profile for '{c.key}' is {age} days old "
+            f"(last verified {c.last_verified_at})[/red bold]"
+        )
+        console.print(
+            "[yellow]run `vibe-resume company verify "
+            f"{c.key}` to refresh, or "
+            f"`vibe-resume company mark-verified {c.key}` if you have already "
+            "confirmed the profile by hand.[/yellow]"
+        )
+
+
 @cli.command()
 @click.option("--only", multiple=True, help="Run only specific extractors by name")
 @click.pass_context
@@ -80,6 +111,7 @@ def enrich(
     """Ask Claude Code agent skill to summarize each project group."""
     from core.runner import run_enricher
 
+    _warn_if_company_stale(company)
     run_enricher(
         ctx.obj["config"],
         limit=limit,
@@ -313,6 +345,7 @@ def review(
         # Map domain errors to click's user-facing error type.
         raise click.UsageError(str(e)) from e
 
+    _warn_if_company_stale(company)
     jd_keywords = parse_jd_keywords(Path(jd)) if jd else None
     report = review_file(
         md_path,
@@ -529,6 +562,225 @@ def company_show(key: str) -> None:
     console.print(f"  {profile.review_tips}\n")
     if profile.verification_sources:
         _section("Verification sources", profile.verification_sources)
+
+
+# ---------------------------------------------------------------------------
+# Verification loop — subagent fact-check + YAML date bump
+#
+# ``company verify`` delegates to the ``claude -p`` agent so the actual web-
+# search / fetch work happens in a subprocess with the full Claude Code
+# toolset; the CLI's job is to package the profile YAML into a structured
+# fact-check prompt and persist the returned markdown report under
+# ``data/verification_reports/`` for traceability. ``company mark-verified``
+# then bumps ``last_verified_at`` after a human has reviewed the report (or
+# immediately, via ``--apply``, when the verdict is ``clean``).
+# ---------------------------------------------------------------------------
+
+VERIFICATION_REPORTS_DIR = ROOT / "data" / "verification_reports"
+
+_VERIFY_PROMPT = """\
+You are fact-checking a company résumé-review profile to prevent LLM-
+hallucinated content from biasing résumés. Use your web-search and web-fetch
+tools (cap at ~5 queries) to verify the specific factual claims in the YAML
+below.
+
+For each non-generic claim (named products, documented hiring process,
+required documents, tech-stack claims, cited culture points), decide:
+
+- CONFIRMED — primary or reputable secondary source found (quote URL)
+- STALE — weakly supported or now outdated (quote URL + caveat)
+- WRONG — contradicted by evidence (quote URL + correction)
+
+Output format — plain markdown, nothing else:
+
+# Verification report: {key}
+
+Verified on: {today}
+Profile source: core/profiles/{key}.yaml
+
+## Findings
+
+- CONFIRMED: ...
+- STALE: ...
+- WRONG: ...
+
+## Verdict
+
+Emit exactly one of these lines as the final line:
+
+- `VERDICT: clean`          — no WRONG or STALE findings; profile can bump date.
+- `VERDICT: needs-update`   — WRONG or STALE findings present; list YAML edits.
+
+YAML under review:
+
+---
+{yaml_body}
+---
+"""
+
+
+def _parse_verdict(report_text: str) -> str:
+    """Extract the machine-readable verdict line emitted by the verify agent.
+
+    Returns one of ``"clean"``, ``"needs-update"``, or ``"unknown"`` when
+    the agent's output did not contain a ``VERDICT:`` line. Strips surrounding
+    whitespace and lowercases for robustness.
+    """
+    import re as _re
+
+    m = _re.search(r"^VERDICT:\s*(.+?)\s*$", report_text, _re.MULTILINE | _re.IGNORECASE)
+    if not m:
+        return "unknown"
+    return m.group(1).strip().lower()
+
+
+@company.command("verify")
+@click.argument("key")
+@click.option(
+    "--apply",
+    is_flag=True,
+    default=False,
+    help="If the agent verdict is 'clean', auto-bump last_verified_at to today.",
+)
+@click.option(
+    "--timeout",
+    type=int,
+    default=300,
+    help="Claude CLI timeout in seconds (default: 300).",
+)
+def company_verify(key: str, apply: bool, timeout: int) -> None:
+    """Fact-check ``<key>``'s profile via a Claude agent and save the report.
+
+    Spawns ``claude -p`` with a structured fact-check prompt (max ~5 web
+    queries recommended to the agent), then writes the returned markdown
+    report to ``data/verification_reports/<key>_<YYYY-MM-DD>.md``. Requires
+    the ``claude`` binary on PATH — if missing, prints a clear instruction.
+    """
+    from datetime import date
+
+    from core.company_profiles import COMPANY_PROFILES, PROFILES_DIR
+
+    profile = COMPANY_PROFILES.get(key)
+    if profile is None:
+        raise click.UsageError(
+            f"unknown company key {key!r}. "
+            "Run `vibe-resume company list` to see available keys."
+        )
+
+    yaml_path = PROFILES_DIR / f"{key}.yaml"
+    yaml_body = yaml_path.read_text(encoding="utf-8")
+    today = date.today().isoformat()
+    prompt = _VERIFY_PROMPT.format(key=key, today=today, yaml_body=yaml_body)
+
+    console.print(
+        f"[cyan]verifying {profile.label} ({key}) via claude -p…[/cyan] "
+        "(this may take a minute)"
+    )
+
+    from core.enricher import _call_claude
+
+    report = _call_claude(prompt, timeout=timeout)
+    if not report:
+        console.print(
+            "[red]claude CLI unavailable or call failed. "
+            "Install claude (or re-run with a longer --timeout), "
+            "or mark-verified manually after a browser fact-check.[/red]"
+        )
+        raise click.Abort()
+
+    VERIFICATION_REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    out_path = VERIFICATION_REPORTS_DIR / f"{key}_{today}.md"
+    out_path.write_text(report, encoding="utf-8")
+    console.print(f"[green]✓[/green] saved report to {out_path.relative_to(ROOT)}")
+
+    verdict = _parse_verdict(report)
+    console.print(f"[bold]verdict:[/bold] {verdict}")
+
+    # Print a short preview so operators don't have to open the file to triage
+    preview_lines = [line for line in report.splitlines() if line.strip()][:18]
+    console.print()
+    for line in preview_lines:
+        console.print(f"  {line}")
+    console.print()
+
+    if verdict == "clean" and apply:
+        from core.company_profiles import update_last_verified_at
+
+        update_last_verified_at(key, today)
+        console.print(
+            f"[green]✓[/green] auto-applied: {key}.yaml last_verified_at → {today}"
+        )
+    elif verdict == "clean":
+        console.print(
+            "[dim]verdict clean — re-run with --apply to bump the date, "
+            f"or `vibe-resume company mark-verified {key}`.[/dim]"
+        )
+    elif verdict == "needs-update":
+        console.print(
+            "[yellow]verdict needs-update — review the report, apply YAML edits "
+            f"manually, then `vibe-resume company mark-verified {key}` when done."
+            "[/yellow]"
+        )
+    else:
+        console.print(
+            "[yellow]verdict could not be parsed from the agent output. "
+            "Review the full report before marking verified.[/yellow]"
+        )
+
+
+@company.command("mark-verified")
+@click.argument("key")
+@click.option(
+    "--date",
+    "date_str",
+    default=None,
+    help="Override the verification date (YYYY-MM-DD). Defaults to today.",
+)
+@click.option(
+    "--yes",
+    is_flag=True,
+    default=False,
+    help="Skip the confirmation prompt.",
+)
+def company_mark_verified(key: str, date_str: str | None, yes: bool) -> None:
+    """Bump ``<key>``'s ``last_verified_at`` to today (or a given date).
+
+    Use after a ``company verify`` run whose verdict you've confirmed, or
+    after a manual web-browser fact-check. Writes only the one YAML line;
+    every other field, comment, or hand-edited formatting is preserved.
+    """
+    from datetime import date
+
+    from core.company_profiles import (
+        COMPANY_PROFILES,
+        ProfileLoadError,
+        update_last_verified_at,
+    )
+
+    profile = COMPANY_PROFILES.get(key)
+    if profile is None:
+        raise click.UsageError(
+            f"unknown company key {key!r}. "
+            "Run `vibe-resume company list` to see available keys."
+        )
+
+    new_date = date_str or date.today().isoformat()
+    console.print(
+        f"[bold]{profile.label}[/bold] ({key})\n"
+        f"  current: {profile.last_verified_at}\n"
+        f"      new: {new_date}"
+    )
+    if not yes and not click.confirm("apply?", default=True):
+        console.print("[dim]skipped.[/dim]")
+        return
+
+    try:
+        path = update_last_verified_at(key, new_date)
+    except ProfileLoadError as e:
+        raise click.UsageError(str(e)) from e
+    console.print(
+        f"[green]✓[/green] {path.relative_to(ROOT)} last_verified_at → {new_date}"
+    )
 
 
 @company.command("audit")

@@ -321,6 +321,40 @@ def _check_keyword_echo(md: str, jd_keywords: list[str] | None) -> Score:
     return Score("Keyword echo (JD)", pts, 10, notes)
 
 
+def _check_company_keyword_coverage(md: str, company: Any) -> Score:
+    """Coverage of the target employer's curated keyword anchors.
+
+    Complementary to JD keyword-echo: JD keywords are role-specific and
+    extracted from the ad, while CompanyProfile.keyword_anchors are the
+    stable hiring-bar vocabulary the employer's reviewers actually look
+    for across roles (e.g. OpenAI expects PyTorch + distributed training +
+    RLHF on most ML résumés, regardless of which team posted).
+
+    Matching is substring + case-insensitive so CJK anchors like
+    ``職務経歴書`` or ``카카오`` match naturally. Zero-keyword profiles
+    (should not happen given loader validation) return max=0 to skip.
+    """
+    anchors = getattr(company, "keyword_anchors", None) or ()
+    if not anchors:
+        return Score(
+            "Company keyword coverage",
+            0,
+            0,
+            ["no company keyword_anchors — skipped"],
+        )
+    lower = md.lower()
+    hit = [k for k in anchors if k.lower() in lower]
+    ratio = len(hit) / len(anchors)
+    pts = min(int(round(ratio * 10)), 10)
+    miss = [k for k in anchors if k.lower() not in lower][:5]
+    notes = [
+        f"{len(hit)}/{len(anchors)} {company.label} keyword anchors present",
+    ]
+    if miss:
+        notes.append("missing: " + ", ".join(miss))
+    return Score("Company keyword coverage", pts, 10, notes)
+
+
 def _check_action_verb(md: str, locale_meta: dict[str, Any]) -> Score:
     """XYZ-locale check: each experience bullet starts with a past-tense verb."""
     if locale_meta.get("style") != "xyz":
@@ -486,6 +520,7 @@ def review(
     *,
     source: str = "(in-memory)",
     jd_keywords: list[str] | None = None,
+    company: Any = None,
 ) -> ReviewReport:
     canon = resolve_locale(locale_key)
     loc = get_locale(canon)
@@ -499,6 +534,12 @@ def review(
         _check_contact_line(md_text),
         _check_page_estimate(md_text, loc),
     ]
+    if company is not None:
+        # Company-specific coverage lands at the bottom of the scorecard so
+        # it reads as a supplement rather than an override of the generic
+        # rubric — the 8 base checks remain comparable across résumé versions
+        # even when a candidate swaps target employers between runs.
+        scores.append(_check_company_keyword_coverage(md_text, company))
     scoring = [s for s in scores if s.max > 0]
     total = sum(s.score for s in scoring)
     max_total = sum(s.max for s in scoring)
@@ -561,7 +602,18 @@ def review_file(
     if not locale_key:
         m = re.search(r"resume_v\d+_([a-zA-Z_]+)\.md$", str(md_path))
         locale_key = m.group(1) if m else "en_US"
-    report = review(text, locale_key, source=str(Path(md_path).name), jd_keywords=jd_keywords)
+    # Pre-resolve company so the ``review()`` scorer can apply keyword-anchor
+    # coverage in the same pass. Unknown keys fall through cleanly.
+    from core.company_profiles import get_company
+
+    c = get_company(company) if company else None
+    report = review(
+        text,
+        locale_key,
+        source=str(Path(md_path).name),
+        jd_keywords=jd_keywords,
+        company=c,
+    )
     if persona:
         from core.personas import get_persona
 
@@ -569,15 +621,11 @@ def review_file(
         if p is not None:
             report.persona = p.key
             report.persona_tips = p.review_tips
-    if company:
-        from core.company_profiles import get_company
-
-        c = get_company(company)
-        if c is not None:
-            report.company = c.key
-            report.company_label = c.label
-            report.company_verified_at = c.last_verified_at
-            report.company_tips = c.review_tips
+    if c is not None:
+        report.company = c.key
+        report.company_label = c.label
+        report.company_verified_at = c.last_verified_at
+        report.company_tips = c.review_tips
     if level:
         from core.levels import get_level
 

@@ -21,6 +21,7 @@ a user can override per résumé version, not hard filters.
 """
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field, fields
 from datetime import date, datetime
 from pathlib import Path
@@ -215,6 +216,20 @@ def days_since_verification(profile: CompanyProfile, today: date | None = None) 
 STALE_DEFAULT_DAYS = 180
 
 
+def is_stale(
+    profile: CompanyProfile,
+    threshold_days: int = STALE_DEFAULT_DAYS,
+    today: date | None = None,
+) -> bool:
+    """Convenience predicate — profile age exceeds the staleness threshold.
+
+    Used both at CLI level (print a warning whenever a stale profile is
+    applied via ``--company``) and inside the verify workflow to decide
+    whether an auto-refresh is due.
+    """
+    return days_since_verification(profile, today) > threshold_days
+
+
 def stale_profiles(
     threshold_days: int = STALE_DEFAULT_DAYS,
     today: date | None = None,
@@ -236,3 +251,60 @@ def stale_profiles(
     stale = [p for d, p in aged if d > threshold_days]
     stale.sort(key=lambda p: p.verified_date())
     return stale
+
+
+# ---------------------------------------------------------------------------
+# Persistent date-update helper — used by ``vibe-resume company mark-verified``
+# after a human (or a ``company verify`` claude-agent call) confirms a profile
+# is current. We rewrite only the ``last_verified_at`` line in place so any
+# folded-string blocks, comments, or user hand-edits elsewhere in the YAML
+# survive unchanged. Full YAML dump-reload would lose formatting.
+# ---------------------------------------------------------------------------
+
+_LAST_VERIFIED_LINE_RE = re.compile(
+    r"^last_verified_at:\s*.*$",
+    re.MULTILINE,
+)
+
+
+def update_last_verified_at(
+    key: str,
+    new_date: date | str,
+    dir: Path | None = None,
+) -> Path:
+    """Rewrite one profile YAML's ``last_verified_at`` line to *new_date*.
+
+    Accepts either a ``date`` or a YYYY-MM-DD string; validates the string
+    form. Returns the updated file path. Raises :class:`ProfileLoadError`
+    if the profile is unknown or the YAML does not contain an existing
+    ``last_verified_at:`` line to replace.
+    """
+    src = dir or PROFILES_DIR
+    path = src / f"{key}.yaml"
+    if not path.exists():
+        raise ProfileLoadError(f"profile not found: {path}")
+
+    if isinstance(new_date, str):
+        try:
+            datetime.strptime(new_date, "%Y-%m-%d")
+        except ValueError as exc:
+            raise ProfileLoadError(
+                f"new_date {new_date!r} is not a valid YYYY-MM-DD date: {exc}"
+            ) from exc
+        date_str = new_date
+    else:
+        date_str = new_date.isoformat()
+
+    text = path.read_text(encoding="utf-8")
+    replacement = f"last_verified_at: '{date_str}'"
+    new_text, n = _LAST_VERIFIED_LINE_RE.subn(replacement, text)
+    if n == 0:
+        raise ProfileLoadError(
+            f"{path}: no existing last_verified_at line to rewrite"
+        )
+    if n > 1:
+        raise ProfileLoadError(
+            f"{path}: unexpectedly matched last_verified_at {n} times"
+        )
+    path.write_text(new_text, encoding="utf-8")
+    return path

@@ -185,6 +185,38 @@ done
 uv run vibe-resume trend
 ```
 
+## Strategic résumé: `--company <key> --level <key>`
+
+70 bundled company profiles (`core/profiles/*.yaml`) + 6 career-level
+archetypes let you tailor `enrich` and `review` against a named target
+employer on top of locale/persona/JD. Each profile carries
+`last_verified_at` metadata so stale research surfaces loudly.
+
+- `uv run vibe-resume company list [--tier X]` — catalogue grouped by
+  tier (frontier_ai / ai_unicorn / regional_ai / tw_local / us_tier2 /
+  eu / jp / kr).
+- `uv run vibe-resume company show <key>` — full profile (must-haves,
+  red flags, keyword anchors, enrich_bias, review_tips, verified date).
+- `uv run vibe-resume company audit [--only-stale]` — age table across
+  all profiles; default staleness threshold is 180 days.
+- `uv run vibe-resume company verify <key> [--apply]` — delegates a
+  fact-check to `claude -p`; saves the markdown report under
+  `data/verification_reports/`; auto-bumps the verified date when the
+  agent returns `VERDICT: clean`.
+- `uv run vibe-resume company mark-verified <key>` — bump
+  `last_verified_at` in place (one-line YAML edit, preserves formatting).
+
+Apply via `--company <key>` on `enrich` or `review`; apply stacks with
+`--level <key>` (`new_grad`/`junior`/`mid`/`senior`/`staff_plus`/
+`research_scientist`). Enrich injects the company's `enrich_bias` into
+the prompt (block order: tailor → persona → level → company). Review
+adds a 0-10 "Company keyword coverage" score that counts how many
+`keyword_anchors` actually surface in the résumé.
+
+Every `--company` apply auto-prints a warning and the refresh
+instruction when the profile is older than 180 days — never silently
+tailors against stale research.
+
 ## Useful sibling commands
 
 - `uv run vibe-resume status` — per-source activity counts
