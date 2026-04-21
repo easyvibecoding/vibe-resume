@@ -1,0 +1,51 @@
+key: sap
+label: SAP
+tier: eu
+locale_hint: en_US
+must_haves:
+- >-
+  ERP / enterprise-software domain depth or an adjacent SaaS background —
+  SAP is Europe's only 100B+ software company and its hiring orbits ERP,
+  finance, supply chain, HR systems
+- >-
+  One of the core SAP languages — Java, ABAP, Go, Python, or SAP UI5 /
+  Fiori (JavaScript) — at production depth
+- Large-enterprise integration awareness — SAP customers are multinational
+  corporations with multi-year deployment cycles
+plus_signals:
+- SAP Cloud Platform (BTP), HANA, S/4HANA, SuccessFactors, Ariba, or
+  Concur ecosystem exposure
+- Multi-region / multi-subsidiary enterprise deployment work
+- Industry-specific SaaS experience (manufacturing, automotive, retail,
+  public sector)
+- Compliance / audit / SOX / GDPR-heavy product experience
+red_flags:
+- Fast-startup résumé framed with no enterprise-deployment awareness
+- Missing multi-region / multi-language / localisation dimension for senior
+  roles
+- Pure consumer-app career with no B2B or ERP adjacency
+format_rules:
+- 1-2 pages, no photo
+- Each role names the enterprise scale (customers, users, subsidiaries) and
+  the integration boundary (SAP module, external system, partner network)
+- Certification section welcome — SAP values formal training in-house
+keyword_anchors:
+- SAP
+- ERP
+- S/4HANA
+- BTP
+- ABAP
+- Java
+- enterprise
+- integration
+enrich_bias: >-
+  This résumé will be reviewed by SAP. Surface enterprise-scale concerns —
+  multi-region deployment, integration boundaries, compliance, localisation.
+  Where adjacent SAP / ERP products show up in prior work, name them
+  (S/4HANA, BTP, SuccessFactors, Ariba, Concur, HANA). Certifications and
+  formal training carry more weight here than at consumer-SaaS companies.
+review_tips: >-
+  SAP reviewers read for enterprise-deployment awareness + multi-region /
+  multi-subsidiary scope + certification signals. Flag: fast-startup
+  framing without enterprise dimension, missing localisation / compliance
+  for senior roles, consumer-app-only careers for B2B platform tracks.

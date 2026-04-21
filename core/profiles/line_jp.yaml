@@ -1,0 +1,42 @@
+key: line_jp
+label: LINE (LY Corporation)
+tier: jp
+locale_hint: ja_JP
+must_haves:
+- >-
+  大規模消費者サービス (メッセージング / ペイメント / ミニアプリ) の運用経験
+  —— LINE の月間アクティブユーザーは日本で 9,000 万超
+- Java / Kotlin / Python / Go のいずれかで本番運用経験
+- 英語または韓国語でのコミュニケーション能力 (LY / Naver グループ横断)
+plus_signals:
+- 高 QPS バックエンド、リアルタイムメッセージング、決済 (LINE Pay) の経験
+- セキュリティ / 不正検知 / リスク管理の経験
+- マイクロサービス基盤 (LINE は独自の Armeria OSS を持つ)
+- OSS コントリビューション (特に Armeria, CentralDogma, Decaton)
+red_flags:
+- 消費者スケールの運用経験が無いシニア応募
+- 言語面で日本語のみで、LY / Naver グループ横断の英語・韓国語要件を満たさない
+- メッセージング / 決済ドメインへの隣接経験がゼロ
+format_rules:
+- 履歴書 + 職務経歴書 両方、1-3 ページ
+- QPS / DAU / MAU のスケール指標を各プロジェクトに記載
+- Armeria など LINE の OSS への貢献があれば最上位に配置
+keyword_anchors:
+- LINE
+- メッセージング
+- LINE Pay
+- Armeria
+- Kotlin
+- Java
+- MSA
+- 大規模トラフィック
+enrich_bias: >-
+  この履歴は LINE / LY Corporation 向けにレビューされる。消費者スケールの
+  運用経験を QPS / DAU / MAU の数字で示し、メッセージング・決済・ミニアプリ
+  のいずれかへの隣接経験を上位に配置する。LINE の OSS (Armeria, CentralDogma,
+  Decaton) への貢献があれば特筆する。LY / Naver グループ横断では英語または
+  韓国語の能力レベルを明記する。
+review_tips: >-
+  LINE のレビュアーは消費者スケール + OSS 文化 + グループ横断のコミュニ
+  ケーション能力を見る。スケール指標の欠如、LY / Naver 横断の言語能力記述
+  なし、メッセージング / 決済ドメイン経験ゼロのシニア応募はフラグ対象。

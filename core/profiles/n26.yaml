@@ -1,0 +1,48 @@
+key: n26
+label: N26
+tier: eu
+locale_hint: en_US
+must_haves:
+- >-
+  Consumer digital-banking depth — N26 holds a full European banking
+  licence and operates as a regulated bank, not a fintech wrapper
+- Strong reliability / availability framing — banking-grade uptime
+  expectations, not startup-grade
+- Python / Kotlin / Java backend for server roles; Swift / Kotlin for mobile
+plus_signals:
+- Regulated-finance / KYC / AML / transaction-monitoring experience
+- Multi-country European deployment (N26 operates in most EU markets)
+- EBA / BaFin / PSD2 regulatory awareness
+- Fraud-detection or anti-money-laundering machine-learning work
+red_flags:
+- Consumer-app résumé framed as fintech with no regulatory dimension
+- Missing uptime / reliability framing for backend roles (banking-grade
+  SLOs, not product SLOs)
+- Pure startup cadence with no regulated-industry awareness
+format_rules:
+- 1-2 pages, no photo
+- Reliability bullets name availability target (four-nines, five-nines) and
+  regulatory constraint (PSD2, BaFin reporting)
+- KYC / AML / transaction-monitoring experience surfaced explicitly when
+  present
+keyword_anchors:
+- neobank
+- BaFin
+- PSD2
+- KYC
+- AML
+- Kotlin
+- Python
+- multi-country
+enrich_bias: >-
+  This résumé will be reviewed by N26. Surface regulated-banking awareness
+  (BaFin, PSD2, EBA, KYC, AML) alongside technical depth — N26 holds a
+  banking licence and recruits engineers comfortable with that regime.
+  Reliability framing should be banking-grade (four-nines or better) with
+  named uptime targets. Multi-country European deployment is a clear
+  differentiator.
+review_tips: >-
+  N26 reviewers read for regulated-banking depth + banking-grade reliability
+  + multi-country deployment. Flag: fintech framing without regulatory
+  dimension, product-grade reliability for backend roles, missing KYC /
+  AML exposure for senior candidates.

@@ -1,0 +1,47 @@
+key: booking
+label: Booking.com
+tier: eu
+locale_hint: en_US
+must_haves:
+- >-
+  Experimentation / A-B-testing fluency — Booking's engineering culture runs
+  thousands of concurrent experiments; every product change ships as a test
+- Data-informed decision-making bullets — each project shows hypothesis,
+  experiment design, metric moved, decision made
+- Perl / Java / Python / JavaScript depth for engineering roles
+plus_signals:
+- Online-travel / marketplace / two-sided-platform experience
+- Statistics / causal-inference / experimentation-platform engineering
+- Personalisation, search-ranking, or recommendation-system work
+- Multi-language / multi-currency consumer platform experience
+red_flags:
+- Product-engineering résumé with no experimentation or metric-moving
+  evidence
+- Claims of "shipped feature X" without naming the A/B test that validated it
+- Missing statistical / hypothesis-framing vocabulary for data-adjacent roles
+format_rules:
+- 1-2 pages, no photo
+- Every product-impact bullet should reference the experiment — which metric
+  moved by how much, with what statistical confidence
+- Tech stack includes experimentation framework where relevant (in-house or
+  Statsig-class)
+keyword_anchors:
+- A/B testing
+- experimentation
+- hypothesis
+- conversion
+- personalisation
+- search ranking
+- Perl
+- marketplace
+enrich_bias: >-
+  This résumé will be reviewed by Booking.com. Frame every shipped change
+  as an experiment — hypothesis, metric of interest, result, decision. "We
+  shipped X" without "we tested Y and observed Z" under-signals to Booking
+  reviewers. Statistical literacy is explicit; causal-inference / variance-
+  reduction / peeking-control vocabulary is a differentiator.
+review_tips: >-
+  Booking reviewers filter on experimentation fluency + metric-moving
+  evidence + statistical literacy. Flag: ship-only bullets with no A/B
+  dimension, feature claims without hypothesis framing, and missing
+  statistical vocabulary for data-adjacent roles.
