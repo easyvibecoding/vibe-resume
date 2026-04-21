@@ -51,7 +51,7 @@ def _pick_template(env: Environment, locale_key: str) -> str:
         return "resume.md.j2"
 
 
-def _render_md(cfg: dict[str, Any], tailor: str | None, locale: str | None = None) -> tuple[str, dict]:
+def _render_md(cfg: dict[str, Any], tailor: str | None, locale: str | None = None, persona: str | None = None) -> tuple[str, dict]:
     tpl_dir = Path(cfg.get("render", {}).get("templates_dir") or "render/templates")
     if not tpl_dir.is_absolute():
         tpl_dir = ROOT / tpl_dir
@@ -83,7 +83,7 @@ def _render_md(cfg: dict[str, Any], tailor: str | None, locale: str | None = Non
     env.filters["date_range"] = lambda start, end: format_date_range(start, end, locale_key)
     env.filters["localized"] = lambda obj, key: localized(obj, key, locale_key)
 
-    groups = load_groups()
+    groups = load_groups(persona=persona)
     raw_groups = [g.model_dump(mode="json") for g in groups]
 
     skills: set[str] = set()
@@ -355,16 +355,20 @@ def render_draft(
     fmt: str = "md",
     tailor: str | None = None,
     locale: str | None = None,
+    persona: str | None = None,
 ) -> None:
     hist = _history_path(cfg)
     version = _next_version(hist)
 
-    md_text, ctx = _render_md(cfg, tailor, locale=locale)
+    md_text, ctx = _render_md(cfg, tailor, locale=locale, persona=persona)
     locale_key = ctx["locale"]["_key"]
-    suffix = "" if locale_key == "en_US" else f"_{locale_key}"
+    loc_suffix = "" if locale_key == "en_US" else f"_{locale_key}"
+    pers_suffix = f"_{persona}" if persona else ""
+    suffix = f"{loc_suffix}{pers_suffix}"
     md_path = hist / f"resume_v{version:03d}{suffix}.md"
     md_path.write_text(md_text)
-    console.print(f"[green]✓[/green] {md_path.name}  [dim](locale={locale_key}, tpl={ctx['_tpl_name']})[/dim]")
+    persona_tag = f", persona={persona}" if persona else ""
+    console.print(f"[green]✓[/green] {md_path.name}  [dim](locale={locale_key}{persona_tag}, tpl={ctx['_tpl_name']})[/dim]")
 
     written = [md_path]
     if fmt in ("docx", "all"):
@@ -388,6 +392,8 @@ def render_draft(
     msg = f"resume v{version} ({fmt}, {locale_key})"
     if tailor:
         msg += f" [tailored:{Path(tailor).stem}]"
+    if persona:
+        msg += f" [persona:{persona}]"
     sha = snapshot(cfg, written, msg)
     if sha:
         console.print(f"[cyan]snapshot[/cyan] {sha}")

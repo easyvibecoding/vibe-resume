@@ -15,7 +15,7 @@ import orjson
 import yaml
 from rich.console import Console
 
-from core.aggregator import GROUPS_PATH, load_groups
+from core.aggregator import groups_path_for, load_groups
 from core.schema import ProjectGroup
 from render.i18n import get_locale
 
@@ -237,6 +237,30 @@ def _fallback_summary(g: ProjectGroup) -> dict[str, Any]:
     }
 
 
+def _resolve_persona_list(persona: str | None) -> list[str | None]:
+    """Expand the --persona flag into an ordered list of keys (or [None]).
+
+    Accepts: None → [None], 'all' → every registered persona, a comma-separated
+    list → each trimmed key, a single key → [key]. Unknown keys are dropped
+    with a warning rather than aborting the whole run.
+    """
+    from core.personas import PERSONAS, list_persona_keys
+
+    if not persona:
+        return [None]
+    if persona.strip().lower() == "all":
+        return list(list_persona_keys())
+    raw_keys = [p.strip() for p in persona.split(",") if p.strip()]
+    resolved: list[str | None] = []
+    for k in raw_keys:
+        if k in PERSONAS:
+            resolved.append(k)
+        else:
+            known = ", ".join(sorted(PERSONAS))
+            console.print(f"[yellow]unknown persona '{k}'. Known: {known}[/yellow]")
+    return resolved or [None]
+
+
 def enrich_groups(
     cfg: dict[str, Any],
     cache_dir: Path,
@@ -245,6 +269,26 @@ def enrich_groups(
     tailor: str | None = None,
     persona: str | None = None,
 ) -> None:
+    persona_keys = _resolve_persona_list(persona)
+    if len(persona_keys) > 1:
+        label_list = ", ".join(k for k in persona_keys if k)
+        console.print(f"[cyan]multi-persona run:[/cyan] {label_list}")
+    for p_key in persona_keys:
+        if len(persona_keys) > 1:
+            console.print(f"\n[bold cyan]── persona: {p_key} ──[/bold cyan]")
+        _enrich_one_persona(cfg, cache_dir, limit, locale, tailor, persona_key=p_key)
+
+
+def _enrich_one_persona(
+    cfg: dict[str, Any],
+    cache_dir: Path,
+    limit: int | None,
+    locale: str | None,
+    tailor: str | None,
+    persona_key: str | None,
+) -> None:
+    # Always seed from the baseline (aggregate output) — persona variants
+    # are independent re-voicings of the same raw activity, not chained edits.
     groups = load_groups()
     if not groups:
         console.print("[yellow]no groups to enrich — run aggregate first[/yellow]")
@@ -265,13 +309,10 @@ def enrich_groups(
             preview = ", ".join(tailor_keywords[:8]) if tailor_keywords else "(none)"
             console.print(f"[dim]tailor keywords from {tailor_path.name}: {preview}[/dim]")
 
-    from core.personas import PERSONAS, get_persona
+    from core.personas import get_persona
 
-    persona_obj = get_persona(persona)
-    if persona and persona_obj is None:
-        known = ", ".join(sorted(PERSONAS))
-        console.print(f"[yellow]unknown persona '{persona}'. Known: {known}[/yellow]")
-    elif persona_obj:
+    persona_obj = get_persona(persona_key)
+    if persona_obj:
         console.print(f"[dim]reviewer persona: {persona_obj.label}[/dim]")
 
     use_llm = cfg.get("enrich", {}).get("mode") == "claude-code-agent"
@@ -333,5 +374,6 @@ def enrich_groups(
         g.domain_tags = domain[:12]
         enriched.append(g.model_dump(mode="json"))
 
-    GROUPS_PATH.write_bytes(orjson.dumps(enriched, option=orjson.OPT_INDENT_2))
-    console.print(f"[green]✓[/green] wrote enriched groups → {GROUPS_PATH.name}")
+    out_path = groups_path_for(persona_key)
+    out_path.write_bytes(orjson.dumps(enriched, option=orjson.OPT_INDENT_2))
+    console.print(f"[green]✓[/green] wrote enriched groups → {out_path.name}")

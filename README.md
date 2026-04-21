@@ -374,6 +374,34 @@ instruction; numbers, people, and decisions that the raw activity
 doesn't support stay out. The `review --persona` form appends a
 short lens-specific advisory block at the bottom of the scorecard.
 
+### Multi-persona prep in one run
+
+Pass comma-separated keys (or `all`) to produce parallel variants for
+different audiences without re-extracting:
+
+```bash
+# Write three persona-specific enrich caches in one command
+uv run vibe-resume enrich --persona tech_lead,hr,executive --locale en_US
+
+# Render each persona's variant — filename includes the persona suffix
+uv run vibe-resume render --persona tech_lead --locale en_US      # → resume_vNNN_tech_lead.md
+uv run vibe-resume render --persona all      --locale en_US      # fan out across every persona
+
+# Side-by-side diff of bullets across personas (quality iteration)
+uv run vibe-resume personas-compare -n 3
+```
+
+Each persona writes to `data/cache/_project_groups.<persona>.json` so
+variants don't clobber each other. The default `_project_groups.json`
+is preserved for persona-less runs. Render filenames include a
+`_<persona>` suffix when set.
+
+`personas-compare` is the quality-iteration tool: it aligns the top-N
+groups across every persona cache it finds and prints each group's
+role label + bullets side by side. If two personas produce the same
+output, the bias isn't biting — revise `core/personas.py` or the raw
+activity until they differentiate.
+
 ## Reviewer-view audit (`cli.py review`)
 
 ![8-point automated reviewer scorecard alongside a rendered résumé and trend sparkline](docs/assets/reviewer_audit.png)

@@ -166,7 +166,8 @@ def run_render(
     fmt: str = "md",
     tailor: str | None = None,
     locale: str | None = None,
+    persona: str | None = None,
 ) -> None:
     from render.renderer import render_draft
 
-    render_draft(cfg, fmt=fmt, tailor=tailor, locale=locale)
+    render_draft(cfg, fmt=fmt, tailor=tailor, locale=locale, persona=persona)

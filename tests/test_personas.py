@@ -86,3 +86,72 @@ def test_review_file_attaches_persona_tips(tmp_path) -> None:
     assert report.persona == "tech_lead"
     assert "Reviewer lens" in out
     assert "named systems" in out  # phrase unique to tech_lead.review_tips
+
+
+# ─────────────────────── multi-persona orchestration ──────────────────────────
+
+
+def test_resolve_persona_list_accepts_single_csv_and_all() -> None:
+    from core.enricher import _resolve_persona_list
+
+    assert _resolve_persona_list(None) == [None]
+    assert _resolve_persona_list("") == [None]
+    assert _resolve_persona_list("tech_lead") == ["tech_lead"]
+    assert _resolve_persona_list("tech_lead,hr") == ["tech_lead", "hr"]
+    # Whitespace around commas is tolerated — common when copy-pasting.
+    assert _resolve_persona_list(" tech_lead , hr ") == ["tech_lead", "hr"]
+    # 'all' expands to every registered persona (order preserved from registry).
+    from core.personas import list_persona_keys
+
+    assert _resolve_persona_list("all") == list_persona_keys()
+    # Unknown keys drop silently but don't poison the valid ones.
+    assert _resolve_persona_list("tech_lead,bogus,hr") == ["tech_lead", "hr"]
+
+
+def test_groups_path_for_is_persona_scoped(tmp_path, monkeypatch) -> None:
+    """Persona-less pipelines keep writing to the canonical file; persona runs
+    split into sibling files so variants don't clobber each other."""
+    from core.aggregator import GROUPS_PATH, groups_path_for
+
+    assert groups_path_for(None) == GROUPS_PATH
+    p = groups_path_for("tech_lead")
+    assert p.parent == GROUPS_PATH.parent
+    assert p.name == "_project_groups.tech_lead.json"
+    assert groups_path_for("tech_lead") != groups_path_for("hr")
+
+
+def test_load_groups_falls_back_to_canonical_when_persona_cache_missing(
+    tmp_path, monkeypatch
+) -> None:
+    """`render --persona X` before `enrich --persona X` should still produce
+    a reasonable draft from the canonical file, not silently render empty."""
+    import orjson
+
+    from core import aggregator
+
+    fake_canon = tmp_path / "_project_groups.json"
+    fake_canon.write_bytes(
+        orjson.dumps(
+            [
+                {
+                    "name": "demo",
+                    "path": None,
+                    "total_sessions": 1,
+                    "first_activity": "2026-01-01T00:00:00+00:00",
+                    "last_activity": "2026-01-01T00:00:00+00:00",
+                    "sources": ["claude-code"],
+                    "tech_stack": [],
+                    "category_counts": {},
+                    "capability_breadth": 0,
+                    "activities": [],
+                    "summary": "canonical",
+                }
+            ]
+        )
+    )
+    monkeypatch.setattr(aggregator, "GROUPS_PATH", fake_canon)
+
+    # No persona-specific file → falls back to canonical.
+    result = aggregator.load_groups(persona="tech_lead")
+    assert len(result) == 1
+    assert result[0].summary == "canonical"

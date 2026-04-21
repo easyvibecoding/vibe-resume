@@ -85,6 +85,11 @@ def enrich(
     default=False,
     help="Render every supported locale in one pass (mutually exclusive with --locale)",
 )
+@click.option(
+    "--persona",
+    default=None,
+    help="Reviewer persona (reads persona-scoped enrich cache; filename includes suffix). Accepts single key, comma-separated list, or 'all'.",
+)
 @click.pass_context
 def render(
     ctx: click.Context,
@@ -92,8 +97,10 @@ def render(
     tailor: str | None,
     locale: str | None,
     all_locales: bool,
+    persona: str | None,
 ) -> None:
     """Render resume draft to selected format and snapshot a version."""
+    from core.personas import PERSONAS, list_persona_keys
     from core.runner import run_render
     from render.i18n import LOCALES
 
@@ -103,19 +110,117 @@ def render(
     cfg = ctx.obj["config"]
     fmt = format or cfg.get("render", {}).get("default_format", "md")
 
+    # Expand --persona into one or more concrete keys (or [None] for default).
+    if not persona:
+        persona_keys: list[str | None] = [None]
+    elif persona.strip().lower() == "all":
+        persona_keys = list(list_persona_keys())
+    else:
+        raw_keys = [k.strip() for k in persona.split(",") if k.strip()]
+        persona_keys = []
+        for k in raw_keys:
+            if k in PERSONAS:
+                persona_keys.append(k)
+            else:
+                known = ", ".join(sorted(PERSONAS))
+                console.print(f"[yellow]unknown persona '{k}'. Known: {known}[/yellow]")
+        if not persona_keys:
+            persona_keys = [None]
+
+    def _render_for(locale_key: str | None, formats: list[str]) -> None:
+        for p_key in persona_keys:
+            if p_key:
+                console.print(f"\n[bold magenta]── persona: {p_key} ──[/bold magenta]")
+            for f in formats:
+                run_render(cfg, fmt=f, tailor=tailor, locale=locale_key, persona=p_key)
+
     if all_locales:
         # If the user didn't pass --format, fan out over the configured list
         # of formats so batch runs can produce md + docx + pdf in one sweep.
         formats = [fmt] if format else cfg.get("render", {}).get("all_locales_formats") or ["md"]
         console.print(
-            f"[cyan]rendering {len(LOCALES)} locales × {len(formats)} format(s): {', '.join(formats)}[/cyan]"
+            f"[cyan]rendering {len(LOCALES)} locale(s) × {len(persona_keys)} persona(s) × {len(formats)} format(s)[/cyan]"
         )
         for key in LOCALES:
             console.print(f"\n[bold]── {key} ──[/bold]")
-            for f in formats:
-                run_render(cfg, fmt=f, tailor=tailor, locale=key)
+            _render_for(key, formats)
     else:
-        run_render(cfg, fmt=fmt, tailor=tailor, locale=locale)
+        _render_for(locale, [fmt])
+
+
+@cli.command("personas-compare")
+@click.option(
+    "--personas",
+    "personas_arg",
+    default=None,
+    help="Comma-separated persona keys, or 'all'. Omit to diff every persona that has a cached enrich.",
+)
+@click.option("--limit", "-n", type=int, default=3, help="Show top-N project groups (default: 3)")
+@click.pass_context
+def personas_compare(ctx: click.Context, personas_arg: str | None, limit: int) -> None:
+    """Side-by-side diff of persona outputs for the top project groups.
+
+    Reads the per-persona cache files written by `enrich --persona <key>` and
+    prints each group's role_label + bullets under every persona, so you can
+    see whether the re-voicing actually differentiates (quality iteration).
+    """
+    from rich.console import Console as _C
+
+    from core.aggregator import groups_path_for
+    from core.personas import PERSONAS, list_persona_keys
+
+    out = _C()
+
+    # Pick which personas to show.
+    if personas_arg and personas_arg.strip().lower() == "all":
+        candidates = list_persona_keys()
+    elif personas_arg:
+        candidates = [k.strip() for k in personas_arg.split(",") if k.strip() in PERSONAS]
+    else:
+        # Auto-discover: every persona whose cache file actually exists.
+        candidates = [k for k in list_persona_keys() if groups_path_for(k).exists()]
+
+    if not candidates:
+        raise click.UsageError(
+            "no persona caches found. Run `enrich --persona tech_lead,hr,...` first, "
+            "or pass --personas to point at specific keys."
+        )
+
+    # Load each persona's groups and align by project name.
+    import orjson
+
+    persona_groups: dict[str, list[dict]] = {}
+    for k in candidates:
+        p = groups_path_for(k)
+        if not p.exists():
+            out.print(f"[yellow]skip {k}: no cache at {p.name}[/yellow]")
+            continue
+        persona_groups[k] = orjson.loads(p.read_bytes())
+
+    if not persona_groups:
+        raise click.UsageError("no usable persona caches on disk.")
+
+    # Use the first persona's group order as the axis (they all derive from
+    # the same baseline, so ordering is stable).
+    axis = next(iter(persona_groups.values()))[:limit]
+
+    for idx, group in enumerate(axis, 1):
+        name = group.get("name") or "(unnamed)"
+        sessions = group.get("total_sessions", 0)
+        out.print(f"\n[bold cyan]── [{idx}/{limit}] {name}  ({sessions} sessions) ──[/bold cyan]")
+        for p_key in candidates:
+            groups = persona_groups.get(p_key) or []
+            match = next((g for g in groups if g.get("name") == name), None)
+            if not match:
+                out.print(f"  [dim]{p_key}: (not in cache)[/dim]")
+                continue
+            role = match.get("headline") or match.get("role_label") or "—"
+            out.print(f"\n  [bold magenta]{p_key}[/bold magenta]  [dim]{role}[/dim]")
+            summary = (match.get("summary") or "").strip()
+            if summary:
+                out.print(f"    [italic]{summary[:160]}[/italic]")
+            for ach in (match.get("achievements") or [])[:4]:
+                out.print(f"    • {ach}")
 
 
 @cli.command()

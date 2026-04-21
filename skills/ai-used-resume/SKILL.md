@@ -57,6 +57,9 @@ Invoke this skill whenever the user wants to **turn their AI-tool usage history 
 | All 10 locales | `uv run vibe-resume render --all-locales` |
 | JD-tailored run | `uv run vibe-resume enrich --tailor data/imports/jd.txt --locale en_US -n 1 && uv run vibe-resume render -f md --locale en_US --tailor data/imports/jd.txt` |
 | Persona-biased enrich | `uv run vibe-resume enrich --persona tech_lead --locale en_US` (keys: `tech_lead` / `hr` / `executive` / `startup_founder` / `academic`) |
+| Multi-persona enrich in one run | `uv run vibe-resume enrich --persona tech_lead,hr,executive --locale en_US` or `--persona all` — each persona writes its own `_project_groups.<persona>.json` |
+| Persona render | `uv run vibe-resume render --persona tech_lead --locale en_US` reads the persona-scoped cache and emits `resume_v<NNN>_<locale>_<persona>.md` |
+| Compare persona output | `uv run vibe-resume personas-compare -n 3` — side-by-side bullets per persona for the top-N groups (quality iteration loop) |
 | Score latest | `uv run vibe-resume review` |
 | Score with JD echo | `uv run vibe-resume review --jd data/imports/jd.txt` |
 | Score with persona lens | `uv run vibe-resume review --persona hr` — appends persona-specific review tips |

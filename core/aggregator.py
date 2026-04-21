@@ -340,8 +340,29 @@ def load_observed_summary() -> dict | None:
     return orjson.loads(OBSERVED_SUMMARY_PATH.read_bytes())
 
 
-def load_groups() -> list[ProjectGroup]:
-    if not GROUPS_PATH.exists():
-        return []
-    raw = orjson.loads(GROUPS_PATH.read_bytes())
+def groups_path_for(persona: str | None = None) -> Path:
+    """Cache path for project groups, scoped to a reviewer persona when set.
+
+    Persona-less pipelines write to ``_project_groups.json`` (backwards compat).
+    Per-persona runs write to ``_project_groups.<persona>.json`` so two enrich
+    passes can coexist and render can pick the right variant by filename.
+    """
+    if not persona:
+        return GROUPS_PATH
+    return GROUPS_PATH.parent / f"_project_groups.{persona}.json"
+
+
+def load_groups(persona: str | None = None) -> list[ProjectGroup]:
+    """Load groups for the given persona, falling back to the default file.
+
+    The fallback matters for `render --persona X` when the user hasn't run
+    `enrich --persona X` yet: they still get a reasonable draft instead of
+    an empty one.
+    """
+    path = groups_path_for(persona)
+    if not path.exists():
+        path = GROUPS_PATH
+        if not path.exists():
+            return []
+    raw = orjson.loads(path.read_bytes())
     return [ProjectGroup(**g) for g in raw]

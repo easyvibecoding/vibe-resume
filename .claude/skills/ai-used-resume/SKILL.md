@@ -37,12 +37,15 @@ You are operating inside (or next to) the `vibe-resume` project. Use the current
    uv run python cli.py enrich --locale en_US                                # XYZ bullets (en_US / en_GB / en_EU)
    uv run python cli.py enrich --locale ja_JP                                # 名詞片語 bullets (ja/ko/zh/de/fr)
    uv run python cli.py enrich --tailor data/imports/jd.txt --locale en_US -n 1
-   uv run python cli.py enrich --persona tech_lead --locale en_US            # bias toward Staff+ reader
-   uv run python cli.py enrich --persona hr --locale en_US                   # bias toward HR / recruiter
+   uv run python cli.py enrich --persona tech_lead --locale en_US                  # single persona
+   uv run python cli.py enrich --persona tech_lead,hr,executive --locale en_US     # prep three personas in one run
+   uv run python cli.py enrich --persona all --locale en_US                        # every registered persona
+   uv run python cli.py personas-compare                                            # side-by-side diff (quality iteration)
    ```
    - `--locale` selects the prompt shape and language label (prevents e.g. Japanese role_label leaking Simplified Chinese).
    - `--tailor <JD.txt>` injects the JD's extracted keywords into the prompt so achievements surface them verbatim when the raw activity supports it (never invents matches).
-   - `--persona <key>` biases bullet phrasing toward a reviewer archetype. Keys: `tech_lead`, `hr`, `executive`, `startup_founder`, `academic`. Orthogonal to `--locale` (language) and `--tailor` (specific JD); compose all three per audience.
+   - `--persona <key>` biases bullet phrasing toward a reviewer archetype. Keys: `tech_lead`, `hr`, `executive`, `startup_founder`, `academic`. Accepts **comma-separated list** or `all` — each persona writes to its own cache `data/cache/_project_groups.<persona>.json`, so parallel variants coexist. Orthogonal to `--locale` and `--tailor`.
+   - `personas-compare [--personas a,b] [-n N]` prints each group's role + bullets side-by-side across persona variants, so you can see whether the re-voicing meaningfully differentiates. Use this to iterate persona prompt quality.
    - `-n N` limits to the top-N groups; out-of-window groups keep prior enrichment rather than being overwritten.
 
 6. **Render.**
