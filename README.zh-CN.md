@@ -500,8 +500,12 @@ vibe-resume/
 │   ├── resume_history/    # 渲染输出 + 内部 git(gitignored)
 │   └── reviews/           # 评分报告和历史(gitignored)
 ├── docs/samples/          # 各 locale 示范输出
-├── .claude/skills/ai-used-resume/SKILL.md   # 第 1–7 个 host 的 canonical skill
-└── skills/ai-used-resume/SKILL.md           # Hermes 原生 skill(第 8 个 host)
+├── .claude/skills/ai-used-resume/           # 第 1–7 个 host 的 canonical skill
+│   ├── SKILL.md
+│   └── references/                          # strategic-resume · troubleshooting · extending
+└── skills/ai-used-resume/                   # Hermes 原生 skill(第 8 个 host)
+    ├── SKILL.md
+    └── references/                          # strategic-resume · troubleshooting
 ```
 
 ## 新增一个 extractor

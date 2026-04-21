@@ -602,8 +602,12 @@ vibe-resume/
 │   ├── resume_history/    # rendered outputs + internal git (gitignored)
 │   └── reviews/           # review reports + history (gitignored)
 ├── docs/samples/          # illustrative locale-specific sample outputs
-├── .claude/skills/ai-used-resume/SKILL.md   # canonical Agent Skill (7 hosts)
-└── skills/ai-used-resume/SKILL.md           # Hermes-native Agent Skill (8th host)
+├── .claude/skills/ai-used-resume/           # canonical Agent Skill (7 hosts)
+│   ├── SKILL.md
+│   └── references/                          # strategic-resume · troubleshooting · extending
+└── skills/ai-used-resume/                   # Hermes-native Agent Skill (8th host)
+    ├── SKILL.md
+    └── references/                          # strategic-resume · troubleshooting
 ```
 
 ## Add a new extractor

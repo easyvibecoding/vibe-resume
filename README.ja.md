@@ -500,8 +500,12 @@ vibe-resume/
 │   ├── resume_history/    # レンダリング出力 + 内部 git(gitignored)
 │   └── reviews/           # レビュー結果と履歴(gitignored)
 ├── docs/samples/          # ロケール別サンプル出力
-├── .claude/skills/ai-used-resume/SKILL.md   # ホスト 1–7 用 canonical skill
-└── skills/ai-used-resume/SKILL.md           # Hermes ネイティブ skill(8 番目のホスト)
+├── .claude/skills/ai-used-resume/           # ホスト 1–7 用 canonical skill
+│   ├── SKILL.md
+│   └── references/                          # strategic-resume · troubleshooting · extending
+└── skills/ai-used-resume/                   # Hermes ネイティブ skill(8 番目のホスト)
+    ├── SKILL.md
+    └── references/                          # strategic-resume · troubleshooting
 ```
 
 ## 新しい extractor を追加する
