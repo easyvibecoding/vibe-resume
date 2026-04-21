@@ -198,6 +198,13 @@ the full axis reference, `company list`/`show`/`audit`/`verify`/
 `mark-verified` commands, and the drop-in recipe for adding a new
 employer profile.
 
+## Extending the pipeline
+
+When the user asks to add a new extractor, locale, or persona, consult
+[references/extending.md](references/extending.md) for the `Activity`
+schema contract, registration steps, and the "never invent activities"
+rule.
+
 ## Useful sibling commands
 
 - `uv run vibe-resume status` — per-source activity counts

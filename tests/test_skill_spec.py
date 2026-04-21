@@ -15,10 +15,22 @@ import yaml
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-SKILL_PATHS = [
-    REPO_ROOT / ".claude" / "skills" / "ai-used-resume" / "SKILL.md",
-    REPO_ROOT / "skills" / "ai-used-resume" / "SKILL.md",
+CANONICAL_SKILL_DIR = REPO_ROOT / "skills" / "ai-used-resume"
+
+# All host-discovery paths that should resolve to the same canonical SKILL.md.
+# Claude Code / Gemini CLI / OpenAI Codex (.agents/) / OpenCode all read from
+# their own subdirectory; each is a symlink to `skills/<name>/` per the
+# canonical-with-symlinks pattern endorsed by Vercel's `npx skills`, 803's
+# skills-supply, and the wider agentskills.io ecosystem.
+SKILL_DISCOVERY_PATHS = [
+    CANONICAL_SKILL_DIR,
+    REPO_ROOT / ".claude" / "skills" / "ai-used-resume",
+    REPO_ROOT / ".gemini" / "skills" / "ai-used-resume",
+    REPO_ROOT / ".agents" / "skills" / "ai-used-resume",
+    REPO_ROOT / ".opencode" / "skills" / "ai-used-resume",
 ]
+
+SKILL_PATHS = [CANONICAL_SKILL_DIR / "SKILL.md"]
 
 ALLOWED_FRONTMATTER_KEYS = {
     "name",
@@ -123,22 +135,25 @@ def _skill_markdown_files() -> list[Path]:
     return files
 
 
-def test_skill_variants_agree_on_identity() -> None:
-    """Both SKILL.md variants (.claude/ and skills/) must declare the same
-    `name`, `license`, and `compatibility` — these identify the skill to
-    downstream marketplaces and host environments. Description may diverge
-    (different phrasing for different audiences), but identity must not.
+@pytest.mark.parametrize(
+    "discovery_path",
+    [p for p in SKILL_DISCOVERY_PATHS if p != CANONICAL_SKILL_DIR],
+    ids=lambda p: str(p.relative_to(REPO_ROOT)),
+)
+def test_host_discovery_paths_resolve_to_canonical(discovery_path: Path) -> None:
+    """Every agent-host discovery path (.claude/, .gemini/, .agents/, .opencode/)
+    must be a symlink that resolves to the canonical skills/<name>/ directory.
+    Prevents accidental directory forks — if someone copies rather than
+    symlinks, the content will drift silently.
     """
-    frontmatters = {p: _split_frontmatter(p.read_text(encoding="utf-8"))[0] for p in SKILL_PATHS}
-
-    for field in ("name", "license", "compatibility"):
-        values = {str(path.relative_to(REPO_ROOT)): fm.get(field) for path, fm in frontmatters.items()}
-        declared = {v for v in values.values() if v is not None}
-        if len(declared) > 1:
-            pytest.fail(
-                f"SKILL.md variants disagree on `{field}`: {values}. "
-                f"Keep identity fields aligned across variants."
-            )
+    assert discovery_path.is_symlink(), (
+        f"{discovery_path.relative_to(REPO_ROOT)} must be a symlink to the "
+        f"canonical skills/ai-used-resume/ (found a real directory/file)"
+    )
+    assert discovery_path.resolve() == CANONICAL_SKILL_DIR.resolve(), (
+        f"{discovery_path.relative_to(REPO_ROOT)} resolves to "
+        f"{discovery_path.resolve()}, expected {CANONICAL_SKILL_DIR.resolve()}"
+    )
 
 
 @pytest.mark.parametrize(
