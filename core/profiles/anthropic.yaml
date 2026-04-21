@@ -1,0 +1,50 @@
+key: anthropic
+label: Anthropic
+tier: frontier_ai
+locale_hint: en_US
+must_haves:
+- >-
+  At least one substantive LLM project where the candidate drove intricate model behaviour
+  (not just an API wrapper)
+- Strong software engineering fundamentals — ML alone is not enough
+- >-
+  Authentic AI-safety or alignment engagement (specific paper, specific concern, specific
+  prior work)
+plus_signals:
+- >-
+  Public writing or code on interpretability, RLHF, constitutional AI, scalable oversight,
+  or evaluation methodology
+- Infrastructure work supporting large-model training or serving
+red_flags:
+- >-
+  Generic 'passionate about AI' framing with no specific paper or prior engagement cited
+- >-
+  Safety framing that reads as buzzword bingo rather than a demonstrated research interest
+- LLM work limited to prompt-engineering demos
+format_rules:
+- 1-2 pages, no photo
+- >-
+  Cover letter recommended; cite a specific Anthropic paper that shaped the candidate's interest
+- >-
+  Anthropic itself suggests using Claude to tailor the résumé — so generic boilerplate is
+  especially penalised
+keyword_anchors:
+- LLM
+- alignment
+- interpretability
+- RLHF
+- evals
+- red-teaming
+- constitutional AI
+- scalable oversight
+enrich_bias: >-
+  This résumé will be reviewed by Anthropic. Surface LLM projects where the candidate shaped
+  model behaviour — fine-tuning, RLHF, eval design, interpretability probes, adversarial testing.
+  Pair every ML project with the engineering substrate (training infra, dataset pipeline,
+  eval harness) so the résumé shows both halves of the ML-engineer profile. If mission alignment
+  can be demonstrated through prior contributions (OSS, writing, research), name the specific
+  artefact.
+review_tips: >-
+  Anthropic reviewers read for LLM depth + engineering rigour + specific-not-generic safety
+  interest. Flag: 'passionate about AI safety' with no prior engagement; LLM projects that
+  stop at prompt engineering; cover letters that could have been sent to any frontier lab.

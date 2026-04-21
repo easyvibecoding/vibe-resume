@@ -1,0 +1,51 @@
+key: rakuten
+label: 楽天 / Rakuten
+tier: jp
+locale_hint: ja_JP
+must_haves:
+- >-
+  Both 履歴書 (personal résumé) AND 職務経歴書 (work-history CV) — Rakuten screens out at the document
+  stage if either is missing
+- >-
+  Chronological company list with precise entry / exit dates and employment type (正社員 / 契約
+  / 派遣 / 業務委託)
+- >-
+  Per-role: project name, team size, candidate's role, technical stack, and outcome
+plus_signals:
+- Global-product experience (English-language collaboration)
+- E-commerce, fintech, or ads-platform background — Rakuten's core verticals
+- >-
+  Demonstrated Japanese business-level language proficiency OR a clear stance on English-only
+  internal communication
+red_flags:
+- Missing 職務経歴書 — the hiring team treats this as 'not serious'
+- Narrative-style career summary with no date-precise timeline
+- >-
+  Self-promotional superlatives without supporting numbers — Japanese reviewers discount 最高
+  / 素晴らしい without proof
+format_rules:
+- >-
+  履歴書: JIS Z 8303 format preferred; photo required in traditional document (though Rakuten's
+  English-forward teams may waive it)
+- >-
+  職務経歴書: 1-3 pages, reverse-chronological, per-project grid (期間 / 会社 / プロジェクト / 役割 / 技術 /
+  成果)
+- No creative layouts — traditional grids signal professionalism
+keyword_anchors:
+- 職務経歴書
+- 正社員
+- プロジェクト
+- 技術スタック
+- 成果
+- 担当範囲
+- チーム規模
+enrich_bias: >-
+  This résumé will be reviewed by Rakuten as a traditional Japanese 書類選考 package. Produce
+  a 職務経歴書 structure: for each role, emit a date range, company name, project title, team size,
+  candidate's specific 担当範囲 (scope of responsibility), technical stack, and 成果 (outcome).
+  Use neutral factual phrasing, not marketing language. Avoid superlatives; Japanese reviewers
+  treat unbacked claims as weaker than modest verified ones.
+review_tips: >-
+  Rakuten reviewers filter at the document stage: 履歴書 + 職務経歴書 both required, dates must be
+  precise, each role needs a project grid (期間/会社/プロジェクト/役割/技術/成果). Flag: narrative paragraphs
+  instead of grids; missing team-size or scope; superlatives without numbers.

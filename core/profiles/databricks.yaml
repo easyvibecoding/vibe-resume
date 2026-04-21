@@ -1,0 +1,46 @@
+key: databricks
+label: Databricks
+tier: ai_unicorn
+locale_hint: en_US
+must_haves:
+- >-
+  Strong DSA / algorithmic problem-solving — Databricks leans on medium-to-hard coding rounds
+  (graphs, DP, concurrency)
+- >-
+  Distributed-systems depth for ML infra roles (Spark, feature stores, distributed training,
+  serving)
+- 2-3 references lined up — Databricks runs pre-offer reference checks as standard
+plus_signals:
+- Prior Spark / Lakehouse / MLflow / Unity Catalog contributions
+- Multi-threading and concurrency real-world experience
+- >-
+  Recent conference talks or certifications (Databricks Summit, SAIS, Snowflake certs all
+  count)
+red_flags:
+- ML résumé without distributed-systems vocabulary
+- Missing concurrency / multi-threading for backend / infra roles
+- No reference readiness — the process assumes 2-3 solid refs
+format_rules:
+- 1-2 pages, no photo
+- >-
+  Distributed-systems terminology must appear explicitly for infra roles (sharding, consensus,
+  backpressure, partitioning)
+- 'Tech stack grouped by layer: data / training / serving / feature store'
+keyword_anchors:
+- Spark
+- Lakehouse
+- MLflow
+- Unity Catalog
+- distributed
+- feature store
+- concurrency
+- DP
+enrich_bias: >-
+  This résumé will be reviewed by Databricks. Lean into DSA + distributed-systems signalling:
+  name concurrency primitives, sharding strategies, and specific Spark / Lakehouse / MLflow
+  components worked on. For ML infra roles, surface the feature-store / distributed-training
+  / serving triad explicitly. Remember 2-3 references are needed pre-offer.
+review_tips: >-
+  Databricks reviewers filter on DSA + distributed depth + reference readiness. Flag: ML bullets
+  without distributed-systems language; backend roles without concurrency signals; candidates
+  without 2-3 ready references.

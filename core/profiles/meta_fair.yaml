@@ -1,0 +1,45 @@
+key: meta_fair
+label: Meta FAIR
+tier: frontier_ai
+locale_hint: en_US
+must_haves:
+- PhD (or equivalent practical experience) in CS / ML / stats / applied math
+- >-
+  Peer-reviewed publications in AI/ML venues — FAIR filters hard on this at the résumé stage
+- Demonstrable Python / PyTorch proficiency with public code
+plus_signals:
+- Prior postdoc / faculty / industry research lab experience
+- Agents, reasoning, planning, or multimodal-model work
+- Grants, fellowships, patents, or top-tier competition placements
+red_flags:
+- >-
+  No publications listed for a research-scientist role — this is a near-automatic filter at
+  FAIR
+- >-
+  Industry-only track record framed as research — FAIR looks for peer-reviewed contribution,
+  not internal shipping
+- Missing dataset / benchmark / code links under each contribution
+format_rules:
+- 1-2 pages; publication list can overflow to an extra page
+- No photo
+- >-
+  Publications section must list venue + year + role (first author, co-author) explicitly
+keyword_anchors:
+- publication
+- PhD
+- PyTorch
+- agents
+- reasoning
+- multimodal
+- benchmark
+- dataset
+enrich_bias: >-
+  This résumé will be reviewed by Meta FAIR. Publications are the primary currency — surface
+  them first, with venue, year, and author position. For each paper or project, name the dataset,
+  the benchmark, and what the candidate contributed specifically versus co-authors. Industry
+  engineering work, if present, should be framed as 'infrastructure enabling X paper' rather
+  than as shipping stories.
+review_tips: >-
+  FAIR reviewers filter on publications + venue quality + reproducibility artefacts. Flag:
+  research-scientist résumé without peer-reviewed publications; papers listed without venue;
+  industry bullets shaped like product-launch narratives instead of research contributions.

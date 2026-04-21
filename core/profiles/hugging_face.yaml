@@ -1,0 +1,45 @@
+key: hugging_face
+label: Hugging Face
+tier: ai_unicorn
+locale_hint: en_US
+must_haves:
+- >-
+  Substantial open-source contribution record — HF Hub, Transformers, Datasets, Diffusers,
+  or comparable ecosystems
+- >-
+  Public artefact trail: merged PRs, published Spaces / models, blog posts, community work
+- >-
+  Democratisation mindset: work framed around enabling other researchers / developers, not
+  proprietary advantage
+plus_signals:
+- Kaggle / CTF / ML-competition placements
+- Talks at OSS conferences (PyTorch, EuroPython, ML meetups)
+- Community moderation or maintainer responsibilities
+red_flags:
+- >-
+  Engineering-strong candidate with no public ML artefact — HF treats OSS trail as baseline
+- Closed-source-only track record for non-infra roles
+- Generic résumé with no HF-ecosystem familiarity
+format_rules:
+- 1-2 pages
+- >-
+  Link every claim to a public artefact: repo, Space, model, paper, PR, or blog post
+- HF Hub username prominently displayed; no photo
+keyword_anchors:
+- Transformers
+- Datasets
+- Diffusers
+- HF Hub
+- OSS
+- community
+- Spaces
+- accelerate
+enrich_bias: >-
+  This résumé will be reviewed by Hugging Face. Every ML-related bullet should resolve to
+  a public artefact — a merged PR, a published model, a Space, a blog post, a conference talk.
+  The review team follows the links. Frame contributions in terms of democratising ML access,
+  not proprietary competitive edge.
+review_tips: >-
+  Hugging Face reviewers follow public-artefact links. Flag: engineering strength with no
+  OSS / community trail; proprietary-product-only framing for non-infra roles; unsubstantiated
+  ML claims (no repo, no Space, no paper).

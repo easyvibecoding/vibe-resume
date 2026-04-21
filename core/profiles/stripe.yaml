@@ -1,0 +1,45 @@
+key: stripe
+label: Stripe
+tier: us_tier2
+locale_hint: en_US
+must_haves:
+- 'Deep skill in at least one of: Python, Go, Ruby, Java, JavaScript'
+- >-
+  An example of API design where the candidate weighed developer experience explicitly (clear
+  naming, idempotency, error surfaces)
+- >-
+  A bullet showing intellectual honesty — acknowledged a mistake, reverted a bad decision,
+  learned from an outage
+plus_signals:
+- Open-source contributions with accepted PRs
+- Payments / fintech / compliance-adjacent experience
+- Incident ownership with post-mortem narrative
+red_flags:
+- >-
+  Bragging claims without a specific artefact ('solved scaling for billions of users' with
+  no named system)
+- Tool-stacking without defensible depth
+- API-design bullets framed purely around internal perf, no user empathy lens
+format_rules:
+- 1-2 pages, no photo
+- >-
+  Lead bullet per role must be a named shipped outcome, not a responsibility description
+keyword_anchors:
+- API design
+- idempotency
+- webhooks
+- distributed systems
+- Go
+- Ruby
+- Python
+- developer experience
+enrich_bias: >-
+  This résumé will be reviewed by Stripe. For each project, make the API-or-interface boundary
+  visible — what other engineers / services consumed this, and what did the candidate do to
+  make that consumption clearer, safer, or more reliable. Intellectual honesty is part of
+  Stripe's hiring signal: if a project involved a reversal, a bad assumption caught late,
+  or a post-mortem, name it — that narrative outweighs a polished success story.
+review_tips: >-
+  Stripe reviewers scan for API-design empathy and intellectual honesty. Flag: bullets claiming
+  outcomes without a named system; pure backend-optimisation framing with no developer-experience
+  dimension; résumés that never acknowledge a mistake or reversal.

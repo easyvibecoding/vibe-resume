@@ -1,0 +1,44 @@
+key: taiwan_mobile
+label: 台灣大哥大 / Taiwan Mobile
+tier: tw_local
+locale_hint: zh_TW
+must_haves:
+- Java stack depth (Spring / RESTful APIs / relational DB)
+- >-
+  Cross-team coordination experience — telco IT stacks span billing, CRM, OTT, network, and
+  third-party integration
+- >-
+  Stable employment pattern — telcos discount short-tenure job-hopping for stability-oriented
+  back-office roles
+plus_signals:
+- Telco billing / OSS/BSS / CRM / subscription-management experience
+- OTT / streaming / payments third-party integration work
+- Maintenance + rewrite of legacy systems (vs. only greenfield)
+red_flags:
+- >-
+  Adjective-heavy résumé without quantification (Taiwanese recruiters increasingly penalise
+  熟悉 / 精通 / 負責 soup)
+- Job-hop every year without reason — signals flight risk for stable-track roles
+- Only describes tasks, never outcomes — 104-style lint failure
+format_rules:
+- 中文 (zh_TW) or 中英對照 acceptable
+- 1-2 pages; tables/grids for technical-stack section are fine
+- Company + role + dates + tech stack + quantified outcome per position
+keyword_anchors:
+- Java
+- Spring
+- REST API
+- 第三方串接
+- 跨部門
+- 系統維運
+- CRM
+- 計費
+enrich_bias: >-
+  This résumé will be reviewed by Taiwan Mobile. Use Traditional Chinese. For each role, show
+  cross-team coordination (業務 / 產品 / 網管 / 客服) explicitly — telco IT work is inherently cross-functional.
+  Replace adjectives (熟悉 / 精通 / 負責) with verbs + quantified outcomes. Surface stable tenure
+  and maintenance / migration work, not only greenfield shipping.
+review_tips: >-
+  Taiwan Mobile reviewers weigh stability + cross-team coordination + telco-stack familiarity.
+  Flag: adjective-heavy phrasing without metrics; pure task descriptions with no outcome line;
+  missing cross-team or third-party-integration evidence for senior roles.

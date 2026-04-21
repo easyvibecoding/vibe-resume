@@ -1,0 +1,41 @@
+key: perplexity
+label: Perplexity
+tier: ai_unicorn
+locale_hint: en_US
+must_haves:
+- >-
+  Retrieval + LLM combined experience — Perplexity's core is real-time search × language models
+- >-
+  Concrete vocabulary: embeddings, beam search, inference optimisation, re-ranking, citation
+  handling
+- Latency-awareness (p50 / p95 per-query) for user-facing roles
+plus_signals:
+- 'Search-quality work: relevance, query understanding, ranking evaluation'
+- Citation / grounding / hallucination-mitigation research
+- Low-latency serving experience (streaming, speculative decoding)
+red_flags:
+- LLM-only résumé with no retrieval / search dimension
+- Search résumé with no LLM integration
+- Latency-blind bullets for a product built on sub-second response
+format_rules:
+- 1-2 pages, no photo
+- 'Per ML bullet: model + retrieval stack + latency SLO + evaluation metric'
+- Tech stack must reveal the search × LLM combination, not just one side
+keyword_anchors:
+- retrieval
+- embeddings
+- beam search
+- re-ranking
+- citation
+- grounding
+- streaming
+- inference
+enrich_bias: >-
+  This résumé will be reviewed by Perplexity. Surface the retrieval × LLM combination — Perplexity's
+  product sits at that intersection. Every ML bullet should name a model, a retrieval stack,
+  a latency budget, and an evaluation metric (NDCG, precision, grounding score). Avoid framing
+  that reads as pure-LLM or pure-search — both must be visible.
+review_tips: >-
+  Perplexity reviewers scan for retrieval + LLM intersection + latency discipline. Flag: LLM-only
+  résumés with no search dimension; search résumés with no LLM integration; bullets without
+  latency or relevance metrics.

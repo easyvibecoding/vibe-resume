@@ -1,0 +1,48 @@
+key: amazon_aws
+label: Amazon AWS (Applied Scientist)
+tier: frontier_ai
+locale_hint: en_US
+must_haves:
+- PhD in CS / ML / stats / related — or MS with 4+ years industry ML experience
+- >-
+  Every past role must survive a 'Science Depth' deep-dive: what, why, how, outcome, what
+  you'd do differently
+- Production-scale ML experience (SageMaker, Spark, EMR, or equivalent)
+plus_signals:
+- Publications in NLP / RL / GenAI / LLMs at recognised venues
+- >-
+  Amazon Leadership-Principle-shaped bullets (Customer Obsession, Ownership, Dive Deep, Bias
+  for Action)
+- Cost-saving or operational-efficiency wins at scale
+red_flags:
+- Vague 'contributed to' bullets that collapse under deep-dive questioning
+- No Leadership Principle alignment visible in narrative
+- >-
+  Research framing with no connection to business-measurable outcome (AWS blends research
+  + applied)
+format_rules:
+- 1-2 pages
+- >-
+  STAR-shaped bullets (Situation, Task, Action, Result) are the house style for deep-dive
+  prep — résumé should foreshadow them
+- >-
+  Include AWS / cloud keywords (SageMaker, S3, EC2, Lambda) so ATS recognises relevance
+keyword_anchors:
+- SageMaker
+- Spark
+- EMR
+- Leadership Principles
+- customer obsession
+- dive deep
+- LLM
+- A/B test
+enrich_bias: >-
+  This résumé will be reviewed by Amazon AWS for an Applied Scientist or ML Engineer role.
+  Every bullet must be something the candidate is ready to deep-dive on for 10+ minutes —
+  no bragging claims without an underlying project. Use STAR shape (Situation, Task, Action,
+  Result) implicitly. Name AWS-native services where relevant so the résumé surfaces in Amazon's
+  internal ATS.
+review_tips: >-
+  AWS reviewers will deep-dive any bullet in the on-site interview. Flag: any claim the candidate
+  cannot support with a 5-minute narrative; missing Leadership-Principle-shaped framing; research
+  bullets with no business outcome.

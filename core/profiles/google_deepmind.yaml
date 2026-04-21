@@ -1,0 +1,43 @@
+key: google_deepmind
+label: Google DeepMind
+tier: frontier_ai
+locale_hint: en_US
+must_haves:
+- >-
+  Named research projects with depth — every listed project must be something the candidate
+  can discuss for 30+ minutes
+- One-page résumé unless senior/research-heavy (two pages max)
+- JD-keyword alignment — DeepMind screens with keyword overlap first
+plus_signals:
+- Peer-reviewed publications at NeurIPS / ICML / ICLR / JMLR
+- Gemini, AlphaFold, RL, or interpretability-adjacent contributions
+- >-
+  Strong referral or mutual-network connection — still a meaningful signal in DeepMind's funnel
+red_flags:
+- Project list without depth — every project must withstand a technical deep-dive
+- Two-plus pages without commensurate research record
+- Generic ML blurbs instead of project-specific narratives
+format_rules:
+- 1 page (2 allowed for PhD / senior research)
+- No photo
+- >-
+  Per-project: what you built, what question it answered, what the result was — in that order
+keyword_anchors:
+- research
+- publication
+- RL
+- transformers
+- evaluation
+- benchmark
+- dataset
+- reproducibility
+enrich_bias: >-
+  This résumé will be reviewed by Google DeepMind. Treat every project entry as a mini-abstract:
+  problem statement, method, concrete result. Prefer naming specific artefacts (paper titles,
+  benchmark deltas, open-source repos) over listing frameworks. Match keywords to the target
+  job description — DeepMind's screener weights keyword overlap heavily — but never fabricate
+  experience to hit a keyword.
+review_tips: >-
+  DeepMind reviewers expect every project to be defensible in a technical deep-dive. Flag:
+  project lists without outcomes, résumés over one page without a research record, keyword-stuffed
+  skill sections disconnected from the project narrative.

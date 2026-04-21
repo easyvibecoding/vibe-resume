@@ -1,0 +1,42 @@
+key: openai
+label: OpenAI
+tier: frontier_ai
+locale_hint: en_US
+must_haves:
+- >-
+  Evidence of working at significant scale (millions of users or massive data-processing volumes)
+- Concrete Python + deep-learning framework depth (PyTorch or TF)
+- >-
+  Quantified results — latency, throughput, accuracy, cost — on every non-trivial bullet
+plus_signals:
+- Distributed systems ownership
+- Inference optimisation or serving-layer contributions
+- Open-source contributions to major ML ecosystems
+red_flags:
+- >-
+  Tool lists without defensible depth (named a framework you cannot discuss for 10 minutes)
+- Vague 'improved performance' bullets with no metric
+- More than two pages for ICs without a research track record
+format_rules:
+- 1 page preferred (2 allowed for senior/staff+)
+- No photo
+- Lead each role with a verb + metric in the first bullet
+keyword_anchors:
+- PyTorch
+- distributed training
+- inference
+- evals
+- post-training
+- RLHF
+- scaling
+- latency
+enrich_bias: >-
+  This résumé will be reviewed by OpenAI. Emphasise scale (users, data volume, compute), the
+  specific ML stack (PyTorch, CUDA, distributed trainers, inference engines), and quantified
+  outcomes on every achievement bullet. Small-team agility is valued: phrases like 'led a
+  team of 2 to ship X' are preferred over 'was part of a large org that did Y'. Initiative
+  signals — projects the candidate scoped and drove — outrank titles.
+review_tips: >-
+  OpenAI reviewers skim for scale + ML depth + quantified impact. Flag: any bullet without
+  a metric, any tool listed without a defensible project behind it, any passive 'contributed
+  to' phrasing. Two-page résumés below staff level get discounted.

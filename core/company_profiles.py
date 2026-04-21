@@ -10,17 +10,21 @@ consistently weight differently from the generic 8-point rubric in
 - ``core/levels.py``         → seniority bracket (new_grad … staff_plus)
 - ``core/company_profiles.py`` (this file) → target employer
 
+Profile *data* lives one-file-per-company under ``core/profiles/*.yaml``
+so that /loop iterations (or external contributors) can add a new
+employer by dropping a single YAML file — no Python edit required.
+
 Sources: first-party careers pages, engineering blogs, and published
 interview guides collected under the "resume_review_templates_progress"
 memory. Each profile is a distillation — treat ``review_tips`` as hints
 a user can override per résumé version, not hard filters.
-
-Schema is deliberately conservative: every field is a ``tuple[str, ...]``
-or a plain string so profiles serialise cleanly if later moved to YAML.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
+from pathlib import Path
+
+import yaml
 
 # Tier groupings used by downstream code to select default format rules
 # (e.g. frontier_ai rarely wants a photo; jp often wants 職務経歴書 companion).
@@ -32,6 +36,11 @@ TIER_US_TIER2 = "us_tier2"
 TIER_EU = "eu"
 TIER_JP = "jp"
 TIER_KR = "kr"
+
+KNOWN_TIERS: frozenset[str] = frozenset({
+    TIER_FRONTIER_AI, TIER_AI_UNICORN, TIER_REGIONAL_AI, TIER_TW_LOCAL,
+    TIER_US_TIER2, TIER_EU, TIER_JP, TIER_KR,
+})
 
 
 @dataclass(frozen=True)
@@ -49,885 +58,86 @@ class CompanyProfile:
     review_tips: str
 
 
-COMPANY_PROFILES: dict[str, CompanyProfile] = {
-    # ---------------- A. Frontier AI labs ------------------------------------
-    "openai": CompanyProfile(
-        key="openai",
-        label="OpenAI",
-        tier=TIER_FRONTIER_AI,
-        locale_hint="en_US",
-        must_haves=(
-            "Evidence of working at significant scale (millions of users or "
-            "massive data-processing volumes)",
-            "Concrete Python + deep-learning framework depth (PyTorch or TF)",
-            "Quantified results — latency, throughput, accuracy, cost — on every "
-            "non-trivial bullet",
-        ),
-        plus_signals=(
-            "Distributed systems ownership",
-            "Inference optimisation or serving-layer contributions",
-            "Open-source contributions to major ML ecosystems",
-        ),
-        red_flags=(
-            "Tool lists without defensible depth (named a framework you cannot "
-            "discuss for 10 minutes)",
-            "Vague 'improved performance' bullets with no metric",
-            "More than two pages for ICs without a research track record",
-        ),
-        format_rules=(
-            "1 page preferred (2 allowed for senior/staff+)",
-            "No photo",
-            "Lead each role with a verb + metric in the first bullet",
-        ),
-        keyword_anchors=(
-            "PyTorch", "distributed training", "inference", "evals",
-            "post-training", "RLHF", "scaling", "latency",
-        ),
-        enrich_bias=(
-            "This résumé will be reviewed by OpenAI. Emphasise scale (users, "
-            "data volume, compute), the specific ML stack (PyTorch, CUDA, "
-            "distributed trainers, inference engines), and quantified outcomes "
-            "on every achievement bullet. Small-team agility is valued: phrases "
-            "like 'led a team of 2 to ship X' are preferred over 'was part of a "
-            "large org that did Y'. Initiative signals — projects the candidate "
-            "scoped and drove — outrank titles."
-        ),
-        review_tips=(
-            "OpenAI reviewers skim for scale + ML depth + quantified impact. "
-            "Flag: any bullet without a metric, any tool listed without a "
-            "defensible project behind it, any passive 'contributed to' phrasing. "
-            "Two-page résumés below staff level get discounted."
-        ),
-    ),
-    "anthropic": CompanyProfile(
-        key="anthropic",
-        label="Anthropic",
-        tier=TIER_FRONTIER_AI,
-        locale_hint="en_US",
-        must_haves=(
-            "At least one substantive LLM project where the candidate drove "
-            "intricate model behaviour (not just an API wrapper)",
-            "Strong software engineering fundamentals — ML alone is not enough",
-            "Authentic AI-safety or alignment engagement (specific paper, "
-            "specific concern, specific prior work)",
-        ),
-        plus_signals=(
-            "Public writing or code on interpretability, RLHF, constitutional AI, "
-            "scalable oversight, or evaluation methodology",
-            "Infrastructure work supporting large-model training or serving",
-        ),
-        red_flags=(
-            "Generic 'passionate about AI' framing with no specific paper or "
-            "prior engagement cited",
-            "Safety framing that reads as buzzword bingo rather than a "
-            "demonstrated research interest",
-            "LLM work limited to prompt-engineering demos",
-        ),
-        format_rules=(
-            "1-2 pages, no photo",
-            "Cover letter recommended; cite a specific Anthropic paper that "
-            "shaped the candidate's interest",
-            "Anthropic itself suggests using Claude to tailor the résumé — so "
-            "generic boilerplate is especially penalised",
-        ),
-        keyword_anchors=(
-            "LLM", "alignment", "interpretability", "RLHF", "evals",
-            "red-teaming", "constitutional AI", "scalable oversight",
-        ),
-        enrich_bias=(
-            "This résumé will be reviewed by Anthropic. Surface LLM projects "
-            "where the candidate shaped model behaviour — fine-tuning, RLHF, "
-            "eval design, interpretability probes, adversarial testing. Pair "
-            "every ML project with the engineering substrate (training infra, "
-            "dataset pipeline, eval harness) so the résumé shows both halves "
-            "of the ML-engineer profile. If mission alignment can be "
-            "demonstrated through prior contributions (OSS, writing, research), "
-            "name the specific artefact."
-        ),
-        review_tips=(
-            "Anthropic reviewers read for LLM depth + engineering rigour + "
-            "specific-not-generic safety interest. Flag: 'passionate about AI "
-            "safety' with no prior engagement; LLM projects that stop at "
-            "prompt engineering; cover letters that could have been sent to "
-            "any frontier lab."
-        ),
-    ),
-    # ---------------- E. US Tier-2 --------------------------------------------
-    "stripe": CompanyProfile(
-        key="stripe",
-        label="Stripe",
-        tier=TIER_US_TIER2,
-        locale_hint="en_US",
-        must_haves=(
-            "Deep skill in at least one of: Python, Go, Ruby, Java, JavaScript",
-            "An example of API design where the candidate weighed developer "
-            "experience explicitly (clear naming, idempotency, error surfaces)",
-            "A bullet showing intellectual honesty — acknowledged a mistake, "
-            "reverted a bad decision, learned from an outage",
-        ),
-        plus_signals=(
-            "Open-source contributions with accepted PRs",
-            "Payments / fintech / compliance-adjacent experience",
-            "Incident ownership with post-mortem narrative",
-        ),
-        red_flags=(
-            "Bragging claims without a specific artefact ('solved scaling for "
-            "billions of users' with no named system)",
-            "Tool-stacking without defensible depth",
-            "API-design bullets framed purely around internal perf, no user "
-            "empathy lens",
-        ),
-        format_rules=(
-            "1-2 pages, no photo",
-            "Lead bullet per role must be a named shipped outcome, not a "
-            "responsibility description",
-        ),
-        keyword_anchors=(
-            "API design", "idempotency", "webhooks", "distributed systems",
-            "Go", "Ruby", "Python", "developer experience",
-        ),
-        enrich_bias=(
-            "This résumé will be reviewed by Stripe. For each project, make "
-            "the API-or-interface boundary visible — what other engineers / "
-            "services consumed this, and what did the candidate do to make "
-            "that consumption clearer, safer, or more reliable. Intellectual "
-            "honesty is part of Stripe's hiring signal: if a project involved "
-            "a reversal, a bad assumption caught late, or a post-mortem, name "
-            "it — that narrative outweighs a polished success story."
-        ),
-        review_tips=(
-            "Stripe reviewers scan for API-design empathy and intellectual "
-            "honesty. Flag: bullets claiming outcomes without a named system; "
-            "pure backend-optimisation framing with no developer-experience "
-            "dimension; résumés that never acknowledge a mistake or reversal."
-        ),
-    ),
-    # ---------------- G. Japan — traditional (書類-heavy) --------------------
-    "rakuten": CompanyProfile(
-        key="rakuten",
-        label="楽天 / Rakuten",
-        tier=TIER_JP,
-        locale_hint="ja_JP",
-        must_haves=(
-            "Both 履歴書 (personal résumé) AND 職務経歴書 (work-history CV) — "
-            "Rakuten screens out at the document stage if either is missing",
-            "Chronological company list with precise entry / exit dates and "
-            "employment type (正社員 / 契約 / 派遣 / 業務委託)",
-            "Per-role: project name, team size, candidate's role, technical "
-            "stack, and outcome",
-        ),
-        plus_signals=(
-            "Global-product experience (English-language collaboration)",
-            "E-commerce, fintech, or ads-platform background — Rakuten's core "
-            "verticals",
-            "Demonstrated Japanese business-level language proficiency OR a "
-            "clear stance on English-only internal communication",
-        ),
-        red_flags=(
-            "Missing 職務経歴書 — the hiring team treats this as 'not serious'",
-            "Narrative-style career summary with no date-precise timeline",
-            "Self-promotional superlatives without supporting numbers — "
-            "Japanese reviewers discount 最高 / 素晴らしい without proof",
-        ),
-        format_rules=(
-            "履歴書: JIS Z 8303 format preferred; photo required in traditional "
-            "document (though Rakuten's English-forward teams may waive it)",
-            "職務経歴書: 1-3 pages, reverse-chronological, per-project grid "
-            "(期間 / 会社 / プロジェクト / 役割 / 技術 / 成果)",
-            "No creative layouts — traditional grids signal professionalism",
-        ),
-        keyword_anchors=(
-            "職務経歴書", "正社員", "プロジェクト", "技術スタック",
-            "成果", "担当範囲", "チーム規模",
-        ),
-        enrich_bias=(
-            "This résumé will be reviewed by Rakuten as a traditional Japanese "
-            "書類選考 package. Produce a 職務経歴書 structure: for each role, "
-            "emit a date range, company name, project title, team size, "
-            "candidate's specific 担当範囲 (scope of responsibility), technical "
-            "stack, and 成果 (outcome). Use neutral factual phrasing, not "
-            "marketing language. Avoid superlatives; Japanese reviewers treat "
-            "unbacked claims as weaker than modest verified ones."
-        ),
-        review_tips=(
-            "Rakuten reviewers filter at the document stage: 履歴書 + 職務経歴書 "
-            "both required, dates must be precise, each role needs a project "
-            "grid (期間/会社/プロジェクト/役割/技術/成果). Flag: narrative paragraphs "
-            "instead of grids; missing team-size or scope; superlatives without "
-            "numbers."
-        ),
-    ),
-    "google_deepmind": CompanyProfile(
-        key="google_deepmind",
-        label="Google DeepMind",
-        tier=TIER_FRONTIER_AI,
-        locale_hint="en_US",
-        must_haves=(
-            "Named research projects with depth — every listed project must be "
-            "something the candidate can discuss for 30+ minutes",
-            "One-page résumé unless senior/research-heavy (two pages max)",
-            "JD-keyword alignment — DeepMind screens with keyword overlap first",
-        ),
-        plus_signals=(
-            "Peer-reviewed publications at NeurIPS / ICML / ICLR / JMLR",
-            "Gemini, AlphaFold, RL, or interpretability-adjacent contributions",
-            "Strong referral or mutual-network connection — still a meaningful "
-            "signal in DeepMind's funnel",
-        ),
-        red_flags=(
-            "Project list without depth — every project must withstand a "
-            "technical deep-dive",
-            "Two-plus pages without commensurate research record",
-            "Generic ML blurbs instead of project-specific narratives",
-        ),
-        format_rules=(
-            "1 page (2 allowed for PhD / senior research)",
-            "No photo",
-            "Per-project: what you built, what question it answered, what the "
-            "result was — in that order",
-        ),
-        keyword_anchors=(
-            "research", "publication", "RL", "transformers", "evaluation",
-            "benchmark", "dataset", "reproducibility",
-        ),
-        enrich_bias=(
-            "This résumé will be reviewed by Google DeepMind. Treat every "
-            "project entry as a mini-abstract: problem statement, method, "
-            "concrete result. Prefer naming specific artefacts (paper titles, "
-            "benchmark deltas, open-source repos) over listing frameworks. "
-            "Match keywords to the target job description — DeepMind's "
-            "screener weights keyword overlap heavily — but never fabricate "
-            "experience to hit a keyword."
-        ),
-        review_tips=(
-            "DeepMind reviewers expect every project to be defensible in a "
-            "technical deep-dive. Flag: project lists without outcomes, "
-            "résumés over one page without a research record, keyword-"
-            "stuffed skill sections disconnected from the project narrative."
-        ),
-    ),
-    "meta_fair": CompanyProfile(
-        key="meta_fair",
-        label="Meta FAIR",
-        tier=TIER_FRONTIER_AI,
-        locale_hint="en_US",
-        must_haves=(
-            "PhD (or equivalent practical experience) in CS / ML / stats / "
-            "applied math",
-            "Peer-reviewed publications in AI/ML venues — FAIR filters hard "
-            "on this at the résumé stage",
-            "Demonstrable Python / PyTorch proficiency with public code",
-        ),
-        plus_signals=(
-            "Prior postdoc / faculty / industry research lab experience",
-            "Agents, reasoning, planning, or multimodal-model work",
-            "Grants, fellowships, patents, or top-tier competition placements",
-        ),
-        red_flags=(
-            "No publications listed for a research-scientist role — this is a "
-            "near-automatic filter at FAIR",
-            "Industry-only track record framed as research — FAIR looks for "
-            "peer-reviewed contribution, not internal shipping",
-            "Missing dataset / benchmark / code links under each contribution",
-        ),
-        format_rules=(
-            "1-2 pages; publication list can overflow to an extra page",
-            "No photo",
-            "Publications section must list venue + year + role (first author, "
-            "co-author) explicitly",
-        ),
-        keyword_anchors=(
-            "publication", "PhD", "PyTorch", "agents", "reasoning",
-            "multimodal", "benchmark", "dataset",
-        ),
-        enrich_bias=(
-            "This résumé will be reviewed by Meta FAIR. Publications are the "
-            "primary currency — surface them first, with venue, year, and "
-            "author position. For each paper or project, name the dataset, "
-            "the benchmark, and what the candidate contributed specifically "
-            "versus co-authors. Industry engineering work, if present, should "
-            "be framed as 'infrastructure enabling X paper' rather than as "
-            "shipping stories."
-        ),
-        review_tips=(
-            "FAIR reviewers filter on publications + venue quality + "
-            "reproducibility artefacts. Flag: research-scientist résumé "
-            "without peer-reviewed publications; papers listed without "
-            "venue; industry bullets shaped like product-launch narratives "
-            "instead of research contributions."
-        ),
-    ),
-    "amazon_aws": CompanyProfile(
-        key="amazon_aws",
-        label="Amazon AWS (Applied Scientist)",
-        tier=TIER_FRONTIER_AI,
-        locale_hint="en_US",
-        must_haves=(
-            "PhD in CS / ML / stats / related — or MS with 4+ years industry "
-            "ML experience",
-            "Every past role must survive a 'Science Depth' deep-dive: what, "
-            "why, how, outcome, what you'd do differently",
-            "Production-scale ML experience (SageMaker, Spark, EMR, or "
-            "equivalent)",
-        ),
-        plus_signals=(
-            "Publications in NLP / RL / GenAI / LLMs at recognised venues",
-            "Amazon Leadership-Principle-shaped bullets (Customer Obsession, "
-            "Ownership, Dive Deep, Bias for Action)",
-            "Cost-saving or operational-efficiency wins at scale",
-        ),
-        red_flags=(
-            "Vague 'contributed to' bullets that collapse under deep-dive "
-            "questioning",
-            "No Leadership Principle alignment visible in narrative",
-            "Research framing with no connection to business-measurable "
-            "outcome (AWS blends research + applied)",
-        ),
-        format_rules=(
-            "1-2 pages",
-            "STAR-shaped bullets (Situation, Task, Action, Result) are the "
-            "house style for deep-dive prep — résumé should foreshadow them",
-            "Include AWS / cloud keywords (SageMaker, S3, EC2, Lambda) so "
-            "ATS recognises relevance",
-        ),
-        keyword_anchors=(
-            "SageMaker", "Spark", "EMR", "Leadership Principles",
-            "customer obsession", "dive deep", "LLM", "A/B test",
-        ),
-        enrich_bias=(
-            "This résumé will be reviewed by Amazon AWS for an Applied "
-            "Scientist or ML Engineer role. Every bullet must be something "
-            "the candidate is ready to deep-dive on for 10+ minutes — no "
-            "bragging claims without an underlying project. Use STAR shape "
-            "(Situation, Task, Action, Result) implicitly. Name AWS-native "
-            "services where relevant so the résumé surfaces in Amazon's "
-            "internal ATS."
-        ),
-        review_tips=(
-            "AWS reviewers will deep-dive any bullet in the on-site interview. "
-            "Flag: any claim the candidate cannot support with a 5-minute "
-            "narrative; missing Leadership-Principle-shaped framing; research "
-            "bullets with no business outcome."
-        ),
-    ),
-    "mercari": CompanyProfile(
-        key="mercari",
-        label="メルカリ / Mercari",
-        tier=TIER_JP,
-        locale_hint="ja_JP",
-        must_haves=(
-            "職務経歴書 (work-history CV) with *narrative between roles* — "
-            "Mercari's HR explicitly reads for the story linking each move to "
-            "the next",
-            "Public artefact trail — GitHub profile, tech blog, conference "
-            "talks; Mercari's HR states they always read submitted profiles",
-            "Clear motivation for joining Mercari specifically (not 'any "
-            "Japanese tech company')",
-        ),
-        plus_signals=(
-            "OSS contributions to Go / Kubernetes / cloud-native ecosystem",
-            "English-capable engineering (Mercari runs English-first for "
-            "product dev)",
-            "C2C-marketplace, trust-and-safety, or ML-for-recommendation "
-            "experience",
-        ),
-        red_flags=(
-            "履歴書 that is clearly template-filled with no personality — "
-            "Mercari's HR states they 'basically don't read' a hollow 履歴書",
-            "Job-hopping history with no connecting narrative between roles",
-            "Missing public-artefact links (no GitHub, no blog, no talks) "
-            "for an engineer with 3+ years of experience",
-        ),
-        format_rules=(
-            "履歴書 + 職務経歴書 both required, but 職務経歴書 is the primary "
-            "document — it should read as a cohesive story, not a list",
-            "Photo optional (Mercari's modernised hiring allows no-photo)",
-            "English résumé accepted and often preferred for engineering roles",
-        ),
-        keyword_anchors=(
-            "職務経歴書", "GitHub", "OSS", "Go", "Kubernetes",
-            "microservices", "C2C", "trust and safety",
-        ),
-        enrich_bias=(
-            "This résumé will be reviewed by Mercari — a 'new-school' "
-            "Japanese tech company that reads 職務経歴書 and public-artefact "
-            "trails over 履歴書 formalities. For each role, explain *why* "
-            "the candidate moved and how that move connected to the next — "
-            "Mercari's HR explicitly evaluates this narrative thread. Surface "
-            "GitHub repos, blog posts, and conference talks; the review team "
-            "will follow the links."
-        ),
-        review_tips=(
-            "Mercari reviewers follow public-artefact links and read for "
-            "inter-role narrative. Flag: 職務経歴書 that reads as a bullet "
-            "list with no thread; missing GitHub / blog / talks for engineers "
-            "with non-trivial experience; generic 'I like Japan' motivation "
-            "that applies to any JP company."
-        ),
-    ),
-    # ---------------- D. Taiwan local ----------------------------------------
-    "taiwan_mobile": CompanyProfile(
-        key="taiwan_mobile",
-        label="台灣大哥大 / Taiwan Mobile",
-        tier=TIER_TW_LOCAL,
-        locale_hint="zh_TW",
-        must_haves=(
-            "Java stack depth (Spring / RESTful APIs / relational DB)",
-            "Cross-team coordination experience — telco IT stacks span "
-            "billing, CRM, OTT, network, and third-party integration",
-            "Stable employment pattern — telcos discount short-tenure "
-            "job-hopping for stability-oriented back-office roles",
-        ),
-        plus_signals=(
-            "Telco billing / OSS/BSS / CRM / subscription-management "
-            "experience",
-            "OTT / streaming / payments third-party integration work",
-            "Maintenance + rewrite of legacy systems (vs. only greenfield)",
-        ),
-        red_flags=(
-            "Adjective-heavy résumé without quantification (Taiwanese "
-            "recruiters increasingly penalise 熟悉 / 精通 / 負責 soup)",
-            "Job-hop every year without reason — signals flight risk for "
-            "stable-track roles",
-            "Only describes tasks, never outcomes — 104-style lint failure",
-        ),
-        format_rules=(
-            "中文 (zh_TW) or 中英對照 acceptable",
-            "1-2 pages; tables/grids for technical-stack section are fine",
-            "Company + role + dates + tech stack + quantified outcome per "
-            "position",
-        ),
-        keyword_anchors=(
-            "Java", "Spring", "REST API", "第三方串接", "跨部門",
-            "系統維運", "CRM", "計費",
-        ),
-        enrich_bias=(
-            "This résumé will be reviewed by Taiwan Mobile. Use Traditional "
-            "Chinese. For each role, show cross-team coordination (業務 / "
-            "產品 / 網管 / 客服) explicitly — telco IT work is inherently "
-            "cross-functional. Replace adjectives (熟悉 / 精通 / 負責) with "
-            "verbs + quantified outcomes. Surface stable tenure and "
-            "maintenance / migration work, not only greenfield shipping."
-        ),
-        review_tips=(
-            "Taiwan Mobile reviewers weigh stability + cross-team coordination "
-            "+ telco-stack familiarity. Flag: adjective-heavy phrasing without "
-            "metrics; pure task descriptions with no outcome line; missing "
-            "cross-team or third-party-integration evidence for senior roles."
-        ),
-    ),
-    # ---------------- H. Korea -----------------------------------------------
-    "kakao": CompanyProfile(
-        key="kakao",
-        label="Kakao",
-        tier=TIER_KR,
-        locale_hint="ko_KR",
-        must_haves=(
-            "Hangul-first résumé with English technical terms in parentheses "
-            "— Korean ATS scans Hangul first, then English equivalents",
-            "Demonstrated scale experience (Kakao serves 90%+ of Korean "
-            "messaging traffic)",
-            "Clear tenure timeline with month-level precision",
-        ),
-        plus_signals=(
-            "Prior NKLCB experience (Naver / Kakao / Line / Coupang / Baedal "
-            "Minjok / Danggeun / Toss) — widely used as a trust signal "
-            "across the Korean tech network",
-            "Kakao / KakaoBank / KakaoPay / KakaoGames ecosystem work",
-            "High-QPS backend, messaging, or payments experience",
-        ),
-        red_flags=(
-            "English-only résumé without Hangul fallback — misses the "
-            "Korean ATS first pass",
-            "Missing photo in traditional submission channels (photo is "
-            "standard for most Korean résumés)",
-            "No mention of tenure duration — Korean reviewers read this "
-            "alongside the company name",
-        ),
-        format_rules=(
-            "Hangul primary + English tech terms; photo commonly expected",
-            "Reverse-chronological; company names in Korean with English "
-            "short forms",
-            "1-2 pages",
-        ),
-        keyword_anchors=(
-            "카카오", "대규모 트래픽", "백엔드", "메시징", "결제",
-            "Java", "Kotlin", "MSA",
-        ),
-        enrich_bias=(
-            "This résumé will be reviewed by Kakao. Produce Korean "
-            "(Hangul) as the primary language with English technical terms in "
-            "parentheses — Korean ATS scans Hangul first. Surface scale "
-            "(QPS, DAU, messaging volume) using numerical values that match "
-            "Kakao's own product scale. If the candidate has prior NKLCB "
-            "experience, it is a trust signal — name the company plainly."
-        ),
-        review_tips=(
-            "Kakao reviewers scan for Hangul primary + scale numbers + NKLCB "
-            "lineage. Flag: English-only résumé; missing tenure months; "
-            "backend roles without a QPS / DAU / messaging-volume scale line."
-        ),
-    ),
-    "nvidia": CompanyProfile(
-        key="nvidia",
-        label="NVIDIA",
-        tier=TIER_FRONTIER_AI,
-        locale_hint="en_US",
-        must_haves=(
-            "Deep-learning framework fluency (PyTorch / JAX / TensorFlow) with "
-            "a clear algorithm-implementation track record",
-            "Reverse-chronological layout with 3-6 bullets per role (more for "
-            "recent, fewer for older)",
-            "Tailored alignment to the specific JD — NVIDIA's recruiters state "
-            "they read for keyword overlap before depth",
-        ),
-        plus_signals=(
-            "CUDA / Triton / TensorRT / cuDNN low-level optimisation work",
-            "Referral from an NVIDIA insider — still a meaningful funnel advantage",
-            "GPU-adjacent research (kernels, numerics, mixed-precision, "
-            "parallelism)",
-        ),
-        red_flags=(
-            "ML-applied résumé with no systems-level depth for infra or kernel "
-            "roles",
-            "Missing framework-version specificity ('used PyTorch' without "
-            "saying which version or feature set)",
-            "Bulk-applied résumé with no keyword match to the target JD",
-        ),
-        format_rules=(
-            "1-2 pages; classic reverse-chronological",
-            "Clean header with contact details first; no photo",
-            "Tech-stack section should name frameworks + CUDA/GPU specifics "
-            "where relevant",
-        ),
-        keyword_anchors=(
-            "CUDA", "PyTorch", "JAX", "TensorRT", "cuDNN", "Triton",
-            "kernel", "mixed precision",
-        ),
-        enrich_bias=(
-            "This résumé will be reviewed by NVIDIA. Prefer algorithm-level "
-            "and kernel-level language over framework-user language: name "
-            "specific CUDA primitives, mixed-precision strategies, or "
-            "parallelism patterns the candidate implemented. For DL / ML "
-            "roles, surface the hardware substrate — which GPUs, which "
-            "interconnect, which numerics trade-off. Match the target JD's "
-            "keyword list before polishing prose."
-        ),
-        review_tips=(
-            "NVIDIA reviewers filter on framework depth + hardware-aware "
-            "language + JD keyword match. Flag: ML bullets with no hardware "
-            "or framework-version specificity; résumés that read identical "
-            "for every NVIDIA JD; reverse-chron layout violations."
-        ),
-    ),
-    "apple": CompanyProfile(
-        key="apple",
-        label="Apple (AIML / MLR)",
-        tier=TIER_FRONTIER_AI,
-        locale_hint="en_US",
-        must_haves=(
-            "PhD in CS / ML / related technical field (or equivalent "
-            "practical research experience)",
-            "Peer-reviewed publications at NeurIPS / ICML / ICLR / AAAI / "
-            "CVPR / ICCV / ECCV / ACL / EMNLP",
-            "Hands-on deep-learning toolkit fluency (PyTorch primary), with "
-            "strong linear-algebra / statistics foundation",
-        ),
-        plus_signals=(
-            "Ability to formulate a research problem from scratch — not just "
-            "execute a defined one (Apple's MLR hires curiosity-driven "
-            "researchers)",
-            "On-device / privacy-preserving ML experience (Apple's "
-            "differentiating area)",
-            "Long-term curiosity-driven research rather than quarterly-ship "
-            "cadence",
-        ),
-        red_flags=(
-            "Research résumé without publications at a recognised venue",
-            "Short-tenure jumps that imply the candidate cannot sustain the "
-            "multi-year research arcs Apple MLR is built around",
-            "Industry-shipping narrative framed as research",
-        ),
-        format_rules=(
-            "1-2 pages for ICs; publication list may overflow to extra page",
-            "No photo",
-            "Each publication entry: venue + year + role + link to paper",
-        ),
-        keyword_anchors=(
-            "publication", "PhD", "PyTorch", "on-device",
-            "privacy-preserving", "CVPR", "ICML", "research",
-        ),
-        enrich_bias=(
-            "This résumé will be reviewed by Apple's Machine Learning "
-            "Research team. Emphasise curiosity-driven long-term research — "
-            "multi-year projects with a clear research question, not "
-            "quarterly shipping wins. Publications are primary. If the "
-            "candidate has on-device or privacy-preserving ML experience, "
-            "surface it early — that is Apple's differentiator. Frame "
-            "industry work as research-infrastructure-enabling."
-        ),
-        review_tips=(
-            "Apple MLR reviewers filter on venue quality + sustained research "
-            "arcs + on-device / privacy angle when present. Flag: "
-            "publication-free research résumés; short-tenure churn; bullets "
-            "that read like product shipping rather than research contribution."
-        ),
-    ),
-    "microsoft": CompanyProfile(
-        key="microsoft",
-        label="Microsoft (Applied Scientist / ML Engineer)",
-        tier=TIER_FRONTIER_AI,
-        locale_hint="en_US",
-        must_haves=(
-            "MS/PhD in CS/EE + 2+ years ML/NLP/data-mining experience, OR "
-            "BS + 4+ years in the same",
-            "Hands-on ML-framework fluency: PyTorch, TensorFlow, HuggingFace, "
-            "ONNX at minimum",
-            "Azure / cloud experience — Microsoft expects cloud literacy "
-            "alongside ML depth",
-        ),
-        plus_signals=(
-            "ATS-friendly reverse-chronological format — Microsoft's ATS is "
-            "configured for it",
-            "Cross-functional collaboration with PM / data / research / "
-            "customer-facing roles",
-            "Responsible-AI / safety / red-teaming exposure",
-        ),
-        red_flags=(
-            "Non-standard layouts (two-column creative templates) that "
-            "confuse ATS parsers",
-            "ML-only narrative with no cloud / platform / productisation "
-            "dimension",
-            "Missing cross-functional collaboration evidence for senior roles",
-        ),
-        format_rules=(
-            "Reverse-chronological, ATS-friendly",
-            "1-2 pages",
-            "Explicit framework + Azure service names for ATS keyword "
-            "matching",
-        ),
-        keyword_anchors=(
-            "Azure", "PyTorch", "HuggingFace", "ONNX", "responsible AI",
-            "applied scientist", "cross-functional",
-        ),
-        enrich_bias=(
-            "This résumé will be reviewed by Microsoft for an Applied "
-            "Scientist or ML Engineer role. Use reverse-chronological, "
-            "ATS-friendly layout. Name ML frameworks and Azure services "
-            "explicitly — Microsoft's ATS keys on these. Surface cross-"
-            "functional collaboration (PM / data / research / customer-"
-            "facing) because Microsoft's applied-science roles sit between "
-            "research and product."
-        ),
-        review_tips=(
-            "Microsoft reviewers scan ATS-parseable reverse-chron résumés "
-            "for framework + Azure service mentions and cross-functional "
-            "language. Flag: creative layouts that ATS-misparse; pure-ML "
-            "narratives with no cloud dimension; missing PM / customer-"
-            "facing collaboration for senior candidates."
-        ),
-    ),
-    # ---------------- B. AI unicorns -----------------------------------------
-    "cohere": CompanyProfile(
-        key="cohere",
-        label="Cohere",
-        tier=TIER_AI_UNICORN,
-        locale_hint="en_US",
-        must_haves=(
-            "Production-grade LLM system experience — not just demos or "
-            "notebooks",
-            "Enterprise-integration awareness: RAG, retrieval, permissions, "
-            "on-prem / VPC deployment",
-            "Clear ML × software-engineering balance (Cohere hires engineers "
-            "who can both train and deploy)",
-        ),
-        plus_signals=(
-            "Multilingual / multi-tenant LLM product work",
-            "Open-source ML contributions with accepted PRs",
-            "Published research papers on LLM methods",
-        ),
-        red_flags=(
-            "LLM experience that tops out at OpenAI-API wrapping",
-            "No deployment / reliability dimension — Cohere's customers "
-            "are enterprises",
-            "Missing retrieval / embedding / RAG vocabulary for applied "
-            "roles",
-        ),
-        format_rules=(
-            "1-2 pages, no photo",
-            "Name the LLM family + training regime (pre-train / fine-tune / "
-            "RLHF) for each ML bullet",
-            "Surface enterprise-grade concerns (latency SLO, multi-tenant, "
-            "privacy) explicitly",
-        ),
-        keyword_anchors=(
-            "LLM", "RAG", "retrieval", "embeddings", "fine-tuning",
-            "enterprise", "on-prem", "multi-tenant",
-        ),
-        enrich_bias=(
-            "This résumé will be reviewed by Cohere. Surface production LLM "
-            "work — training, fine-tuning, RAG, evaluation — paired with "
-            "the engineering substrate that lets it serve enterprise "
-            "customers (permissions, multi-tenant, on-prem, SLOs). Avoid "
-            "framing LLM work as prompt-engineering or API-wrapping if the "
-            "real depth is there."
-        ),
-        review_tips=(
-            "Cohere reviewers read for LLM-depth + enterprise-deployment "
-            "awareness together. Flag: LLM bullets that stop at demos or "
-            "API-wrapping; missing deployment / reliability dimension; "
-            "retrieval roles without RAG / embeddings vocabulary."
-        ),
-    ),
-    "hugging_face": CompanyProfile(
-        key="hugging_face",
-        label="Hugging Face",
-        tier=TIER_AI_UNICORN,
-        locale_hint="en_US",
-        must_haves=(
-            "Substantial open-source contribution record — HF Hub, "
-            "Transformers, Datasets, Diffusers, or comparable ecosystems",
-            "Public artefact trail: merged PRs, published Spaces / models, "
-            "blog posts, community work",
-            "Democratisation mindset: work framed around enabling other "
-            "researchers / developers, not proprietary advantage",
-        ),
-        plus_signals=(
-            "Kaggle / CTF / ML-competition placements",
-            "Talks at OSS conferences (PyTorch, EuroPython, ML meetups)",
-            "Community moderation or maintainer responsibilities",
-        ),
-        red_flags=(
-            "Engineering-strong candidate with no public ML artefact — HF "
-            "treats OSS trail as baseline",
-            "Closed-source-only track record for non-infra roles",
-            "Generic résumé with no HF-ecosystem familiarity",
-        ),
-        format_rules=(
-            "1-2 pages",
-            "Link every claim to a public artefact: repo, Space, model, "
-            "paper, PR, or blog post",
-            "HF Hub username prominently displayed; no photo",
-        ),
-        keyword_anchors=(
-            "Transformers", "Datasets", "Diffusers", "HF Hub", "OSS",
-            "community", "Spaces", "accelerate",
-        ),
-        enrich_bias=(
-            "This résumé will be reviewed by Hugging Face. Every ML-related "
-            "bullet should resolve to a public artefact — a merged PR, a "
-            "published model, a Space, a blog post, a conference talk. The "
-            "review team follows the links. Frame contributions in terms "
-            "of democratising ML access, not proprietary competitive edge."
-        ),
-        review_tips=(
-            "Hugging Face reviewers follow public-artefact links. Flag: "
-            "engineering strength with no OSS / community trail; "
-            "proprietary-product-only framing for non-infra roles; "
-            "unsubstantiated ML claims (no repo, no Space, no paper)."
-        ),
-    ),
-    "databricks": CompanyProfile(
-        key="databricks",
-        label="Databricks",
-        tier=TIER_AI_UNICORN,
-        locale_hint="en_US",
-        must_haves=(
-            "Strong DSA / algorithmic problem-solving — Databricks leans on "
-            "medium-to-hard coding rounds (graphs, DP, concurrency)",
-            "Distributed-systems depth for ML infra roles (Spark, feature "
-            "stores, distributed training, serving)",
-            "2-3 references lined up — Databricks runs pre-offer reference "
-            "checks as standard",
-        ),
-        plus_signals=(
-            "Prior Spark / Lakehouse / MLflow / Unity Catalog contributions",
-            "Multi-threading and concurrency real-world experience",
-            "Recent conference talks or certifications (Databricks Summit, "
-            "SAIS, Snowflake certs all count)",
-        ),
-        red_flags=(
-            "ML résumé without distributed-systems vocabulary",
-            "Missing concurrency / multi-threading for backend / infra roles",
-            "No reference readiness — the process assumes 2-3 solid refs",
-        ),
-        format_rules=(
-            "1-2 pages, no photo",
-            "Distributed-systems terminology must appear explicitly for infra "
-            "roles (sharding, consensus, backpressure, partitioning)",
-            "Tech stack grouped by layer: data / training / serving / "
-            "feature store",
-        ),
-        keyword_anchors=(
-            "Spark", "Lakehouse", "MLflow", "Unity Catalog", "distributed",
-            "feature store", "concurrency", "DP",
-        ),
-        enrich_bias=(
-            "This résumé will be reviewed by Databricks. Lean into DSA + "
-            "distributed-systems signalling: name concurrency primitives, "
-            "sharding strategies, and specific Spark / Lakehouse / MLflow "
-            "components worked on. For ML infra roles, surface the feature-"
-            "store / distributed-training / serving triad explicitly. "
-            "Remember 2-3 references are needed pre-offer."
-        ),
-        review_tips=(
-            "Databricks reviewers filter on DSA + distributed depth + "
-            "reference readiness. Flag: ML bullets without distributed-"
-            "systems language; backend roles without concurrency signals; "
-            "candidates without 2-3 ready references."
-        ),
-    ),
-    "perplexity": CompanyProfile(
-        key="perplexity",
-        label="Perplexity",
-        tier=TIER_AI_UNICORN,
-        locale_hint="en_US",
-        must_haves=(
-            "Retrieval + LLM combined experience — Perplexity's core is "
-            "real-time search × language models",
-            "Concrete vocabulary: embeddings, beam search, inference "
-            "optimisation, re-ranking, citation handling",
-            "Latency-awareness (p50 / p95 per-query) for user-facing roles",
-        ),
-        plus_signals=(
-            "Search-quality work: relevance, query understanding, ranking "
-            "evaluation",
-            "Citation / grounding / hallucination-mitigation research",
-            "Low-latency serving experience (streaming, speculative decoding)",
-        ),
-        red_flags=(
-            "LLM-only résumé with no retrieval / search dimension",
-            "Search résumé with no LLM integration",
-            "Latency-blind bullets for a product built on sub-second "
-            "response",
-        ),
-        format_rules=(
-            "1-2 pages, no photo",
-            "Per ML bullet: model + retrieval stack + latency SLO + "
-            "evaluation metric",
-            "Tech stack must reveal the search × LLM combination, not "
-            "just one side",
-        ),
-        keyword_anchors=(
-            "retrieval", "embeddings", "beam search", "re-ranking",
-            "citation", "grounding", "streaming", "inference",
-        ),
-        enrich_bias=(
-            "This résumé will be reviewed by Perplexity. Surface the "
-            "retrieval × LLM combination — Perplexity's product sits at "
-            "that intersection. Every ML bullet should name a model, a "
-            "retrieval stack, a latency budget, and an evaluation metric "
-            "(NDCG, precision, grounding score). Avoid framing that reads "
-            "as pure-LLM or pure-search — both must be visible."
-        ),
-        review_tips=(
-            "Perplexity reviewers scan for retrieval + LLM intersection + "
-            "latency discipline. Flag: LLM-only résumés with no search "
-            "dimension; search résumés with no LLM integration; bullets "
-            "without latency or relevance metrics."
-        ),
-    ),
-}
+# Where YAML profiles live. Override with ``load_profiles(dir=...)`` in tests.
+PROFILES_DIR: Path = Path(__file__).parent / "profiles"
+
+_TUPLE_FIELDS: frozenset[str] = frozenset({
+    "must_haves", "plus_signals", "red_flags", "format_rules", "keyword_anchors",
+})
+_REQUIRED_FIELDS: frozenset[str] = frozenset(f.name for f in fields(CompanyProfile))
+
+
+class ProfileLoadError(ValueError):
+    """Raised when a YAML profile is malformed or missing required fields."""
+
+
+def _profile_from_yaml(path: Path) -> CompanyProfile:
+    try:
+        raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except yaml.YAMLError as exc:
+        raise ProfileLoadError(f"{path}: YAML parse error: {exc}") from exc
+    if not isinstance(raw, dict):
+        raise ProfileLoadError(f"{path}: top-level YAML must be a mapping")
+
+    missing = _REQUIRED_FIELDS - raw.keys()
+    if missing:
+        raise ProfileLoadError(f"{path}: missing required fields: {sorted(missing)}")
+
+    extra = set(raw.keys()) - _REQUIRED_FIELDS
+    if extra:
+        raise ProfileLoadError(f"{path}: unknown fields: {sorted(extra)}")
+
+    if raw["tier"] not in KNOWN_TIERS:
+        raise ProfileLoadError(
+            f"{path}: tier {raw['tier']!r} is not one of {sorted(KNOWN_TIERS)}"
+        )
+
+    if raw["key"] != path.stem:
+        raise ProfileLoadError(
+            f"{path}: key {raw['key']!r} does not match filename stem {path.stem!r}"
+        )
+
+    for fname in _TUPLE_FIELDS:
+        val = raw[fname]
+        if not isinstance(val, list) or not val:
+            raise ProfileLoadError(f"{path}: field {fname} must be a non-empty list")
+        raw[fname] = tuple(val)
+
+    return CompanyProfile(**raw)
+
+
+def load_profiles(dir: Path | None = None) -> dict[str, CompanyProfile]:
+    """Load every ``*.yaml`` file under *dir* into a keyed registry.
+
+    Filename stem must match the profile's ``key`` field. Duplicate keys or
+    malformed files raise :class:`ProfileLoadError` rather than silently
+    overwriting, so a broken commit fails loudly at import time.
+    """
+    src = dir or PROFILES_DIR
+    if not src.is_dir():
+        raise ProfileLoadError(f"profiles directory not found: {src}")
+
+    registry: dict[str, CompanyProfile] = {}
+    for path in sorted(src.glob("*.yaml")):
+        prof = _profile_from_yaml(path)
+        if prof.key in registry:
+            raise ProfileLoadError(
+                f"{path}: duplicate key {prof.key!r} already loaded from another file"
+            )
+        registry[prof.key] = prof
+    return registry
+
+
+# Eager-load at import so downstream callers treat this like a static registry.
+# Re-bind at runtime via ``reload_profiles()`` in tests that add/remove files.
+COMPANY_PROFILES: dict[str, CompanyProfile] = load_profiles()
+
+
+def reload_profiles(dir: Path | None = None) -> dict[str, CompanyProfile]:
+    """Clear and reload the module-level registry (test support)."""
+    global COMPANY_PROFILES
+    COMPANY_PROFILES = load_profiles(dir)
+    return COMPANY_PROFILES
 
 
 def get_company(key: str | None) -> CompanyProfile | None:

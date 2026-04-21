@@ -1,0 +1,39 @@
+key: microsoft
+label: Microsoft (Applied Scientist / ML Engineer)
+tier: frontier_ai
+locale_hint: en_US
+must_haves:
+- >-
+  MS/PhD in CS/EE + 2+ years ML/NLP/data-mining experience, OR BS + 4+ years in the same
+- 'Hands-on ML-framework fluency: PyTorch, TensorFlow, HuggingFace, ONNX at minimum'
+- Azure / cloud experience — Microsoft expects cloud literacy alongside ML depth
+plus_signals:
+- ATS-friendly reverse-chronological format — Microsoft's ATS is configured for it
+- Cross-functional collaboration with PM / data / research / customer-facing roles
+- Responsible-AI / safety / red-teaming exposure
+red_flags:
+- Non-standard layouts (two-column creative templates) that confuse ATS parsers
+- ML-only narrative with no cloud / platform / productisation dimension
+- Missing cross-functional collaboration evidence for senior roles
+format_rules:
+- Reverse-chronological, ATS-friendly
+- 1-2 pages
+- Explicit framework + Azure service names for ATS keyword matching
+keyword_anchors:
+- Azure
+- PyTorch
+- HuggingFace
+- ONNX
+- responsible AI
+- applied scientist
+- cross-functional
+enrich_bias: >-
+  This résumé will be reviewed by Microsoft for an Applied Scientist or ML Engineer role.
+  Use reverse-chronological, ATS-friendly layout. Name ML frameworks and Azure services explicitly
+  — Microsoft's ATS keys on these. Surface cross-functional collaboration (PM / data / research
+  / customer-facing) because Microsoft's applied-science roles sit between research and product.
+review_tips: >-
+  Microsoft reviewers scan ATS-parseable reverse-chron résumés for framework + Azure service
+  mentions and cross-functional language. Flag: creative layouts that ATS-misparse; pure-ML
+  narratives with no cloud dimension; missing PM / customer-facing collaboration for senior
+  candidates.

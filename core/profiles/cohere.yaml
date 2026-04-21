@@ -1,0 +1,42 @@
+key: cohere
+label: Cohere
+tier: ai_unicorn
+locale_hint: en_US
+must_haves:
+- Production-grade LLM system experience — not just demos or notebooks
+- >-
+  Enterprise-integration awareness: RAG, retrieval, permissions, on-prem / VPC deployment
+- >-
+  Clear ML × software-engineering balance (Cohere hires engineers who can both train and deploy)
+plus_signals:
+- Multilingual / multi-tenant LLM product work
+- Open-source ML contributions with accepted PRs
+- Published research papers on LLM methods
+red_flags:
+- LLM experience that tops out at OpenAI-API wrapping
+- No deployment / reliability dimension — Cohere's customers are enterprises
+- Missing retrieval / embedding / RAG vocabulary for applied roles
+format_rules:
+- 1-2 pages, no photo
+- >-
+  Name the LLM family + training regime (pre-train / fine-tune / RLHF) for each ML bullet
+- >-
+  Surface enterprise-grade concerns (latency SLO, multi-tenant, privacy) explicitly
+keyword_anchors:
+- LLM
+- RAG
+- retrieval
+- embeddings
+- fine-tuning
+- enterprise
+- on-prem
+- multi-tenant
+enrich_bias: >-
+  This résumé will be reviewed by Cohere. Surface production LLM work — training, fine-tuning,
+  RAG, evaluation — paired with the engineering substrate that lets it serve enterprise customers
+  (permissions, multi-tenant, on-prem, SLOs). Avoid framing LLM work as prompt-engineering
+  or API-wrapping if the real depth is there.
+review_tips: >-
+  Cohere reviewers read for LLM-depth + enterprise-deployment awareness together. Flag: LLM
+  bullets that stop at demos or API-wrapping; missing deployment / reliability dimension;
+  retrieval roles without RAG / embeddings vocabulary.

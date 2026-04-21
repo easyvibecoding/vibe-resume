@@ -1,0 +1,46 @@
+key: nvidia
+label: NVIDIA
+tier: frontier_ai
+locale_hint: en_US
+must_haves:
+- >-
+  Deep-learning framework fluency (PyTorch / JAX / TensorFlow) with a clear algorithm-implementation
+  track record
+- >-
+  Reverse-chronological layout with 3-6 bullets per role (more for recent, fewer for older)
+- >-
+  Tailored alignment to the specific JD — NVIDIA's recruiters state they read for keyword
+  overlap before depth
+plus_signals:
+- CUDA / Triton / TensorRT / cuDNN low-level optimisation work
+- Referral from an NVIDIA insider — still a meaningful funnel advantage
+- GPU-adjacent research (kernels, numerics, mixed-precision, parallelism)
+red_flags:
+- ML-applied résumé with no systems-level depth for infra or kernel roles
+- >-
+  Missing framework-version specificity ('used PyTorch' without saying which version or feature
+  set)
+- Bulk-applied résumé with no keyword match to the target JD
+format_rules:
+- 1-2 pages; classic reverse-chronological
+- Clean header with contact details first; no photo
+- Tech-stack section should name frameworks + CUDA/GPU specifics where relevant
+keyword_anchors:
+- CUDA
+- PyTorch
+- JAX
+- TensorRT
+- cuDNN
+- Triton
+- kernel
+- mixed precision
+enrich_bias: >-
+  This résumé will be reviewed by NVIDIA. Prefer algorithm-level and kernel-level language
+  over framework-user language: name specific CUDA primitives, mixed-precision strategies,
+  or parallelism patterns the candidate implemented. For DL / ML roles, surface the hardware
+  substrate — which GPUs, which interconnect, which numerics trade-off. Match the target JD's
+  keyword list before polishing prose.
+review_tips: >-
+  NVIDIA reviewers filter on framework depth + hardware-aware language + JD keyword match.
+  Flag: ML bullets with no hardware or framework-version specificity; résumés that read identical
+  for every NVIDIA JD; reverse-chron layout violations.

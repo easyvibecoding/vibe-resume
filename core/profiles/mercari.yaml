@@ -1,0 +1,50 @@
+key: mercari
+label: メルカリ / Mercari
+tier: jp
+locale_hint: ja_JP
+must_haves:
+- >-
+  職務経歴書 (work-history CV) with *narrative between roles* — Mercari's HR explicitly reads for
+  the story linking each move to the next
+- >-
+  Public artefact trail — GitHub profile, tech blog, conference talks; Mercari's HR states
+  they always read submitted profiles
+- >-
+  Clear motivation for joining Mercari specifically (not 'any Japanese tech company')
+plus_signals:
+- OSS contributions to Go / Kubernetes / cloud-native ecosystem
+- English-capable engineering (Mercari runs English-first for product dev)
+- C2C-marketplace, trust-and-safety, or ML-for-recommendation experience
+red_flags:
+- >-
+  履歴書 that is clearly template-filled with no personality — Mercari's HR states they 'basically
+  don't read' a hollow 履歴書
+- Job-hopping history with no connecting narrative between roles
+- >-
+  Missing public-artefact links (no GitHub, no blog, no talks) for an engineer with 3+ years
+  of experience
+format_rules:
+- >-
+  履歴書 + 職務経歴書 both required, but 職務経歴書 is the primary document — it should read as a cohesive
+  story, not a list
+- Photo optional (Mercari's modernised hiring allows no-photo)
+- English résumé accepted and often preferred for engineering roles
+keyword_anchors:
+- 職務経歴書
+- GitHub
+- OSS
+- Go
+- Kubernetes
+- microservices
+- C2C
+- trust and safety
+enrich_bias: >-
+  This résumé will be reviewed by Mercari — a 'new-school' Japanese tech company that reads
+  職務経歴書 and public-artefact trails over 履歴書 formalities. For each role, explain *why* the
+  candidate moved and how that move connected to the next — Mercari's HR explicitly evaluates
+  this narrative thread. Surface GitHub repos, blog posts, and conference talks; the review
+  team will follow the links.
+review_tips: >-
+  Mercari reviewers follow public-artefact links and read for inter-role narrative. Flag:
+  職務経歴書 that reads as a bullet list with no thread; missing GitHub / blog / talks for engineers
+  with non-trivial experience; generic 'I like Japan' motivation that applies to any JP company.

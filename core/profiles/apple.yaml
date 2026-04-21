@@ -1,0 +1,47 @@
+key: apple
+label: Apple (AIML / MLR)
+tier: frontier_ai
+locale_hint: en_US
+must_haves:
+- >-
+  PhD in CS / ML / related technical field (or equivalent practical research experience)
+- >-
+  Peer-reviewed publications at NeurIPS / ICML / ICLR / AAAI / CVPR / ICCV / ECCV / ACL /
+  EMNLP
+- >-
+  Hands-on deep-learning toolkit fluency (PyTorch primary), with strong linear-algebra / statistics
+  foundation
+plus_signals:
+- >-
+  Ability to formulate a research problem from scratch — not just execute a defined one (Apple's
+  MLR hires curiosity-driven researchers)
+- On-device / privacy-preserving ML experience (Apple's differentiating area)
+- Long-term curiosity-driven research rather than quarterly-ship cadence
+red_flags:
+- Research résumé without publications at a recognised venue
+- >-
+  Short-tenure jumps that imply the candidate cannot sustain the multi-year research arcs
+  Apple MLR is built around
+- Industry-shipping narrative framed as research
+format_rules:
+- 1-2 pages for ICs; publication list may overflow to extra page
+- No photo
+- 'Each publication entry: venue + year + role + link to paper'
+keyword_anchors:
+- publication
+- PhD
+- PyTorch
+- on-device
+- privacy-preserving
+- CVPR
+- ICML
+- research
+enrich_bias: >-
+  This résumé will be reviewed by Apple's Machine Learning Research team. Emphasise curiosity-driven
+  long-term research — multi-year projects with a clear research question, not quarterly shipping
+  wins. Publications are primary. If the candidate has on-device or privacy-preserving ML
+  experience, surface it early — that is Apple's differentiator. Frame industry work as research-infrastructure-enabling.
+review_tips: >-
+  Apple MLR reviewers filter on venue quality + sustained research arcs + on-device / privacy
+  angle when present. Flag: publication-free research résumés; short-tenure churn; bullets
+  that read like product shipping rather than research contribution.
