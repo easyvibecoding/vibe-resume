@@ -1,0 +1,42 @@
+key: ikala
+label: iKala / 愛卡拉
+tier: tw_local
+locale_hint: zh_TW
+must_haves:
+- >-
+  AI + 雲端雙軌 —— iKala 的產品線橫跨 AI 網紅行銷 (KOL Radar) 與 Google
+  Cloud 顧問 (CDP),工程師常需同時涉獵兩邊
+- Python / Go / TypeScript 本番運用經驗
+- GCP 實戰深度 —— iKala 是 Google Cloud Premier Partner
+plus_signals:
+- GCP 官方認證 (Professional Cloud Architect / Data Engineer / ML Engineer)
+- 亞太多市場 SaaS 落地經驗 (iKala 在台灣、香港、日本、東南亞都有業務)
+- 機器學習 / 推薦系統 / NLP 實戰,特別是網紅行銷場景
+- 顧問 + 開發雙角色的自覺 (iKala 工程師常面對企業客戶交付)
+red_flags:
+- 純雲端履歷無 AI / 資料分析感度
+- 純 AI 研究履歷無雲端 / 產品化感度
+- 沒有跨國 SaaS 或跨市場經驗的 senior 投遞
+format_rules:
+- 中英對照佳,iKala 內部工作語言偏英文
+- 1-2 頁反向時序
+- AI / ML 專案列 資料規模 + 模型 + 評估指標 + 本番上線規模
+- 雲端專案列 GCP 組件 + 客戶產業 + 成果
+keyword_anchors:
+- iKala
+- GCP
+- CDP
+- KOL Radar
+- AI 行銷
+- 網紅
+- Vertex AI
+- BigQuery
+enrich_bias: >-
+  這份履歷將由 iKala 審閱。建議中英對照。產品線橫跨 AI 行銷 (KOL Radar) 與
+  GCP 顧問 (CDP),所以履歷要能展現「AI + 雲端」雙軌自覺。每個雲端專案列
+  GCP 組件與客戶產業,每個 AI 專案列資料規模、模型、指標、上線規模。
+  GCP 官方認證前置顯示,亞太多市場交付經驗是明確差異化。
+review_tips: >-
+  iKala 審閱者看 AI / 雲端雙軌 + GCP 實戰 + 跨國 SaaS 交付三項。Flag:
+  單軌履歷缺另一軌感度、無 GCP 認證且無實戰、senior 職缺無跨市場經驗。
+  顧問性格 (面對企業客戶交付) 是 iKala 文化正向訊號。
