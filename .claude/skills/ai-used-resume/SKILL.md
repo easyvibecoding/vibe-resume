@@ -1,6 +1,8 @@
 ---
 name: ai-used-resume
 description: Extract AI tool usage history (Claude Code, Cursor, Copilot, Cline, Continue, Aider, Windsurf, Zed AI, Claude Desktop, ChatGPT/Claude.ai/Gemini/Grok/Perplexity/Mistral/Poe exports, ComfyUI/Midjourney/Suno/ElevenLabs, git commits) from the user's machine and synthesize a versioned, reviewer-scored résumé across 10 locales (en_US / en_EU / en_GB / zh_TW / zh_HK / zh_CN / ja_JP / ko_KR / de_DE / fr_FR) with Markdown / DOCX / PDF output and an 8-point reviewer-audit scorecard. Triggers when the user asks to "generate my resume from AI usage", "render my résumé in Japanese", "tailor my resume for this JD", "show my resume trend", "review my resume", or similar.
+license: MIT
+compatibility: Requires Python 3.12+ and uv. Optional pandoc (PDF rendering) and claude CLI (LLM enrichment; falls back to rule-based). Works on macOS and Linux.
 ---
 
 # vibe-resume — Claude Code Agent Skill
@@ -22,25 +24,25 @@ You are operating inside (or next to) the `vibe-resume` project. Use the current
 
 3. **Run extractors.**
    ```bash
-   uv run python cli.py extract
-   uv run python cli.py status     # sanity-check per-source counts
+   uv run vibe-resume extract
+   uv run vibe-resume status     # sanity-check per-source counts
    ```
 
 4. **Aggregate.**
    ```bash
-   uv run python cli.py aggregate
+   uv run vibe-resume aggregate
    ```
    Output: `data/cache/_project_groups.json` + `_window_stats.json`.
 
 5. **Enrich** (recommended — produces LLM-written achievements, not rule-based fallback).
    ```bash
-   uv run python cli.py enrich --locale en_US                                # XYZ bullets (en_US / en_GB / en_EU)
-   uv run python cli.py enrich --locale ja_JP                                # 名詞片語 bullets (ja/ko/zh/de/fr)
-   uv run python cli.py enrich --tailor data/imports/jd.txt --locale en_US -n 1
-   uv run python cli.py enrich --persona tech_lead --locale en_US                  # single persona
-   uv run python cli.py enrich --persona tech_lead,hr,executive --locale en_US     # prep three personas in one run
-   uv run python cli.py enrich --persona all --locale en_US                        # every registered persona
-   uv run python cli.py personas-compare                                            # side-by-side diff (quality iteration)
+   uv run vibe-resume enrich --locale en_US                                # XYZ bullets (en_US / en_GB / en_EU)
+   uv run vibe-resume enrich --locale ja_JP                                # 名詞片語 bullets (ja/ko/zh/de/fr)
+   uv run vibe-resume enrich --tailor data/imports/jd.txt --locale en_US -n 1
+   uv run vibe-resume enrich --persona tech_lead --locale en_US                  # single persona
+   uv run vibe-resume enrich --persona tech_lead,hr,executive --locale en_US     # prep three personas in one run
+   uv run vibe-resume enrich --persona all --locale en_US                        # every registered persona
+   uv run vibe-resume personas-compare                                            # side-by-side diff (quality iteration)
    ```
    - `--locale` selects the prompt shape and language label (prevents e.g. Japanese role_label leaking Simplified Chinese).
    - `--tailor <JD.txt>` injects the JD's extracted keywords into the prompt so achievements surface them verbatim when the raw activity supports it (never invents matches).
@@ -50,10 +52,10 @@ You are operating inside (or next to) the `vibe-resume` project. Use the current
 
 6. **Render.**
    ```bash
-   uv run python cli.py render -f md  --locale en_US
-   uv run python cli.py render -f all --locale ja_JP         # md + docx (JIS Z 8303 履歴書) + pdf
-   uv run python cli.py render --all-locales                 # fan out every registered locale
-   uv run python cli.py render --all-locales --tailor data/imports/jd.txt
+   uv run vibe-resume render -f md  --locale en_US
+   uv run vibe-resume render -f all --locale ja_JP         # md + docx (JIS Z 8303 履歴書) + pdf
+   uv run vibe-resume render --all-locales                 # fan out every registered locale
+   uv run vibe-resume render --all-locales --tailor data/imports/jd.txt
    ```
 
    **Locale resolution chain** (used by render and enrich):
@@ -66,10 +68,10 @@ You are operating inside (or next to) the `vibe-resume` project. Use the current
 
 7. **Review & trend.** Score the output against the 8-point reviewer checklist:
    ```bash
-   uv run python cli.py review                              # latest render
-   uv run python cli.py review -v 9 --locale zh_TW
-   uv run python cli.py review -v 12 --jd data/imports/jd.txt   # with JD keyword echo
-   uv run python cli.py trend --locale ja_JP                # per-locale sparkline
+   uv run vibe-resume review                              # latest render
+   uv run vibe-resume review -v 9 --locale zh_TW
+   uv run vibe-resume review -v 12 --jd data/imports/jd.txt   # with JD keyword echo
+   uv run vibe-resume trend --locale ja_JP                # per-locale sparkline
    ```
    The 8 checks are: top-fold, numbers-per-bullet, keyword-echo, action-verb-first, density, red-flags (locale-aware), contact-line width, page-count estimate. Bar is grade B / 80% before sending to a real reviewer.
 
@@ -92,15 +94,15 @@ You are operating inside (or next to) the `vibe-resume` project. Use the current
 
 | Command | Purpose |
 |---|---|
-| `uv run python cli.py status` | per-source activity counts |
-| `uv run python cli.py list-versions` | resume version history (internal git log) |
-| `uv run python cli.py diff v001 v002` | diff two resume versions |
-| `uv run python cli.py completion zsh --install` | install shell completion so `--locale <tab>` expands |
-| `uv run python cli.py company list [--tier X]` | browse 70 bundled employer profiles |
-| `uv run python cli.py company show <key>` | full profile (must-haves / red flags / tips) |
-| `uv run python cli.py company audit [--only-stale]` | age table; flag profiles past 90-day threshold |
-| `uv run python cli.py company verify <key> [--apply]` | delegate fact-check to claude agent; auto-bump date on clean verdict |
-| `uv run python cli.py company mark-verified <key>` | bump `last_verified_at` after manual fact-check |
+| `uv run vibe-resume status` | per-source activity counts |
+| `uv run vibe-resume list-versions` | resume version history (internal git log) |
+| `uv run vibe-resume diff v001 v002` | diff two resume versions |
+| `uv run vibe-resume completion zsh --install` | install shell completion so `--locale <tab>` expands |
+| `uv run vibe-resume company list [--tier X]` | browse 70 bundled employer profiles |
+| `uv run vibe-resume company show <key>` | full profile (must-haves / red flags / tips) |
+| `uv run vibe-resume company audit [--only-stale]` | age table; flag profiles past 90-day threshold |
+| `uv run vibe-resume company verify <key> [--apply]` | delegate fact-check to claude agent; auto-bump date on clean verdict |
+| `uv run vibe-resume company mark-verified <key>` | bump `last_verified_at` after manual fact-check |
 | `scripts/backup_claude_projects.sh` | macOS/Linux rsync of `~/.claude/projects` |
 | `pwsh scripts/backup_claude_projects.ps1` | Windows / cross-platform backup (supports `-WhatIf`) |
 
@@ -156,19 +158,19 @@ The user: "I want to apply to roles in Japan, Germany, and Taiwan using this JD"
 ```bash
 # 1. One LLM pass per locale (English fallback on failure is automatic)
 for loc in ja_JP de_DE zh_TW; do
-    uv run python cli.py enrich --tailor data/imports/jd.txt --locale "$loc" -n 3
+    uv run vibe-resume enrich --tailor data/imports/jd.txt --locale "$loc" -n 3
 done
 
 # 2. Batch render those three locales
 for loc in ja_JP de_DE zh_TW; do
-    uv run python cli.py render -f all --locale "$loc" --tailor data/imports/jd.txt
+    uv run vibe-resume render -f all --locale "$loc" --tailor data/imports/jd.txt
 done
 
 # 3. Review each; bar is B/80%
 for loc in ja_JP de_DE zh_TW; do
-    uv run python cli.py review --locale "$loc"
+    uv run vibe-resume review --locale "$loc"
 done
 
 # 4. Which one improved most vs last iteration?
-uv run python cli.py trend
+uv run vibe-resume trend
 ```

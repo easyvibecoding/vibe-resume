@@ -1,10 +1,11 @@
 ---
 name: ai-used-resume
 description: Generate a versioned, reviewer-scored résumé from the user's AI-coding and git history — extracts from Claude Code, Cursor, Copilot, Cline, Continue, Aider, Windsurf, Zed AI, Claude Desktop, ChatGPT/Claude.ai/Gemini/Grok/Perplexity/Mistral/Poe cloud exports, ComfyUI, Midjourney, Suno, ElevenLabs, and git commits. Renders to Markdown / DOCX / PDF across 10 locales (en_US, en_EU, en_GB, zh_TW, zh_HK, zh_CN, ja_JP, ko_KR, de_DE, fr_FR) with culture-specific layouts (JIS Z 8303 履歴書 grid, Europass, Lebenslauf, bilingual HK), optional JD-tailored bullet rewriting, and an 8-point reviewer audit with score trend. Use when the user asks to "generate my résumé", "render my résumé in Japanese", "tailor my CV for this job description", "score my résumé", or "show my résumé trend".
-version: 0.2.0
-author: easyvibecoding
 license: MIT
+compatibility: Requires Python 3.12+ and uv. Optional pandoc (PDF rendering) and claude CLI (LLM enrichment; falls back to rule-based). Works on macOS and Linux.
 metadata:
+  version: "0.2.0"
+  author: easyvibecoding
   hermes:
     tags:
       - resume
