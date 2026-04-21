@@ -12,8 +12,12 @@ below with zero content duplication.
 
 This file has the frontmatter-typed `name` and `description` that hosts use to
 decide when to lazy-load the skill. The body walks the LLM through every step
-of the résumé pipeline, the 10-locale cheat sheet, a playbook for common user
-requests, and an end-to-end "one JD, every market" example.
+of the résumé pipeline, the 10-locale cheat sheet, and an end-to-end
+"one JD, every market" example. Advanced content is bundled under
+[`.claude/skills/ai-used-resume/references/`](.claude/skills/ai-used-resume/references/)
+and loaded progressively — currently `strategic-resume.md` (company /
+level axis) and `troubleshooting.md` (failure-mode playbook) — per the
+[agentskills.io](https://agentskills.io/specification) progressive-disclosure pattern.
 
 ## Host discovery matrix
 
@@ -49,9 +53,10 @@ Project-scope paths only fire when the agent runs inside this clone. To make
 the skill's trigger phrases available anywhere, use whichever installer matches
 your agent's ecosystem:
 
-**Tier 1 — 27+ `agentskills.io`-standard hosts** (Claude Code, Cursor,
+**Tier 1 — 35+ `agentskills.io`-standard hosts** (Claude Code, Cursor,
 Windsurf, Gemini CLI, GitHub Copilot, Codex, Qwen, Kimi, Roo, Kilo, Goose,
-Trae, OpenCode, Amp, Antigravity, …):
+Trae, OpenCode, Amp, Antigravity, Kiro, Factory, Junie, Letta, Mux,
+Emdash, Workshop, Laravel Boost, Spring AI, …):
 ```bash
 npx skills add easyvibecoding/vibe-resume --skill ai-used-resume
 ```
