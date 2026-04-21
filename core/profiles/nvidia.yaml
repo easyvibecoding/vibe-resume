@@ -45,3 +45,4 @@ review_tips: >-
   NVIDIA reviewers filter on framework depth + hardware-aware language + JD keyword match.
   Flag: ML bullets with no hardware or framework-version specificity; résumés that read identical
   for every NVIDIA JD; reverse-chron layout violations.
+last_verified_at: '2026-04-21'

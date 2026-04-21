@@ -154,6 +154,18 @@ class ReviewReport:
     scores: list[Score]
     persona: str | None = None  # reviewer-persona key, if one was applied
     persona_tips: str | None = None  # human-readable advice from that persona
+    # Strategic-résumé hooks — same shape as persona tips, but sourced from
+    # the bundled CompanyProfile / LevelArchetype registries. Both are
+    # purely additive to the markdown report; they do not change numeric
+    # scoring. Adding scoring logic would require defining matcher rules per
+    # must_haves / red_flags entry, which is left as a future iteration.
+    company: str | None = None  # company key (e.g. "openai")
+    company_label: str | None = None
+    company_verified_at: str | None = None  # ISO date for staleness display
+    company_tips: str | None = None  # full review_tips from CompanyProfile
+    level: str | None = None  # level key (e.g. "senior")
+    level_label: str | None = None
+    level_tips: str | None = None  # full review_tips from LevelArchetype
 
     @property
     def grade(self) -> str:
@@ -219,6 +231,22 @@ class ReviewReport:
             lines.append(f"### Reviewer lens — {persona_label}")
             lines.append("")
             lines.append(self.persona_tips)
+        if self.level_tips:
+            lines.append("")
+            lines.append(f"### Career level — {self.level_label or self.level}")
+            lines.append("")
+            lines.append(self.level_tips)
+        if self.company_tips:
+            ver = (
+                f" (profile last verified {self.company_verified_at})"
+                if self.company_verified_at else ""
+            )
+            lines.append("")
+            lines.append(
+                f"### Target employer — {self.company_label or self.company}{ver}"
+            )
+            lines.append("")
+            lines.append(self.company_tips)
         return "\n".join(lines) + "\n"
 
     @classmethod
@@ -525,6 +553,8 @@ def review_file(
     locale_key: str | None = None,
     jd_keywords: list[str] | None = None,
     persona: str | None = None,
+    company: str | None = None,
+    level: str | None = None,
 ) -> ReviewReport:
     text = Path(md_path).read_text(encoding="utf-8")
     # infer locale from filename if not given: resume_v007.md → en_US; resume_v010_zh_TW.md → zh_TW
@@ -539,6 +569,23 @@ def review_file(
         if p is not None:
             report.persona = p.key
             report.persona_tips = p.review_tips
+    if company:
+        from core.company_profiles import get_company
+
+        c = get_company(company)
+        if c is not None:
+            report.company = c.key
+            report.company_label = c.label
+            report.company_verified_at = c.last_verified_at
+            report.company_tips = c.review_tips
+    if level:
+        from core.levels import get_level
+
+        lvl = get_level(level)
+        if lvl is not None:
+            report.level = lvl.key
+            report.level_label = lvl.label
+            report.level_tips = lvl.review_tips
     return report
 
 

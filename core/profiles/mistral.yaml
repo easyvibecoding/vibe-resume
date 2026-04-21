@@ -47,3 +47,4 @@ review_tips: >-
   Mistral reviewers filter on publication venue + author position + open-weight
   contributions. Flag: résumés that bury publications under job descriptions,
   papers without venue names, transformer work stated at API-consumer depth only.
+last_verified_at: '2026-04-21'

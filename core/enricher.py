@@ -16,6 +16,8 @@ import yaml
 from rich.console import Console
 
 from core.aggregator import groups_path_for, load_groups
+from core.company_profiles import CompanyProfile
+from core.levels import LevelArchetype
 from core.personas import Persona
 from core.schema import ProjectGroup
 from render.i18n import get_locale
@@ -57,6 +59,29 @@ Reviewer persona — {label}:
 {bias}
 Apply this lens *when the raw activity supports it*. Never fabricate numbers, \
 people, or decisions that the input doesn't show.
+"""
+
+# Seniority-bracket bias. Fires after the persona block so the level-specific
+# "what the lead bullet must prove" signal lands nearer the end of the prompt.
+LEVEL_BLOCK_TEMPLATE = """
+
+Career level — {label} (lead-bullet signal: {lead_signal}):
+{bias}
+Tune bullet ambition to this level — do not promote task-shaped work into
+scope claims the candidate cannot defend in an interview.
+"""
+
+# Company-specific bias. Fires last so it wins tie-breaks against persona /
+# level / tailor. Each bundled CompanyProfile was fact-checked on the date
+# recorded in its ``last_verified_at`` field; stale profiles may drift from
+# the current hiring bar.
+COMPANY_BLOCK_TEMPLATE = """
+
+Target employer — {label} (profile last verified {verified}):
+{bias}
+Ground every bullet in what the raw activity actually shows. Prefer
+employer-relevant specificity (named systems, scale markers, domain
+vocabulary) over generic phrasing when the data supports it.
 """
 
 console = Console()
@@ -173,6 +198,8 @@ def _build_prompt(
     locale_meta: dict[str, Any] | None = None,
     tailor_keywords: list[str] | None = None,
     persona: Persona | None = None,
+    level: LevelArchetype | None = None,
+    company: CompanyProfile | None = None,
 ) -> str:
     raw_lines: list[str] = []
     for a in g.activities[:12]:
@@ -211,6 +238,18 @@ def _build_prompt(
         body += PERSONA_BLOCK_TEMPLATE.format(
             label=persona.label,
             bias=persona.enrich_bias,
+        )
+    if level is not None:
+        body += LEVEL_BLOCK_TEMPLATE.format(
+            label=level.label,
+            lead_signal=level.lead_signal,
+            bias=level.enrich_bias,
+        )
+    if company is not None:
+        body += COMPANY_BLOCK_TEMPLATE.format(
+            label=company.label,
+            verified=company.last_verified_at,
+            bias=company.enrich_bias,
         )
     return body
 
@@ -336,6 +375,8 @@ def enrich_groups(
     locale: str | None = None,
     tailor: str | None = None,
     persona: str | None = None,
+    company: str | None = None,
+    level: str | None = None,
 ) -> None:
     persona_keys = _resolve_persona_list(persona)
     if len(persona_keys) > 1:
@@ -344,7 +385,16 @@ def enrich_groups(
     for p_key in persona_keys:
         if len(persona_keys) > 1:
             console.print(f"\n[bold cyan]── persona: {p_key} ──[/bold cyan]")
-        _enrich_one_persona(cfg, cache_dir, limit, locale, tailor, persona_key=p_key)
+        _enrich_one_persona(
+            cfg,
+            cache_dir,
+            limit,
+            locale,
+            tailor,
+            persona_key=p_key,
+            company_key=company,
+            level_key=level,
+        )
 
 
 def _enrich_one_persona(
@@ -354,6 +404,8 @@ def _enrich_one_persona(
     locale: str | None,
     tailor: str | None,
     persona_key: str | None,
+    company_key: str | None = None,
+    level_key: str | None = None,
 ) -> None:
     # Always seed from the baseline (aggregate output) — persona variants
     # are independent re-voicings of the same raw activity, not chained edits.
@@ -377,11 +429,34 @@ def _enrich_one_persona(
             preview = ", ".join(tailor_keywords[:8]) if tailor_keywords else "(none)"
             console.print(f"[dim]tailor keywords from {tailor_path.name}: {preview}[/dim]")
 
+    from core.company_profiles import days_since_verification, get_company
+    from core.levels import get_level
     from core.personas import get_persona
 
     persona_obj = get_persona(persona_key)
     if persona_obj:
         console.print(f"[dim]reviewer persona: {persona_obj.label}[/dim]")
+
+    company_obj = get_company(company_key)
+    if company_key and company_obj is None:
+        console.print(
+            f"[yellow]unknown company '{company_key}' — ignoring --company[/yellow]"
+        )
+    elif company_obj is not None:
+        age = days_since_verification(company_obj)
+        stale_tag = " [red](STALE)[/red]" if age > 180 else ""
+        console.print(
+            f"[dim]target employer: {company_obj.label} "
+            f"(verified {company_obj.last_verified_at}, {age}d ago){stale_tag}[/dim]"
+        )
+
+    level_obj = get_level(level_key)
+    if level_key and level_obj is None:
+        console.print(
+            f"[yellow]unknown level '{level_key}' — ignoring --level[/yellow]"
+        )
+    elif level_obj is not None:
+        console.print(f"[dim]career level: {level_obj.label}[/dim]")
 
     use_llm = cfg.get("enrich", {}).get("mode") == "claude-code-agent"
     enriched: list[dict[str, Any]] = []
@@ -405,7 +480,12 @@ def _enrich_one_persona(
         if use_llm and g.total_sessions >= 2:
             out = _call_claude(
                 _build_prompt(
-                    g, locale_meta, tailor_keywords=tailor_keywords, persona=persona_obj
+                    g,
+                    locale_meta,
+                    tailor_keywords=tailor_keywords,
+                    persona=persona_obj,
+                    level=level_obj,
+                    company=company_obj,
                 )
             )
             parsed = _parse_yaml(out) if out else None

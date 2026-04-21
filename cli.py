@@ -57,6 +57,16 @@ def aggregate(ctx: click.Context) -> None:
     default=None,
     help="Reviewer persona: tech_lead / hr / executive / startup_founder / academic — biases bullet phrasing toward that audience",
 )
+@click.option(
+    "--company",
+    default=None,
+    help="Target employer key (see `vibe-resume company list`). Injects that company's enrich_bias into the prompt for strategic résumé tailoring.",
+)
+@click.option(
+    "--level",
+    default=None,
+    help="Career level key: new_grad / junior / mid / senior / staff_plus / research_scientist — biases bullet ambition to the seniority bracket.",
+)
 @click.pass_context
 def enrich(
     ctx: click.Context,
@@ -64,11 +74,21 @@ def enrich(
     locale: str | None,
     tailor: str | None,
     persona: str | None,
+    company: str | None,
+    level: str | None,
 ) -> None:
     """Ask Claude Code agent skill to summarize each project group."""
     from core.runner import run_enricher
 
-    run_enricher(ctx.obj["config"], limit=limit, locale=locale, tailor=tailor, persona=persona)
+    run_enricher(
+        ctx.obj["config"],
+        limit=limit,
+        locale=locale,
+        tailor=tailor,
+        persona=persona,
+        company=company,
+        level=level,
+    )
 
 
 @cli.command()
@@ -255,6 +275,16 @@ def status(ctx: click.Context) -> None:
     default=None,
     help="Reviewer persona: tech_lead / hr / executive / startup_founder / academic — appends persona-specific review advice",
 )
+@click.option(
+    "--company",
+    default=None,
+    help="Target employer key (see `vibe-resume company list`). Appends that company's review_tips to the scorecard and notes profile staleness.",
+)
+@click.option(
+    "--level",
+    default=None,
+    help="Career level key: new_grad / junior / mid / senior / staff_plus / research_scientist — appends level-specific pitfalls.",
+)
 @click.pass_context
 def review(
     ctx: click.Context,
@@ -264,6 +294,8 @@ def review(
     jd: str | None,
     diff: bool,
     persona: str | None,
+    company: str | None,
+    level: str | None,
 ) -> None:
     """Score a rendered resume against the 8-point reviewer checklist."""
     from core.review import (
@@ -282,7 +314,14 @@ def review(
         raise click.UsageError(str(e)) from e
 
     jd_keywords = parse_jd_keywords(Path(jd)) if jd else None
-    report = review_file(md_path, locale_key=locale, jd_keywords=jd_keywords, persona=persona)
+    report = review_file(
+        md_path,
+        locale_key=locale,
+        jd_keywords=jd_keywords,
+        persona=persona,
+        company=company,
+        level=level,
+    )
     out_dir = ROOT / "data" / "reviews"
     previous = find_previous_review(out_dir, report.source, report.locale) if diff else None
     md_out, json_out = write_report(report, out_dir, previous=previous)
@@ -410,6 +449,154 @@ def diff(ctx: click.Context, from_version: str, to_version: str) -> None:
     from core.versioning import diff_versions
 
     click.echo(diff_versions(ctx.obj["config"], from_version, to_version))
+
+
+# ---------------------------------------------------------------------------
+# company-profile inspection / audit commands
+#
+# These help operators decide whether a specific profile is fresh enough to
+# bias a résumé against, or whether the data has aged out of currency. They
+# never call out to the network — verification work itself is a separate
+# flow (subagent fact-check pass). These commands are read-only.
+# ---------------------------------------------------------------------------
+
+
+@cli.group()
+def company() -> None:
+    """Inspect and audit bundled company-review profiles."""
+
+
+@company.command("list")
+@click.option("--tier", default=None, help="Filter to one tier (e.g. frontier_ai, jp)")
+def company_list(tier: str | None) -> None:
+    """List all registered company profiles, grouped by tier."""
+    from core.company_profiles import COMPANY_PROFILES, KNOWN_TIERS, list_by_tier
+
+    target_tiers = [tier] if tier else sorted(KNOWN_TIERS)
+    for t in target_tiers:
+        profiles = sorted(list_by_tier(t), key=lambda p: p.key)
+        if not profiles:
+            if tier:
+                console.print(f"[yellow]no profiles in tier {t!r}[/yellow]")
+            continue
+        console.print(f"\n[bold cyan]── {t} ({len(profiles)}) ──[/bold cyan]")
+        for p in profiles:
+            console.print(
+                f"  [green]{p.key:<20}[/green] {p.label}  "
+                f"[dim]({p.locale_hint}, verified {p.last_verified_at})[/dim]"
+            )
+    console.print(f"\n[dim]total profiles: {len(COMPANY_PROFILES)}[/dim]")
+
+
+@company.command("show")
+@click.argument("key")
+def company_show(key: str) -> None:
+    """Print one profile's full content in a human-readable layout."""
+    from core.company_profiles import COMPANY_PROFILES, days_since_verification
+
+    profile = COMPANY_PROFILES.get(key)
+    if not profile:
+        known = ", ".join(sorted(COMPANY_PROFILES.keys())[:20])
+        raise click.UsageError(
+            f"unknown company key {key!r}. First 20 known: {known}…"
+        )
+
+    age_days = days_since_verification(profile)
+    age_tag = "[green]fresh[/green]" if age_days < 180 else "[red]stale[/red]"
+    console.print(
+        f"\n[bold]{profile.label}[/bold] "
+        f"[dim]({profile.key}, {profile.tier}, {profile.locale_hint})[/dim]"
+    )
+    console.print(
+        f"[dim]last verified: {profile.last_verified_at} "
+        f"({age_days}d ago) — {age_tag}[/dim]\n"
+    )
+
+    def _section(title: str, items: tuple[str, ...]) -> None:
+        console.print(f"[bold yellow]{title}[/bold yellow]")
+        for it in items:
+            console.print(f"  • {it}")
+        console.print()
+
+    _section("Must-haves", profile.must_haves)
+    _section("Plus signals", profile.plus_signals)
+    _section("Red flags", profile.red_flags)
+    _section("Format rules", profile.format_rules)
+    _section("Keyword anchors", profile.keyword_anchors)
+    console.print("[bold yellow]Enrich bias[/bold yellow]")
+    console.print(f"  {profile.enrich_bias}\n")
+    console.print("[bold yellow]Review tips[/bold yellow]")
+    console.print(f"  {profile.review_tips}\n")
+    if profile.verification_sources:
+        _section("Verification sources", profile.verification_sources)
+
+
+@company.command("audit")
+@click.option(
+    "--stale-days",
+    type=int,
+    default=None,
+    help="Override the default staleness threshold (default: 180 days).",
+)
+@click.option(
+    "--only-stale",
+    is_flag=True,
+    default=False,
+    help="Show only profiles past the staleness threshold.",
+)
+def company_audit(stale_days: int | None, only_stale: bool) -> None:
+    """Summarise verification ages — surface profiles needing a fact-check."""
+    from datetime import date
+
+    from core.company_profiles import (
+        COMPANY_PROFILES,
+        STALE_DEFAULT_DAYS,
+        days_since_verification,
+        stale_profiles,
+    )
+
+    threshold = stale_days if stale_days is not None else STALE_DEFAULT_DAYS
+    today = date.today()
+
+    table = Table(
+        title=f"Company-profile audit — threshold {threshold} days "
+        f"(today: {today.isoformat()})",
+        show_lines=False,
+    )
+    table.add_column("key", style="green")
+    table.add_column("tier", style="cyan")
+    table.add_column("verified")
+    table.add_column("age (d)", justify="right")
+    table.add_column("status")
+
+    profiles = sorted(
+        COMPANY_PROFILES.values(),
+        key=lambda p: days_since_verification(p, today),
+        reverse=True,
+    )
+
+    stale_set = {p.key for p in stale_profiles(threshold, today)}
+    rendered = 0
+    for p in profiles:
+        age = days_since_verification(p, today)
+        is_stale = p.key in stale_set
+        if only_stale and not is_stale:
+            continue
+        status = "[red]STALE[/red]" if is_stale else "[green]fresh[/green]"
+        table.add_row(p.key, p.tier, p.last_verified_at, str(age), status)
+        rendered += 1
+
+    console.print(table)
+    console.print(
+        f"\n[dim]{rendered} shown / {len(COMPANY_PROFILES)} total — "
+        f"{len(stale_set)} stale at >{threshold} days[/dim]"
+    )
+    if stale_set:
+        console.print(
+            "[yellow]run a subagent fact-check pass on the stale entries "
+            "(see core/profiles/<key>.yaml) before biasing résumés against them."
+            "[/yellow]"
+        )
 
 
 if __name__ == "__main__":

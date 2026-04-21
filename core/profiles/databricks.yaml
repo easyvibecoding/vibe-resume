@@ -44,3 +44,4 @@ review_tips: >-
   Databricks reviewers filter on DSA + distributed depth + reference readiness. Flag: ML bullets
   without distributed-systems language; backend roles without concurrency signals; candidates
   without 2-3 ready references.
+last_verified_at: '2026-04-21'

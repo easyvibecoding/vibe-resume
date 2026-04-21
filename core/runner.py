@@ -155,10 +155,21 @@ def run_enricher(
     locale: str | None = None,
     tailor: str | None = None,
     persona: str | None = None,
+    company: str | None = None,
+    level: str | None = None,
 ) -> None:
     from core.enricher import enrich_groups
 
-    enrich_groups(cfg, CACHE_DIR, limit=limit, locale=locale, tailor=tailor, persona=persona)
+    enrich_groups(
+        cfg,
+        CACHE_DIR,
+        limit=limit,
+        locale=locale,
+        tailor=tailor,
+        persona=persona,
+        company=company,
+        level=level,
+    )
 
 
 def run_render(

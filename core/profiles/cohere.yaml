@@ -40,3 +40,4 @@ review_tips: >-
   Cohere reviewers read for LLM-depth + enterprise-deployment awareness together. Flag: LLM
   bullets that stop at demos or API-wrapping; missing deployment / reliability dimension;
   retrieval roles without RAG / embeddings vocabulary.
+last_verified_at: '2026-04-21'

@@ -42,3 +42,4 @@ review_tips: >-
   human-in-the-loop awareness. Flag: ML bullets with no data-pipeline dimension,
   missing quality / throughput metrics, backend work disconnected from Scale's
   labeling-and-evals core.
+last_verified_at: '2026-04-21'

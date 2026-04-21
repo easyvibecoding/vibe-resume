@@ -39,3 +39,4 @@ review_tips: >-
   Perplexity reviewers scan for retrieval + LLM intersection + latency discipline. Flag: LLM-only
   résumés with no search dimension; search résumés with no LLM integration; bullets without
   latency or relevance metrics.
+last_verified_at: '2026-04-21'

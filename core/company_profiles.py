@@ -21,7 +21,8 @@ a user can override per résumé version, not hard filters.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, field, fields
+from datetime import date, datetime
 from pathlib import Path
 
 import yaml
@@ -56,6 +57,22 @@ class CompanyProfile:
     keyword_anchors: tuple[str, ...]
     enrich_bias: str
     review_tips: str
+    # Hallucination-guard metadata: when this profile was last fact-checked,
+    # and optional pointers to the sources consulted. ``verification_sources``
+    # is optional (defaults to empty) so new profiles can be staged without
+    # a full citation list, but ``last_verified_at`` is mandatory so every
+    # profile carries a visible age — stale entries can then be surfaced by
+    # ``stale_profiles(...)`` / ``vibe-resume company audit``.
+    last_verified_at: str = ""  # ISO 8601 date, YYYY-MM-DD
+    verification_sources: tuple[str, ...] = field(default_factory=tuple)
+
+    def verified_date(self) -> date:
+        """Parse ``last_verified_at`` to a :class:`datetime.date`.
+
+        Loader has already validated the format, so this cannot fail for any
+        profile registered in :data:`COMPANY_PROFILES`.
+        """
+        return datetime.strptime(self.last_verified_at, "%Y-%m-%d").date()
 
 
 # Where YAML profiles live. Override with ``load_profiles(dir=...)`` in tests.
@@ -64,7 +81,12 @@ PROFILES_DIR: Path = Path(__file__).parent / "profiles"
 _TUPLE_FIELDS: frozenset[str] = frozenset({
     "must_haves", "plus_signals", "red_flags", "format_rules", "keyword_anchors",
 })
-_REQUIRED_FIELDS: frozenset[str] = frozenset(f.name for f in fields(CompanyProfile))
+# Fields that may be omitted from YAML (loader supplies a default).
+_OPTIONAL_FIELDS: frozenset[str] = frozenset({"verification_sources"})
+_REQUIRED_FIELDS: frozenset[str] = (
+    frozenset(f.name for f in fields(CompanyProfile)) - _OPTIONAL_FIELDS
+)
+_ALL_FIELDS: frozenset[str] = frozenset(f.name for f in fields(CompanyProfile))
 
 
 class ProfileLoadError(ValueError):
@@ -83,7 +105,7 @@ def _profile_from_yaml(path: Path) -> CompanyProfile:
     if missing:
         raise ProfileLoadError(f"{path}: missing required fields: {sorted(missing)}")
 
-    extra = set(raw.keys()) - _REQUIRED_FIELDS
+    extra = set(raw.keys()) - _ALL_FIELDS
     if extra:
         raise ProfileLoadError(f"{path}: unknown fields: {sorted(extra)}")
 
@@ -102,6 +124,30 @@ def _profile_from_yaml(path: Path) -> CompanyProfile:
         if not isinstance(val, list) or not val:
             raise ProfileLoadError(f"{path}: field {fname} must be a non-empty list")
         raw[fname] = tuple(val)
+
+    # Validate ``last_verified_at`` is an ISO 8601 calendar date (YYYY-MM-DD)
+    # so every registered profile can be compared against today without
+    # runtime parsing surprises elsewhere in the codebase.
+    lva = raw["last_verified_at"]
+    if not isinstance(lva, str) or not lva:
+        raise ProfileLoadError(
+            f"{path}: last_verified_at must be a non-empty YYYY-MM-DD string"
+        )
+    try:
+        datetime.strptime(lva, "%Y-%m-%d")
+    except ValueError as exc:
+        raise ProfileLoadError(
+            f"{path}: last_verified_at {lva!r} is not a valid YYYY-MM-DD date: {exc}"
+        ) from exc
+
+    # verification_sources is optional — normalise to tuple when present.
+    if "verification_sources" in raw:
+        vs = raw["verification_sources"]
+        if not isinstance(vs, list):
+            raise ProfileLoadError(
+                f"{path}: verification_sources must be a list (may be empty or omitted)"
+            )
+        raw["verification_sources"] = tuple(vs)
 
     return CompanyProfile(**raw)
 
@@ -152,3 +198,41 @@ def list_company_keys() -> list[str]:
 
 def list_by_tier(tier: str) -> list[CompanyProfile]:
     return [p for p in COMPANY_PROFILES.values() if p.tier == tier]
+
+
+def days_since_verification(profile: CompanyProfile, today: date | None = None) -> int:
+    """Days elapsed between a profile's last fact-check date and *today*.
+
+    Pass ``today`` to freeze the reference point in tests; otherwise uses
+    the local system date. Negative values are theoretically possible if a
+    YAML declares a future verification date — the loader does not block
+    that, so callers that care should guard with ``max(0, …)``.
+    """
+    ref = today or date.today()
+    return (ref - profile.verified_date()).days
+
+
+STALE_DEFAULT_DAYS = 180
+
+
+def stale_profiles(
+    threshold_days: int = STALE_DEFAULT_DAYS,
+    today: date | None = None,
+    registry: dict[str, CompanyProfile] | None = None,
+) -> list[CompanyProfile]:
+    """Return all profiles older than *threshold_days* since last verified.
+
+    The 180-day default mirrors the half-year "external-fact refresh" cadence
+    recommended for hiring-process and product-name claims; tighten via the
+    argument when a specific workflow needs fresher guarantees. Sorted by
+    oldest-first so callers can print a "fix these next" list directly.
+    """
+    reg = registry or COMPANY_PROFILES
+    ref = today or date.today()
+    aged = [
+        (days_since_verification(p, ref), p)
+        for p in reg.values()
+    ]
+    stale = [p for d, p in aged if d > threshold_days]
+    stale.sort(key=lambda p: p.verified_date())
+    return stale
