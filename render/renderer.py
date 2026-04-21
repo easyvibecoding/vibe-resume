@@ -51,6 +51,97 @@ def _pick_template(env: Environment, locale_key: str) -> str:
         return "resume.md.j2"
 
 
+# Category slug → human-readable label shown in `headline` on each group.
+# Extracted as a module-level constant so the mapping is findable / editable
+# without spelunking into `_render_md`.
+HEADLINE_MAP: dict[str, str] = {
+    "frontend": "Frontend",
+    "backend": "Backend",
+    "fullstack": "Full-stack",
+    "database": "Database",
+    "devops": "DevOps",
+    "deployment": "Deployment",
+    "bug-fix": "Bug fixes",
+    "feature": "Features",
+    "refactor": "Refactoring",
+    "testing": "Testing",
+    "ui-design": "UI",
+    "docs": "Docs",
+    "performance": "Performance",
+    "security": "Security",
+    "data-ml": "Data/ML",
+    "api-integration": "API integration",
+    "agent-tooling": "Agent tooling",
+    "research": "Research",
+}
+
+
+def _humanize_headlines(raw_groups: list[dict]) -> None:
+    """In-place: rewrite each group's `headline` slug to human-readable form.
+
+    e.g. ``backend 40% / frontend 20%`` → ``Backend 40% / Frontend 20%``.
+    Unknown slugs pass through untouched.
+    """
+    for g in raw_groups:
+        hl = g.get("headline") or ""
+        for k, v in HEADLINE_MAP.items():
+            hl = hl.replace(f"{k} ", f"{v} ")
+        g["headline"] = hl
+
+
+def _compute_timespan(raw_groups: list[dict]) -> tuple[str, str]:
+    """(start, end) as YYYY-MM-DD strings.
+
+    Both collapse to `datetime.now()` when there are no groups — the template
+    still needs a string to render the "between X and Y" summary line.
+    """
+    if not raw_groups:
+        today = datetime.now().strftime("%Y-%m-%d")
+        return today, today
+    start = min(g["first_activity"][:10] for g in raw_groups)
+    end = max(g["last_activity"][:10] for g in raw_groups)
+    return start, end
+
+
+def _build_ai_overview(groups: list) -> list[dict]:
+    """Per-AI-source breakdown for the template's "AI sources observed" line.
+
+    Counts distinct *project groups* each source appears in (not raw sessions),
+    so a single long-running project doesn't dominate the share. Returned
+    ordered most-common first.
+    """
+    src_counter: Counter[str] = Counter()
+    for g in groups:
+        for s in g.sources:
+            src_counter[s.value] += 1
+    total_groups = len(groups) or 1
+    return [
+        {
+            "tool": source_display(src),
+            "projects": cnt,
+            "percent": cnt * 100 // total_groups,
+        }
+        for src, cnt in src_counter.most_common()
+    ]
+
+
+def _top_capabilities(groups: list, limit: int = 6) -> list[str]:
+    """Top-N task categories across all groups, excluding `fullstack`.
+
+    `fullstack` is derived — it's always a superset of the other categories,
+    so including it in the top list would crowd out real signal.
+    """
+    cap_counter: Counter[str] = Counter()
+    for g in groups:
+        for cat, n in (g.category_counts or {}).items():
+            cap_counter[cat] += n
+    return [
+        category_label(c)
+        for c, _ in cap_counter.most_common(limit + 2)
+        if c != "fullstack"
+    ][:limit]
+
+
 def _render_md(cfg: dict[str, Any], tailor: str | None, locale: str | None = None, persona: str | None = None) -> tuple[str, dict]:
     tpl_dir = Path(cfg.get("render", {}).get("templates_dir") or "render/templates")
     if not tpl_dir.is_absolute():
@@ -92,65 +183,11 @@ def _render_md(cfg: dict[str, Any], tailor: str | None, locale: str | None = Non
     skills_list = sorted(skills)
     skills_grouped = group_by_category(skills_list)
 
-    if not raw_groups:
-        timespan_start = timespan_end = datetime.now().strftime("%Y-%m-%d")
-    else:
-        timespan_start = min(g["first_activity"][:10] for g in raw_groups)
-        timespan_end = max(g["last_activity"][:10] for g in raw_groups)
-
-    # AI tool usage overview
-    src_counter: Counter[str] = Counter()
-    for g in groups:
-        for s in g.sources:
-            src_counter[s.value] += 1
-    total_groups = len(groups) or 1
-    ai_overview = [
-        {
-            "tool": source_display(src),
-            "projects": cnt,
-            "percent": cnt * 100 // total_groups,
-        }
-        for src, cnt in src_counter.most_common()
-    ]
+    timespan_start, timespan_end = _compute_timespan(raw_groups)
+    ai_overview = _build_ai_overview(groups)
     total_sessions = sum(g.total_sessions for g in groups)
-
-    # top capabilities across all projects (category-level)
-    cap_counter: Counter[str] = Counter()
-    for g in groups:
-        for cat, n in (g.category_counts or {}).items():
-            cap_counter[cat] += n
-    top_capabilities = [
-        category_label(c)
-        for c, _ in cap_counter.most_common(8)
-        if c != "fullstack"
-    ][:6]
-
-    # humanize per-group headlines (turn internal slugs into display labels)
-    headline_map = {
-        "frontend": "Frontend",
-        "backend": "Backend",
-        "fullstack": "Full-stack",
-        "database": "Database",
-        "devops": "DevOps",
-        "deployment": "Deployment",
-        "bug-fix": "Bug fixes",
-        "feature": "Features",
-        "refactor": "Refactoring",
-        "testing": "Testing",
-        "ui-design": "UI",
-        "docs": "Docs",
-        "performance": "Performance",
-        "security": "Security",
-        "data-ml": "Data/ML",
-        "api-integration": "API integration",
-        "agent-tooling": "Agent tooling",
-        "research": "Research",
-    }
-    for g in raw_groups:
-        hl = g.get("headline") or ""
-        for k, v in headline_map.items():
-            hl = hl.replace(f"{k} ", f"{v} ")
-        g["headline"] = hl
+    top_capabilities = _top_capabilities(groups)
+    _humanize_headlines(raw_groups)
 
     observed = load_observed_summary() or {}
     window_stats = load_window_stats() or {}
