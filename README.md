@@ -224,11 +224,11 @@ uv run vibe-resume render -f all    # md + docx + pdf + git snapshot
 |---|---|
 | `cli.py extract [--only NAME]` | run extractors, cache to `data/cache/*.json` |
 | `cli.py aggregate` | group by project, classify task types, infer stack |
-| `cli.py enrich [-n N] [--locale L] [--tailor JD.txt]` | generate summary + achievements (XYZ for en, noun-phrase for zh/ja/de/fr/ko); `--tailor` biases bullets toward a JD's keywords |
+| `cli.py enrich [-n N] [--locale L] [--tailor JD.txt] [--persona KEY]` | generate summary + achievements (XYZ for en, noun-phrase for zh/ja/de/fr/ko); `--tailor` biases toward a JD's keywords; `--persona` biases toward a reviewer archetype (see § *Reviewer personas*) |
 | `cli.py render -f md\|docx\|pdf\|all [--locale L]` | render + git snapshot |
 | `cli.py render --all-locales [-f FMT]` | fan out across every registered locale in one pass |
 | `cli.py render --tailor data/imports/jd.txt` | tailor for a specific job description |
-| `cli.py review [-v N \| --file PATH] [--locale L] [--jd JD.txt]` | score the rendered draft against the 8-point reviewer checklist |
+| `cli.py review [-v N \| --file PATH] [--locale L] [--jd JD.txt] [--persona KEY]` | score against the 8-point checklist; `--persona` appends a persona-specific lens at the end of the report |
 | `cli.py trend [--locale L]` | score history per locale with ASCII sparkline + mean + latest grade |
 | `cli.py completion {bash\|zsh\|fish} [--install]` | print or install a shell completion script so `--locale <tab>` expands |
 | `cli.py status` | show per-source activity counts |
@@ -334,6 +334,45 @@ uv run python cli.py render --all-locales --tailor jd.txt # one JD, every locale
 Per-locale formats are controlled by `config.render.all_locales_formats`
 (default `["md"]`) — bump it to `["md", "docx", "pdf"]` to cut full bundles.
 `--locale` and `--all-locales` are mutually exclusive.
+
+## Reviewer personas (`--persona`)
+
+A résumé that wins a Tech Lead screen often loses an HR-first funnel, and
+vice versa. `--persona` adds a third axis (orthogonal to locale and JD)
+that biases how each bullet is phrased — same candidate, same activity
+data, but re-voiced for the expected reader.
+
+| Key | Reader | What this reader skims for |
+|---|---|---|
+| `tech_lead` | Staff+ engineer / Tech Lead | Named systems, specific perf numbers, trade-off verbs (*migrated / replaced / introduced*) |
+| `hr` | HR manager / recruiter | Career trajectory, collaboration, plain-language business impact; acronym soup gets skipped |
+| `executive` | VP / hiring manager | Business outcomes in $ / scale / team-size; each role's lead bullet should read as a headline |
+| `startup_founder` | Early-stage founder | End-to-end ownership, shipping velocity, resourcefulness; enterprise-process framing gets discounted |
+| `academic` | Research hiring committee | Methodological rigour, datasets, benchmarks, citation-style framing |
+
+Compose with locale and JD freely — each dimension hits a different part
+of the prompt:
+
+```bash
+# Same person, three audiences, Japanese market
+uv run vibe-resume enrich --persona tech_lead   --locale ja_JP -n 3
+uv run vibe-resume render  -f all              --locale ja_JP
+uv run vibe-resume review  --persona tech_lead --locale ja_JP
+
+uv run vibe-resume enrich --persona hr          --locale ja_JP -n 3
+uv run vibe-resume render  -f all              --locale ja_JP     # overwrites the draft
+uv run vibe-resume review  --persona hr        --locale ja_JP
+
+# Executive lens + JD-tailored + English
+uv run vibe-resume enrich --persona executive --tailor data/imports/jd.txt --locale en_US -n 3
+uv run vibe-resume render  -f md --locale en_US --tailor data/imports/jd.txt
+uv run vibe-resume review  --persona executive --jd data/imports/jd.txt
+```
+
+Reviewer personas never fabricate — the bias is a *re-voicing*
+instruction; numbers, people, and decisions that the raw activity
+doesn't support stay out. The `review --persona` form appends a
+short lens-specific advisory block at the bottom of the scorecard.
 
 ## Reviewer-view audit (`cli.py review`)
 

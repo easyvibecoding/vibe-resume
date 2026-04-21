@@ -34,12 +34,15 @@ You are operating inside (or next to) the `vibe-resume` project. Use the current
 
 5. **Enrich** (recommended — produces LLM-written achievements, not rule-based fallback).
    ```bash
-   uv run python cli.py enrich --locale en_US            # XYZ bullets (en_US / en_GB / en_EU)
-   uv run python cli.py enrich --locale ja_JP            # 名詞片語 bullets (ja/ko/zh/de/fr)
+   uv run python cli.py enrich --locale en_US                                # XYZ bullets (en_US / en_GB / en_EU)
+   uv run python cli.py enrich --locale ja_JP                                # 名詞片語 bullets (ja/ko/zh/de/fr)
    uv run python cli.py enrich --tailor data/imports/jd.txt --locale en_US -n 1
+   uv run python cli.py enrich --persona tech_lead --locale en_US            # bias toward Staff+ reader
+   uv run python cli.py enrich --persona hr --locale en_US                   # bias toward HR / recruiter
    ```
    - `--locale` selects the prompt shape and language label (prevents e.g. Japanese role_label leaking Simplified Chinese).
    - `--tailor <JD.txt>` injects the JD's extracted keywords into the prompt so achievements surface them verbatim when the raw activity supports it (never invents matches).
+   - `--persona <key>` biases bullet phrasing toward a reviewer archetype. Keys: `tech_lead`, `hr`, `executive`, `startup_founder`, `academic`. Orthogonal to `--locale` (language) and `--tailor` (specific JD); compose all three per audience.
    - `-n N` limits to the top-N groups; out-of-window groups keep prior enrichment rather than being overwritten.
 
 6. **Render.**

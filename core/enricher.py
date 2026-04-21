@@ -132,6 +132,7 @@ def _build_prompt(
     g: ProjectGroup,
     locale_meta: dict[str, Any] | None = None,
     tailor_keywords: list[str] | None = None,
+    persona: Any = None,
 ) -> str:
     raw_lines: list[str] = []
     for a in g.activities[:12]:
@@ -174,6 +175,16 @@ def _build_prompt(
             "verbatim in at least one achievement (e.g. if `RAG` is listed and the project "
             "is a retrieval pipeline, prefer 'RAG' over a generic phrase like 'search stack'). "
             "Never invent a match that isn't supported by the raw activity.\n"
+        )
+    if persona is not None:
+        # Persona bias fires last so it wins tie-breaks against the default voice
+        # without overriding locale script rules (which are upstream).
+        body += (
+            "\n\n"
+            f"Reviewer persona — {persona.label}:\n"
+            f"{persona.enrich_bias}\n"
+            "Apply this lens *when the raw activity supports it*. Never fabricate "
+            "numbers, people, or decisions that the input doesn't show.\n"
         )
     return body
 
@@ -232,6 +243,7 @@ def enrich_groups(
     limit: int | None = None,
     locale: str | None = None,
     tailor: str | None = None,
+    persona: str | None = None,
 ) -> None:
     groups = load_groups()
     if not groups:
@@ -253,6 +265,15 @@ def enrich_groups(
             preview = ", ".join(tailor_keywords[:8]) if tailor_keywords else "(none)"
             console.print(f"[dim]tailor keywords from {tailor_path.name}: {preview}[/dim]")
 
+    from core.personas import PERSONAS, get_persona
+
+    persona_obj = get_persona(persona)
+    if persona and persona_obj is None:
+        known = ", ".join(sorted(PERSONAS))
+        console.print(f"[yellow]unknown persona '{persona}'. Known: {known}[/yellow]")
+    elif persona_obj:
+        console.print(f"[dim]reviewer persona: {persona_obj.label}[/dim]")
+
     use_llm = cfg.get("enrich", {}).get("mode") == "claude-code-agent"
     enriched: list[dict[str, Any]] = []
     n_to_enrich = limit if limit else len(groups)
@@ -273,7 +294,11 @@ def enrich_groups(
             continue
 
         if use_llm and g.total_sessions >= 2:
-            out = _call_claude(_build_prompt(g, locale_meta, tailor_keywords=tailor_keywords))
+            out = _call_claude(
+                _build_prompt(
+                    g, locale_meta, tailor_keywords=tailor_keywords, persona=persona_obj
+                )
+            )
             parsed = _parse_yaml(out) if out else None
         else:
             parsed = None

@@ -56,8 +56,10 @@ Invoke this skill whenever the user wants to **turn their AI-tool usage history 
 | Render single locale | `uv run vibe-resume render -f md --locale ja_JP` |
 | All 10 locales | `uv run vibe-resume render --all-locales` |
 | JD-tailored run | `uv run vibe-resume enrich --tailor data/imports/jd.txt --locale en_US -n 1 && uv run vibe-resume render -f md --locale en_US --tailor data/imports/jd.txt` |
+| Persona-biased enrich | `uv run vibe-resume enrich --persona tech_lead --locale en_US` (keys: `tech_lead` / `hr` / `executive` / `startup_founder` / `academic`) |
 | Score latest | `uv run vibe-resume review` |
 | Score with JD echo | `uv run vibe-resume review --jd data/imports/jd.txt` |
+| Score with persona lens | `uv run vibe-resume review --persona hr` — appends persona-specific review tips |
 | Per-locale trend | `uv run vibe-resume trend --locale zh_TW` |
 
 | Locale quick map | |

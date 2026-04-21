@@ -52,12 +52,23 @@ def aggregate(ctx: click.Context) -> None:
     default=None,
     help="Path to JD .txt; extracted keywords are injected into the enrich prompt so achievements bias toward them",
 )
+@click.option(
+    "--persona",
+    default=None,
+    help="Reviewer persona: tech_lead / hr / executive / startup_founder / academic — biases bullet phrasing toward that audience",
+)
 @click.pass_context
-def enrich(ctx: click.Context, limit: int | None, locale: str | None, tailor: str | None) -> None:
+def enrich(
+    ctx: click.Context,
+    limit: int | None,
+    locale: str | None,
+    tailor: str | None,
+    persona: str | None,
+) -> None:
     """Ask Claude Code agent skill to summarize each project group."""
     from core.runner import run_enricher
 
-    run_enricher(ctx.obj["config"], limit=limit, locale=locale, tailor=tailor)
+    run_enricher(ctx.obj["config"], limit=limit, locale=locale, tailor=tailor, persona=persona)
 
 
 @cli.command()
@@ -134,6 +145,11 @@ def status(ctx: click.Context) -> None:
 @click.option("--locale", default=None, help="Override locale (else inferred from filename)")
 @click.option("--jd", default=None, help="Job description text file for keyword-echo scoring")
 @click.option("--diff/--no-diff", default=True, help="Compare against the previous review of the same locale (default on)")
+@click.option(
+    "--persona",
+    default=None,
+    help="Reviewer persona: tech_lead / hr / executive / startup_founder / academic — appends persona-specific review advice",
+)
 @click.pass_context
 def review(
     ctx: click.Context,
@@ -142,6 +158,7 @@ def review(
     locale: str | None,
     jd: str | None,
     diff: bool,
+    persona: str | None,
 ) -> None:
     """Score a rendered resume against the 8-point reviewer checklist."""
     from core.review import find_previous_review, parse_jd_keywords, review_file, write_report
@@ -164,7 +181,7 @@ def review(
         md_path = versioned[-1]
 
     jd_keywords = parse_jd_keywords(Path(jd)) if jd else None
-    report = review_file(md_path, locale_key=locale, jd_keywords=jd_keywords)
+    report = review_file(md_path, locale_key=locale, jd_keywords=jd_keywords, persona=persona)
     out_dir = ROOT / "data" / "reviews"
     previous = find_previous_review(out_dir, report.source, report.locale) if diff else None
     md_out, json_out = write_report(report, out_dir, previous=previous)

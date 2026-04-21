@@ -152,6 +152,8 @@ class ReviewReport:
     total: int
     max_total: int
     scores: list[Score]
+    persona: str | None = None  # reviewer-persona key, if one was applied
+    persona_tips: str | None = None  # human-readable advice from that persona
 
     @property
     def grade(self) -> str:
@@ -211,6 +213,12 @@ class ReviewReport:
                 lines.append(f"| {s.name} | {label} | {delta_cell} | {notes} |")
             else:
                 lines.append(f"| {s.name} | {label} | {notes} |")
+        if self.persona_tips:
+            persona_label = self.persona or ""
+            lines.append("")
+            lines.append(f"### Reviewer lens — {persona_label}")
+            lines.append("")
+            lines.append(self.persona_tips)
         return "\n".join(lines) + "\n"
 
     @classmethod
@@ -479,13 +487,22 @@ def review_file(
     md_path: Path,
     locale_key: str | None = None,
     jd_keywords: list[str] | None = None,
+    persona: str | None = None,
 ) -> ReviewReport:
     text = Path(md_path).read_text(encoding="utf-8")
     # infer locale from filename if not given: resume_v007.md → en_US; resume_v010_zh_TW.md → zh_TW
     if not locale_key:
         m = re.search(r"resume_v\d+_([a-zA-Z_]+)\.md$", str(md_path))
         locale_key = m.group(1) if m else "en_US"
-    return review(text, locale_key, source=str(Path(md_path).name), jd_keywords=jd_keywords)
+    report = review(text, locale_key, source=str(Path(md_path).name), jd_keywords=jd_keywords)
+    if persona:
+        from core.personas import get_persona
+
+        p = get_persona(persona)
+        if p is not None:
+            report.persona = p.key
+            report.persona_tips = p.review_tips
+    return report
 
 
 # Structural / title words that appear in most JDs and carry no signal.
