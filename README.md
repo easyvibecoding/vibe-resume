@@ -97,18 +97,32 @@ The skill follows the 2026 converged `SKILL.md` convention: **one canonical file
 
 ### Install — three ecosystem tiers
 
-The 2026 agent-skills ecosystem has converged into **three install paths** —
+The 2026 agent-skills ecosystem has converged into **four install paths** —
 pick the one that matches your agent, not eight separate `ln -s` commands.
 
-**Tier 1 — 27+ `agentskills.io`-standard hosts (one line installs to all)**
+**Tier 0 — Plugin marketplaces (bundled install, namespaced skill)**
+
+```bash
+# Claude Code (uses .claude-plugin/plugin.json)
+/plugin install easyvibecoding/vibe-resume
+
+# OpenAI Codex (uses .codex-plugin/plugin.json)
+codex plugin install easyvibecoding/vibe-resume
+```
+
+Plugins wrap the skill plus future commands/agents/hooks/MCP servers in
+one installable unit. Skill is exposed as `/vibe-resume:ai-used-resume`
+(namespaced) instead of bare `/ai-used-resume`.
+
+**Tier 1 — 37+ `agentskills.io`-standard hosts (one line installs to all)**
 ```bash
 npx skills add easyvibecoding/vibe-resume --skill ai-used-resume
 ```
 `npx skills` auto-detects every installed CLI/IDE agent on your machine and
 routes the skill to the correct directory. This one command covers Claude
 Code, Cursor, Windsurf, Gemini CLI, GitHub Copilot, Codex, Qwen Code, Kimi
-Code, Roo Code, Kilo Code, Goose, Trae, OpenCode, Amp, Antigravity, and
-more. To restrict, pass `-a <slug>`:
+Code, Roo Code, Kilo Code, Goose, Trae, OpenCode, Amp, Antigravity, Kiro,
+Factory, Junie, and more. To restrict, pass `-a <slug>`:
 ```bash
 npx skills add easyvibecoding/vibe-resume -a claude -a cursor-agent -a windsurf
 ```
@@ -153,11 +167,11 @@ hermes skills install easyvibecoding/vibe-resume/ai-used-resume --force --yes
 If you can't run `npx skills` or want full control over symlink locations:
 
 ```bash
-# Tier 1 hosts — symlink from this repo's canonical SKILL.md
-mkdir -p ~/.claude/skills && ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.claude/skills/ai-used-resume
-mkdir -p ~/.gemini/skills && ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.gemini/skills/ai-used-resume
-mkdir -p ~/.warp/skills && ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.warp/skills/ai-used-resume
-mkdir -p ~/.opencode/skills && ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.opencode/skills/ai-used-resume
+# Tier 1 hosts — symlink from this repo's canonical SKILL.md (at skills/)
+mkdir -p ~/.claude/skills && ln -s "$(pwd)/skills/ai-used-resume" ~/.claude/skills/ai-used-resume
+mkdir -p ~/.gemini/skills && ln -s "$(pwd)/skills/ai-used-resume" ~/.gemini/skills/ai-used-resume
+mkdir -p ~/.warp/skills && ln -s "$(pwd)/skills/ai-used-resume" ~/.warp/skills/ai-used-resume
+mkdir -p ~/.opencode/skills && ln -s "$(pwd)/skills/ai-used-resume" ~/.opencode/skills/ai-used-resume
 
 # Cursor reads project-root AGENTS.md zero-config. For system-wide, copy to ~/.cursor/rules/.
 ```

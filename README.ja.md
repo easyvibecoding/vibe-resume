@@ -91,13 +91,25 @@ ChatGPT · Claude.ai · Gemini Takeout · Grok · Perplexity · Mistral Le Chat 
 
 ### インストール —— 3 つのエコシステム Tier
 
-2026 年の agent-skills エコシステムは**3 つのインストール経路**に収斂しました。ご自身の agent に合わせて 1 本選ぶだけ。8 個の `ln -s` を書く必要はありません。
+2026 年の agent-skills エコシステムは**4 つのインストール経路**に収斂しました。ご自身の agent に合わせて 1 本選ぶだけ。8 個の `ln -s` を書く必要はありません。
 
-**Tier 1 —— 27 以上の `agentskills.io` 標準ホスト(一行で全部に入る)**
+**Tier 0 —— Plugin marketplace(bundled インストール、skill は namespace 付き)**
+
+```bash
+# Claude Code(.claude-plugin/plugin.json を使用)
+/plugin install easyvibecoding/vibe-resume
+
+# OpenAI Codex(.codex-plugin/plugin.json を使用)
+codex plugin install easyvibecoding/vibe-resume
+```
+
+Plugin は skill と将来追加する commands / agents / hooks / MCP servers を 1 つのインストール単位として包みます。skill は `/vibe-resume:ai-used-resume`(namespace 付き)で呼び出され、素の `/ai-used-resume` ではありません。
+
+**Tier 1 —— 37 以上の `agentskills.io` 標準ホスト(一行で全部に入る)**
 ```bash
 npx skills add easyvibecoding/vibe-resume --skill ai-used-resume
 ```
-`npx skills` はインストール済みの CLI / IDE エージェントを自動検出し、対応ディレクトリに振り分けます。この一行で Claude Code、Cursor、Windsurf、Gemini CLI、GitHub Copilot、Codex、Qwen Code、Kimi Code、Roo Code、Kilo Code、Goose、Trae、OpenCode、Amp、Antigravity などを一括カバー。特定のエージェントに限定する場合は `-a <slug>`:
+`npx skills` はインストール済みの CLI / IDE エージェントを自動検出し、対応ディレクトリに振り分けます。この一行で Claude Code、Cursor、Windsurf、Gemini CLI、GitHub Copilot、Codex、Qwen Code、Kimi Code、Roo Code、Kilo Code、Goose、Trae、OpenCode、Amp、Antigravity、Kiro、Factory、Junie などを一括カバー。特定のエージェントに限定する場合は `-a <slug>`:
 ```bash
 npx skills add easyvibecoding/vibe-resume -a claude -a cursor-agent -a windsurf
 ```
@@ -143,10 +155,10 @@ hermes skills install easyvibecoding/vibe-resume/ai-used-resume --force --yes
 
 ```bash
 # Tier 1 ホスト —— リポの canonical SKILL.md から symlink
-mkdir -p ~/.claude/skills && ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.claude/skills/ai-used-resume
-mkdir -p ~/.gemini/skills && ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.gemini/skills/ai-used-resume
-mkdir -p ~/.warp/skills && ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.warp/skills/ai-used-resume
-mkdir -p ~/.opencode/skills && ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.opencode/skills/ai-used-resume
+mkdir -p ~/.claude/skills && ln -s "$(pwd)/skills/ai-used-resume" ~/.claude/skills/ai-used-resume
+mkdir -p ~/.gemini/skills && ln -s "$(pwd)/skills/ai-used-resume" ~/.gemini/skills/ai-used-resume
+mkdir -p ~/.warp/skills && ln -s "$(pwd)/skills/ai-used-resume" ~/.warp/skills/ai-used-resume
+mkdir -p ~/.opencode/skills && ln -s "$(pwd)/skills/ai-used-resume" ~/.opencode/skills/ai-used-resume
 
 # Cursor はプロジェクトルートの AGENTS.md を設定不要で読みます。横断利用は ~/.cursor/rules/ へコピー。
 ```

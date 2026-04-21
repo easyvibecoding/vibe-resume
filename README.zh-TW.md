@@ -91,13 +91,25 @@ ChatGPT · Claude.ai · Gemini Takeout · Grok · Perplexity · Mistral Le Chat 
 
 ### 安裝 —— 三條生態血統
 
-2026 年 agent-skills 生態已收斂成**三條安裝路徑** —— 依你的 agent 選一條,不用再寫八條 `ln -s`。
+2026 年 agent-skills 生態已收斂成**四條安裝路徑** —— 依你的 agent 選一條,不用再寫八條 `ln -s`。
 
-**Tier 1 —— 27+ 家 `agentskills.io` 標準 host(一行裝到全部)**
+**Tier 0 —— Plugin marketplace(bundled 安裝,skill 會被 namespace)**
+
+```bash
+# Claude Code(走 .claude-plugin/plugin.json)
+/plugin install easyvibecoding/vibe-resume
+
+# OpenAI Codex(走 .codex-plugin/plugin.json)
+codex plugin install easyvibecoding/vibe-resume
+```
+
+Plugin 會把 skill 以及未來要帶的 commands / agents / hooks / MCP servers 包成一個安裝單元。skill 以 `/vibe-resume:ai-used-resume`(有 namespace)呼叫,而不是直接 `/ai-used-resume`。
+
+**Tier 1 —— 37+ 家 `agentskills.io` 標準 host(一行裝到全部)**
 ```bash
 npx skills add easyvibecoding/vibe-resume --skill ai-used-resume
 ```
-`npx skills` 會自動偵測機器上裝了哪些 CLI / IDE agent,並路由到對應目錄。這一行就涵蓋 Claude Code、Cursor、Windsurf、Gemini CLI、GitHub Copilot、Codex、Qwen Code、Kimi Code、Roo Code、Kilo Code、Goose、Trae、OpenCode、Amp、Antigravity 等等。要限定特定 agent,加 `-a <slug>`:
+`npx skills` 會自動偵測機器上裝了哪些 CLI / IDE agent,並路由到對應目錄。這一行就涵蓋 Claude Code、Cursor、Windsurf、Gemini CLI、GitHub Copilot、Codex、Qwen Code、Kimi Code、Roo Code、Kilo Code、Goose、Trae、OpenCode、Amp、Antigravity、Kiro、Factory、Junie 等等。要限定特定 agent,加 `-a <slug>`:
 ```bash
 npx skills add easyvibecoding/vibe-resume -a claude -a cursor-agent -a windsurf
 ```
@@ -143,10 +155,10 @@ hermes skills install easyvibecoding/vibe-resume/ai-used-resume --force --yes
 
 ```bash
 # Tier 1 host —— 從 repo canonical SKILL.md symlink 出去
-mkdir -p ~/.claude/skills && ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.claude/skills/ai-used-resume
-mkdir -p ~/.gemini/skills && ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.gemini/skills/ai-used-resume
-mkdir -p ~/.warp/skills && ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.warp/skills/ai-used-resume
-mkdir -p ~/.opencode/skills && ln -s "$(pwd)/.claude/skills/ai-used-resume" ~/.opencode/skills/ai-used-resume
+mkdir -p ~/.claude/skills && ln -s "$(pwd)/skills/ai-used-resume" ~/.claude/skills/ai-used-resume
+mkdir -p ~/.gemini/skills && ln -s "$(pwd)/skills/ai-used-resume" ~/.gemini/skills/ai-used-resume
+mkdir -p ~/.warp/skills && ln -s "$(pwd)/skills/ai-used-resume" ~/.warp/skills/ai-used-resume
+mkdir -p ~/.opencode/skills && ln -s "$(pwd)/skills/ai-used-resume" ~/.opencode/skills/ai-used-resume
 
 # Cursor 讀 project root 的 AGENTS.md 零設定。要跨專案用就複製到 ~/.cursor/rules/。
 ```
