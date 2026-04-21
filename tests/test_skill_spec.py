@@ -104,3 +104,47 @@ def test_references_dir_follows_spec(path: Path) -> None:
         f"{skill_dir.relative_to(REPO_ROOT)} uses singular `reference/` — "
         f"rename to `references/` per agentskills.io spec"
     )
+
+
+# Markdown inline link: [text](target) — captures the target in group 1.
+# Excludes targets starting with http(s):// or #.
+_MD_LINK_RE = re.compile(r"\[[^\]]+\]\(((?!https?://|#)[^)]+)\)")
+
+
+def _skill_markdown_files() -> list[Path]:
+    """All markdown files inside each skill directory: SKILL.md + references/*.md."""
+    files: list[Path] = []
+    for skill_path in SKILL_PATHS:
+        skill_dir = skill_path.parent
+        files.append(skill_path)
+        refs_dir = skill_dir / "references"
+        if refs_dir.is_dir():
+            files.extend(sorted(refs_dir.glob("*.md")))
+    return files
+
+
+@pytest.mark.parametrize(
+    "md_path",
+    _skill_markdown_files(),
+    ids=lambda p: str(p.relative_to(REPO_ROOT)),
+)
+def test_skill_internal_links_resolve(md_path: Path) -> None:
+    """Relative markdown links inside skill docs must resolve to existing files.
+
+    Catches refactors that rename a `references/*.md` file without updating the
+    pointer in SKILL.md, or docs that link to a file that never shipped.
+    """
+    text = md_path.read_text(encoding="utf-8")
+    unresolved: list[str] = []
+    for target in _MD_LINK_RE.findall(text):
+        # Strip any anchor fragment: `references/foo.md#bar` -> `references/foo.md`.
+        target_path = target.split("#", 1)[0]
+        if not target_path:
+            continue
+        resolved = (md_path.parent / target_path).resolve()
+        if not resolved.exists():
+            unresolved.append(target)
+
+    assert not unresolved, (
+        f"{md_path.relative_to(REPO_ROOT)} has broken relative link(s): {unresolved}"
+    )
