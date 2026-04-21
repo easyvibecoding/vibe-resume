@@ -15,7 +15,14 @@ class ExtractorError(Exception):
 
 
 def iter_jsonl(path: Path) -> Iterator[dict]:
-    """Yield parsed JSON objects from a .jsonl file; skip malformed lines."""
+    """Yield parsed JSON objects from a .jsonl file; skip malformed lines.
+
+    Tries the fast orjson path first, then falls back to stdlib json with
+    lossy UTF-8 decoding for lines that orjson rejects (Claude Code, Cursor,
+    and friends occasionally emit truncated / mixed-encoding rows during
+    crashes). A line that fails both parsers is dropped silently — lossy
+    JSONL is a documented tradeoff, not a bug.
+    """
     try:
         with open(path, "rb") as f:
             for line in f:
@@ -27,7 +34,7 @@ def iter_jsonl(path: Path) -> Iterator[dict]:
                 except (orjson.JSONDecodeError, ValueError):
                     try:
                         yield json.loads(line.decode("utf-8", errors="ignore"))
-                    except Exception:
+                    except (json.JSONDecodeError, ValueError):
                         continue
     except FileNotFoundError:
         return
