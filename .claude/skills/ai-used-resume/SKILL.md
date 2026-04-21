@@ -108,28 +108,14 @@ You are operating inside (or next to) the `vibe-resume` project. Use the current
 
 ## Strategic résumé: `--company <key> --level <key>`
 
-Both `enrich` and `review` accept these two extra axes to tailor against
-a named employer and seniority bracket:
+`enrich` and `review` accept two extra axes — a named target employer
+(70 bundled profiles) and a seniority bracket — stacked on top of
+`--locale` / `--persona` / `--tailor`. Block injection order is
+`tailor → persona → level → company`.
 
-- **`--company`** — one of 70 bundled keys (see `company list`).
-  Injects that profile's `enrich_bias` into the LLM prompt and adds a
-  0-10 "Company keyword coverage" score to the review card (counts how
-  many `keyword_anchors` the résumé actually surfaces). Apply auto-checks
-  `last_verified_at` and prints a loud warning if the profile is older
-  than 90 days — prompt the user to run `company verify <key>` before
-  biasing against stale research.
-- **`--level`** — one of `new_grad` / `junior` / `mid` / `senior` /
-  `staff_plus` / `research_scientist`. Bakes in the lead-bullet signal
-  the reviewer expects at that bracket, so mid-level work is not
-  promoted into unsupported staff claims.
-
-Block injection order in the enrich prompt is deterministic —
-`tailor → persona → level → company` — so the most-specific lens lands
-closest to the YAML emission point and wins tie-breaks.
-
-Adding a new employer is drop-in: write `core/profiles/<key>.yaml` with
-the seven required fields plus `last_verified_at: "YYYY-MM-DD"`; the
-loader validates schema + tier + filename match at import time.
+See [references/strategic-resume.md](references/strategic-resume.md) for
+the full axis reference, catalogue-management commands, 90-day staleness
+guard, and the drop-in recipe for adding a new employer profile.
 
 ## How to help the user
 
