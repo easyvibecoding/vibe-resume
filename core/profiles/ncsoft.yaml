@@ -1,0 +1,49 @@
+key: ncsoft
+label: NCSoft / 엔씨소프트
+tier: kr
+locale_hint: ko_KR
+must_haves:
+- >-
+  Game-engine fluency — NCSoft uses proprietary engines for flagship MMORPGs
+  (Lineage, Blade & Soul) alongside Unreal for newer titles
+- C++ depth for engine / gameplay / server-backend roles
+- Korean-language fluency — NCSoft strongly prefers Korean applicants and
+  interviews are typically conducted in Korean
+plus_signals:
+- MMORPG server / persistence / sharding experience at named scale
+- AI / NPC behaviour / procedural generation work (NCSoft invests heavily in
+  game AI research)
+- Anti-cheat, anti-bot, or account-security engineering
+- Published-title credit with platform + role + team size
+red_flags:
+- English-only applicant without Korean-language readiness for Korea-based
+  roles
+- Game-dev résumé with no shipped MMORPG or comparable persistent-world credit
+- Missing C++ / server-backend depth for engine or live-service tracks
+format_rules:
+- Hangul-primary résumé with English tech terms; photo expected in Korean
+  submission channels
+- Each shipped title — platform, team size, role (engine / gameplay / server /
+  AI / tools)
+- Interview preparation should assume Korean-language technical deep-dive
+keyword_anchors:
+- 엔씨소프트
+- 리니지
+- MMORPG
+- C++
+- Unreal
+- 게임서버
+- AI NPC
+- 샤딩
+enrich_bias: >-
+  This résumé will be reviewed by NCSoft. Hangul-primary format is strongly
+  preferred; English technical terms in parentheses. Shipped-title credit
+  with role specificity is the single highest-value signal — platform,
+  team size, engine / gameplay / server / AI / tools sub-role. MMORPG-scale
+  persistence, sharding, and live-ops are NCSoft-specific priorities.
+  Korean-language readiness should be stated explicitly when present.
+review_tips: >-
+  NCSoft reviewers read Hangul-primary résumés and expect Korean-language
+  readiness. Flag: English-only applications for Korea-based roles, game-dev
+  résumés without shipped MMORPG credit at mid-plus level, missing C++ /
+  server depth for engine tracks.

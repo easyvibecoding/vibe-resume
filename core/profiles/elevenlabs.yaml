@@ -1,0 +1,47 @@
+key: elevenlabs
+label: ElevenLabs
+tier: regional_ai
+locale_hint: en_US
+must_haves:
+- >-
+  Audio ML or speech-synthesis / speech-recognition depth — ElevenLabs is
+  the voice-AI category leader and recruits heavily for audio-ML specialists
+- Python + PyTorch production ML experience
+- Comfort working fully remote across 45+ countries (ElevenLabs is
+  distributed-first)
+plus_signals:
+- TTS / ASR / voice-cloning / audio-generation research or engineering
+- Low-latency real-time audio serving at consumer scale
+- Open-source audio-ML contributions (whisper, bark, tortoise ecosystems)
+- Adjacent-media experience (gaming, audiobooks, film dubbing, accessibility)
+red_flags:
+- ML résumé with no audio dimension for voice / speech roles
+- Missing low-latency serving awareness for real-time voice products
+- In-office-only career with no async / remote-work evidence for distributed
+  team
+format_rules:
+- 1-2 pages, no photo
+- Audio-ML bullets name the model family, dataset, evaluation metric (WER,
+  MOS, naturalness) and deployment latency
+- Remote / async collaboration evidence surfaced explicitly
+keyword_anchors:
+- TTS
+- ASR
+- voice cloning
+- audio ML
+- PyTorch
+- low latency
+- remote
+- real-time
+enrich_bias: >-
+  This résumé will be reviewed by ElevenLabs. Lead with audio-ML specifics —
+  TTS / ASR / voice-cloning / audio-generation — naming the model family,
+  dataset, and evaluation metric on every bullet. Real-time low-latency
+  serving experience is a clear differentiator. Remote-first async
+  communication evidence is a culture-fit positive given ElevenLabs'
+  45+ country distributed team.
+review_tips: >-
+  ElevenLabs reviewers filter on audio-ML depth + low-latency serving +
+  distributed-team readiness. Flag: ML résumés without audio dimension for
+  voice roles, missing latency / quality metrics, in-office-only career
+  markers for distributed-team candidates.

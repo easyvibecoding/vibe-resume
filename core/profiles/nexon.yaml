@@ -1,0 +1,46 @@
+key: nexon
+label: Nexon / 넥슨
+tier: kr
+locale_hint: ko_KR
+must_haves:
+- >-
+  Game-engine fluency — Nexon uses proprietary engines for flagship titles
+  (MapleStory, Dungeon & Fighter) alongside Unity and Unreal
+- C++ / C# depth for engine / gameplay / tools roles
+- Korean OR Japanese language readiness — Nexon has dual-market HQ
+  (Seoul + Tokyo) and much internal communication crosses both
+plus_signals:
+- Shipped long-tail live-service-game credit (Nexon operates games for 15+
+  years each)
+- Free-to-play / monetisation / item-shop engineering experience
+- Anti-cheat, account-security, or fraud-detection for live games
+- Bilingual KR / JP / EN working ability
+red_flags:
+- Game-dev résumé with no shipped live-service credit at mid-plus level
+- Missing long-tail operations experience for live-ops tracks
+- Single-language (English-only) résumé for Korea / Japan-based roles
+format_rules:
+- Korean or Japanese primary; English acceptable for global studios
+- Each shipped title — platform, role, team size, years-in-service when
+  relevant
+- Live-ops duration and monetisation-feature ownership surfaced explicitly
+keyword_anchors:
+- 넥슨
+- MapleStory
+- 던전앤파이터
+- C++
+- live ops
+- 무료화
+- Unreal
+- Unity
+enrich_bias: >-
+  This résumé will be reviewed by Nexon. Shipped-title credit with live-ops
+  duration is the strongest signal — Nexon's portfolio is built on 15+ year
+  live games. C++ / C# depth + game-engine internals are baseline for
+  engine / gameplay / tools roles. Bilingual KR / JP readiness is a Nexon-
+  specific differentiator given dual-HQ operations.
+review_tips: >-
+  Nexon reviewers read for shipped-live-service credit + long-tail ops
+  awareness + KR/JP bilingual readiness when applicable. Flag: game-dev
+  résumés without live-service credit, missing monetisation / live-ops
+  vocabulary, single-language résumés for dual-HQ roles.

@@ -1,0 +1,46 @@
+key: krutrim
+label: Krutrim
+tier: regional_ai
+locale_hint: en_US
+must_haves:
+- >-
+  Foundation-model training experience at scale — Krutrim is building India's
+  sovereign AI foundation models and recruits for pretraining engineers
+- GPU / distributed-training infrastructure fluency (multi-node, tensor
+  parallelism, pipeline parallelism)
+- Python + PyTorch + DeepSpeed / Megatron / FSDP ecosystem
+plus_signals:
+- Indian-languages NLP or multilingual pretraining experience
+- Experience with sovereign / on-prem AI deployment (Krutrim's positioning)
+- Ola ecosystem integration (Krutrim is part of Ola's AI arm)
+- Open-source model releases or dataset publications
+red_flags:
+- ML résumé with no pretraining or distributed-training experience
+- Missing Indian-language dimension for applied-product roles
+- LLM work limited to fine-tuning or API consumption
+format_rules:
+- 1-2 pages; English primary
+- Pretraining experience named with model size, token count, hardware
+  (A100 / H100 / node count)
+- OSS / model-release links surfaced when present
+keyword_anchors:
+- foundation model
+- pretraining
+- Megatron
+- DeepSpeed
+- FSDP
+- Indian languages
+- sovereign AI
+- Ola
+enrich_bias: >-
+  This résumé will be reviewed by Krutrim. Foundation-model pretraining
+  experience is the strongest currency — name model size, token count,
+  and hardware scale (A100 / H100 / node count). Indian-language /
+  multilingual pretraining work aligns with Krutrim's sovereign-AI mission.
+  OSS / model-release contributions should be surfaced at the top.
+review_tips: >-
+  Krutrim reviewers filter on pretraining-at-scale + distributed-training
+  infrastructure + Indian-language dimension. Flag: ML résumés without
+  pretraining experience for research-track applications, missing
+  distributed-training vocabulary for infra roles, LLM work framed as
+  fine-tuning only.

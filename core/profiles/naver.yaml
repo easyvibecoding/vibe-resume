@@ -1,0 +1,48 @@
+key: naver
+label: NAVER
+tier: kr
+locale_hint: ko_KR
+must_haves:
+- >-
+  Search / recommendation / NLP / CV / speech research or engineering
+  experience — Naver publishes research across these areas through Naver Labs
+  and Clova
+- Strong engineering-or-research depth demonstrable via artefacts (papers,
+  OSS, shipped products)
+- Hangul-first résumé with English tech terms in parentheses
+plus_signals:
+- Peer-reviewed publications at NeurIPS / ICML / ICLR / ACL / EMNLP / CVPR
+- Prior Naver / Line / Clova / Hyperclova / Works Mobile ecosystem exposure
+- Large-scale user-facing product engineering (Naver's flagship search, maps,
+  webtoon, shopping)
+- Korean-language-NLP specialised work (Naver leads Korean-LM research)
+red_flags:
+- Research-scientist résumé without publications for research tracks
+- English-only résumé for Korea-based roles
+- Missing product-scale or research-depth markers — Naver bars are high on
+  both axes
+format_rules:
+- Hangul-primary with English tech terms; photo commonly expected
+- Publications / OSS / shipped-product links surfaced at the top
+- 1-2 pages; research résumé may overflow for strong publication record
+keyword_anchors:
+- 네이버
+- Clova
+- Hyperclova
+- NLP
+- 검색
+- 추천
+- CVPR
+- 한국어
+enrich_bias: >-
+  This résumé will be reviewed by Naver. Hangul-primary with English tech
+  terms. For research roles, surface publications with venue, year, and
+  author position at the top. For engineering roles, emphasise consumer-
+  scale product ownership (search, maps, webtoon, shopping) with traffic
+  numbers. Korean-language-NLP specialised work is a Naver-native
+  differentiator.
+review_tips: >-
+  Naver reviewers filter on publication venue (research) or product scale
+  (engineering), both at high bars. Flag: research résumés without peer-
+  reviewed venues, English-only submissions for Korea-based roles, missing
+  scale numbers on consumer-product bullets.

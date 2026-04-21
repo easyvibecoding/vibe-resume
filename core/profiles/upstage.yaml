@@ -1,0 +1,48 @@
+key: upstage
+label: Upstage / 업스테이지
+tier: regional_ai
+locale_hint: en_US
+must_haves:
+- >-
+  Provable ML competition track record — Upstage was built by Kaggle
+  Grandmasters and hires heavily from competitive-ML communities
+- Strong LLM training or serving depth — Upstage's Solar LLM family is the
+  core product
+- Publication or OSS trail for ML claims
+plus_signals:
+- Kaggle medals (gold preferred) or top placements on benchmark leaderboards
+- Korean-language LLM work or multilingual pretraining experience
+- Document-AI / OCR / information-extraction experience (Upstage's enterprise
+  product line)
+- Bilingual Korean + English working ability
+red_flags:
+- ML résumé with no competition / publication / OSS artefact
+- LLM claims limited to API-consumer depth
+- Pure engineering résumé with no model-training or research dimension for
+  ML-facing roles
+format_rules:
+- English-primary résumé acceptable and often preferred for research roles
+- Kaggle / competition placements surfaced at the top of the achievements
+  section
+- Publications list with venue + year + author position
+keyword_anchors:
+- Solar LLM
+- Kaggle
+- document AI
+- OCR
+- 한국어 LLM
+- pretraining
+- fine-tuning
+- benchmark
+enrich_bias: >-
+  This résumé will be reviewed by Upstage. Kaggle / benchmark-leaderboard
+  placements carry extraordinary weight — surface them at the very top of
+  the achievements section, with medal colour and specific competition
+  names. LLM depth must be framed at the training / serving / post-training
+  level, not as API consumption. Korean-LLM and document-AI work are
+  Upstage-specific differentiators.
+review_tips: >-
+  Upstage reviewers read for Kaggle / benchmark track records as primary
+  signal. Flag: ML claims without competition or publication artefacts,
+  LLM bullets at API-consumer depth, missing Solar LLM or document-AI
+  vocabulary for product-team roles.

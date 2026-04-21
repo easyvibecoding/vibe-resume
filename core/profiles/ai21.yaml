@@ -1,0 +1,45 @@
+key: ai21
+label: AI21 Labs
+tier: regional_ai
+locale_hint: en_US
+must_haves:
+- >-
+  Enterprise-LLM or long-context-model depth — AI21's core differentiator is
+  long-context foundation models optimised for regulated enterprise workloads
+- Python + PyTorch training / serving experience
+- Strong applied-NLP or research background
+plus_signals:
+- Long-context architecture research (Mamba, SSMs, attention alternatives,
+  retrieval-augmented long context)
+- Regulated-industry LLM deployment (finance, healthcare, legal)
+- Hebrew / multilingual NLP work or Israel-based academic ties
+- Published research at NeurIPS / ICML / ACL
+red_flags:
+- LLM résumé with no long-context or enterprise-deployment angle
+- Missing regulated-industry awareness for enterprise-product roles
+- Pure prompt-engineering framing for research-track applications
+format_rules:
+- 1-2 pages
+- Publications list with venue + year + author position for research roles
+- Enterprise-deployment bullets name the regulated-industry dimension when
+  applicable (SOC2, HIPAA, GDPR)
+keyword_anchors:
+- long context
+- foundation model
+- enterprise LLM
+- PyTorch
+- Mamba
+- SSM
+- regulated
+- Hebrew
+enrich_bias: >-
+  This résumé will be reviewed by AI21 Labs. Lead with long-context or
+  enterprise-LLM depth — AI21's positioning is long-context-for-regulated-
+  enterprise. For research roles, surface publications early with venue
+  + author position. For applied-engineering roles, name the regulated
+  industry and compliance boundary (SOC2, HIPAA, GDPR).
+review_tips: >-
+  AI21 reviewers filter on long-context / enterprise-LLM depth + research
+  artefacts or regulated-deployment evidence. Flag: LLM bullets at prompt-
+  engineering depth only, missing compliance dimension for enterprise roles,
+  research résumés without venue-named publications.

@@ -1,0 +1,47 @@
+key: woowa
+label: Woowa Brothers (Baedal Minjok / 배달의민족)
+tier: kr
+locale_hint: ko_KR
+must_haves:
+- >-
+  High-QPS order / dispatch / routing backend experience — Baedal Minjok
+  handles Korea's dominant food-delivery volume with real-time matching
+- Java / Kotlin / Spring / JVM depth (Woowa's dominant server stack)
+- Hangul-first résumé with English tech terms in parentheses
+plus_signals:
+- Prior Woowa Tech Course graduation — the most recognised Korean engineering
+  bootcamp and a major NKLCB feeder
+- Real-time dispatch / matching / ETA-prediction algorithm experience
+- Design-driven engineering mindset (Woowa is famous for craft-driven culture)
+- OSS contributions to Spring / Kotlin / reactive ecosystems
+red_flags:
+- English-only résumé for Korea-based roles
+- Backend résumé without high-QPS or real-time matching evidence for senior
+  positions
+- Missing ownership / craftsmanship signals (Woowa hires for these as heavily
+  as technical depth)
+format_rules:
+- Hangul primary + English tech terms; photo commonly expected
+- 1-2 pages, reverse-chronological with month-precision tenure
+- Tech stack explicitly names JVM + Kotlin + Spring when applicable
+keyword_anchors:
+- 배민
+- 배달
+- Kotlin
+- Spring
+- MSA
+- 실시간 매칭
+- Woowa Tech Course
+- JVM
+enrich_bias: >-
+  This résumé will be reviewed by Woowa Brothers (배민). Produce a Hangul-
+  primary résumé with English tech terms in parentheses. Real-time dispatch,
+  matching, and ETA-prediction experience is the clearest differentiator —
+  name the scale (QPS, orders/day, rider count). Woowa Tech Course
+  lineage should be stated prominently if present. Craftsmanship and
+  ownership framing is as important as technical depth.
+review_tips: >-
+  Woowa reviewers read for Hangul-primary + JVM/Kotlin depth + real-time
+  system experience + Woowa-Tech-Course lineage. Flag: English-only résumés,
+  backend résumés without real-time matching dimension, missing
+  craftsmanship/ownership framing for senior candidates.

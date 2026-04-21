@@ -1,0 +1,47 @@
+key: sarvam
+label: Sarvam AI
+tier: regional_ai
+locale_hint: en_US
+must_haves:
+- >-
+  Indian-languages NLP or multilingual-LLM depth — Sarvam's mission is
+  building AI for Indian languages (22+ scheduled languages)
+- LLM training / fine-tuning / evaluation experience
+- Strong Python + PyTorch + HuggingFace ecosystem fluency
+plus_signals:
+- Speech / ASR / TTS for Indian languages (Sarvam ships voice products)
+- Autonomous-agent architecture work — Sarvam advertises research-engineer
+  autonomous-agents roles explicitly
+- Academic ties to IIT / IISc / international research groups
+- Low-resource-language NLP research (data-efficient training, tokenisation
+  for scripts like Devanagari, Tamil, Bengali)
+red_flags:
+- English-only ML résumé with no Indian-language or multilingual dimension
+- Missing agent / tool-use vocabulary for autonomous-agent roles
+- LLM work limited to API consumption with no training / fine-tuning
+  experience
+format_rules:
+- 1-2 pages; English primary
+- Publications and OSS contributions at top
+- Indian-language specialisation surfaced explicitly when present
+keyword_anchors:
+- Indian languages
+- multilingual LLM
+- ASR
+- TTS
+- agents
+- fine-tuning
+- low-resource NLP
+- tokenisation
+enrich_bias: >-
+  This résumé will be reviewed by Sarvam AI. Indian-language / multilingual
+  NLP is the clearest differentiator — name the languages and the dataset
+  scale. For autonomous-agent roles, surface tool-use, planning, and
+  evaluation harness experience. LLM work must go beyond API usage to
+  training / fine-tuning / evaluation. Academic ties to IIT / IISc or
+  international research groups are a clear signal.
+review_tips: >-
+  Sarvam reviewers filter on Indian-language NLP depth + LLM
+  training/fine-tuning experience + agent / multi-step-reasoning
+  vocabulary. Flag: English-only ML résumés, API-consumer LLM framing,
+  missing tokenisation / low-resource-language dimension.
