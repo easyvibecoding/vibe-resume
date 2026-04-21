@@ -123,6 +123,24 @@ def _skill_markdown_files() -> list[Path]:
     return files
 
 
+def test_skill_variants_agree_on_identity() -> None:
+    """Both SKILL.md variants (.claude/ and skills/) must declare the same
+    `name`, `license`, and `compatibility` — these identify the skill to
+    downstream marketplaces and host environments. Description may diverge
+    (different phrasing for different audiences), but identity must not.
+    """
+    frontmatters = {p: _split_frontmatter(p.read_text(encoding="utf-8"))[0] for p in SKILL_PATHS}
+
+    for field in ("name", "license", "compatibility"):
+        values = {str(path.relative_to(REPO_ROOT)): fm.get(field) for path, fm in frontmatters.items()}
+        declared = {v for v in values.values() if v is not None}
+        if len(declared) > 1:
+            pytest.fail(
+                f"SKILL.md variants disagree on `{field}`: {values}. "
+                f"Keep identity fields aligned across variants."
+            )
+
+
 @pytest.mark.parametrize(
     "md_path",
     _skill_markdown_files(),
