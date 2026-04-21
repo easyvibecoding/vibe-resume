@@ -327,6 +327,63 @@ uv run vibe-resume review  --persona executive --jd data/imports/jd.txt
 
 Persona 不捏造 —— 只换语气、换重点。原始数据没支持的数字、人名、决策都不会冒出来。`review --persona` 会在评分表末尾附上该 persona 的审查视角建议。
 
+## 策略型简历 —— 目标企业画像(`--company`、`--level`)
+
+内置 70 家公司画像与 6 个职涯层级原型,让 enrich + review 可针对特定雇主的招聘标准定制 —— 与 locale、persona、JD tailor 正交。每份画像放在 `core/profiles/<key>.yaml`,并带有事实核查时间 (`last_verified_at`),过期数据会在应用时明确警告,不会悄悄污染简历。
+
+**浏览内置目录:**
+
+```bash
+# 按 tier 分组 —— frontier_ai / ai_unicorn / regional_ai / tw_local /
+# us_tier2 / eu / jp / kr
+uv run vibe-resume company list
+uv run vibe-resume company list --tier jp
+
+# 查看完整画像(must-haves、red flags、keyword anchors、
+# enrich_bias、review_tips、最后核查日期)
+uv run vibe-resume company show openai
+
+# 70 家 age 表 —— 标记超过 90 天阈值者
+# (对应当前 AI 招聘市场的季度刷新节奏)
+uv run vibe-resume company audit
+uv run vibe-resume company audit --only-stale --stale-days 30
+```
+
+**enrich + review 应用公司与层级:**
+
+```bash
+# 针对 OpenAI senior IC 定制简历
+uv run vibe-resume enrich  --company openai --level senior --locale en_US -n 3
+uv run vibe-resume render  -f all --locale en_US
+uv run vibe-resume review  --company openai --level senior --locale en_US
+
+# 同一份活动、不同雇主 —— review 会在 8 项基础 rubric 之上
+# 追加一个企业特定的 "Company keyword coverage" 分数 (0/10)
+uv run vibe-resume review  --company anthropic --level senior --locale en_US
+uv run vibe-resume review  --company rakuten  --level senior --locale ja_JP
+```
+
+**每次应用 `--company` 都会自动检查核查日期。** 画像超过 90 天,CLI 会打红字警告并提示更新路径 —— 绝不静默使用过期研究数据污染简历。
+
+**刷新过期画像:**
+
+```bash
+# 委托事实核查给 claude CLI agent(近期 ≤90 天 + 近年 2-3 年双轨交叉验证)
+# 报告存于 data/verification_reports/<key>_<YYYY-MM-DD>.md
+uv run vibe-resume company verify openai
+
+# 若 agent 返回 VERDICT: clean,自动更新核查日期
+uv run vibe-resume company verify openai --apply
+
+# 若已手动用浏览器确认过,直接 bump 日期
+uv run vibe-resume company mark-verified openai
+uv run vibe-resume company mark-verified openai --date 2027-01-15 --yes
+```
+
+`mark-verified` 只改 YAML 那一行日期,保留注释、折叠字符串、其他所有手动修改。新增全新画像也是 drop-in:写一份 `core/profiles/<key>.yaml` 并设 `last_verified_at: "YYYY-MM-DD"`,立刻被 loader 注册、打包进 wheel、可被 `--company` 消费。
+
+职涯层级(`--level`):`new_grad` · `junior` · `mid` · `senior` · `staff_plus` · `research_scientist`。每个原型内建该层级 reviewer 期待看到的 lead-bullet 信号,避免把 mid 的任务膨胀成 staff 都守不住的 scope claim。
+
 ## Reviewer-view 审核(`cli.py review`)
 
 ![8 项自动 reviewer 评分表,旁边是一份已渲染简历和趋势稀疏图](docs/assets/reviewer_audit.png)

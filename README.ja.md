@@ -327,6 +327,63 @@ uv run vibe-resume review  --persona executive --jd data/imports/jd.txt
 
 ペルソナは捏造しません —— あくまで「語り直し」の指示です。元データが支持しない数値・人名・意思決定は出てきません。`review --persona` は採点表の末尾に、該当ペルソナのレビュー観点アドバイスを付加します。
 
+## 戦略的履歴書 —— ターゲット企業プロファイル(`--company`、`--level`)
+
+内蔵の 70 社プロファイル + 6 つのキャリアレベル原型により、enrich + review を特定の採用基準に合わせてチューニングできます —— locale / persona / JD tailor と直交する軸です。各プロファイルは `core/profiles/<key>.yaml` にあり、ファクトチェック日時 (`last_verified_at`) を必ず保持するので、古くなったデータが黙って履歴書を汚染することはなく、適用時に明示的な警告が出ます。
+
+**バンドルされたカタログを閲覧:**
+
+```bash
+# tier 別にグループ化 —— frontier_ai / ai_unicorn / regional_ai /
+# tw_local / us_tier2 / eu / jp / kr
+uv run vibe-resume company list
+uv run vibe-resume company list --tier jp
+
+# プロファイル全文(must-haves / red flags / keyword anchors /
+# enrich_bias / review_tips / 最終検証日)
+uv run vibe-resume company show rakuten
+
+# 70 社の age テーブル —— 90 日しきい値超過をフラグ
+# (現在の AI 採用市場の四半期リフレッシュサイクルに合わせる)
+uv run vibe-resume company audit
+uv run vibe-resume company audit --only-stale --stale-days 30
+```
+
+**企業とレベルを enrich + review に適用:**
+
+```bash
+# 楽天の senior IC 向けに履歴書をチューニング
+uv run vibe-resume enrich  --company rakuten --level senior --locale ja_JP -n 3
+uv run vibe-resume render  -f all --locale ja_JP
+uv run vibe-resume review  --company rakuten --level senior --locale ja_JP
+
+# 同じ raw activity・異なる雇用主 —— review は 8 項目の基本ルーブリックに
+# 加えて企業固有の "Company keyword coverage" スコア (0/10) を付与
+uv run vibe-resume review  --company mercari --level senior --locale ja_JP
+uv run vibe-resume review  --company openai  --level senior --locale en_US
+```
+
+**`--company` 適用ごとに検証日を自動チェックします。** プロファイルが 90 日より古ければ、CLI は赤字警告と更新パスを表示 —— 古い調査結果が黙って履歴書に染み込むことはありません。
+
+**古いプロファイルを更新:**
+
+```bash
+# ファクトチェックを claude CLI エージェントに委譲(直近 ≤90 日 + 過去 2-3 年の
+# ダブルトラック交差検証)。レポートは data/verification_reports/<key>_<YYYY-MM-DD>.md に保存。
+uv run vibe-resume company verify rakuten
+
+# エージェントが VERDICT: clean を返せば検証日を自動更新
+uv run vibe-resume company verify rakuten --apply
+
+# ブラウザで手動確認済みなら、日付をそのままバンプ
+uv run vibe-resume company mark-verified rakuten
+uv run vibe-resume company mark-verified rakuten --date 2027-01-15 --yes
+```
+
+`mark-verified` は YAML の日付行だけを書き換え、コメント・折り返し文字列・他のすべての手編集を保持します。新しいプロファイルを追加するのも drop-in:`core/profiles/<key>.yaml` を書いて `last_verified_at: "YYYY-MM-DD"` を指定するだけで、loader が登録し、wheel にも同梱され、`--company` で即消費可能になります。
+
+キャリアレベル(`--level`):`new_grad` · `junior` · `mid` · `senior` · `staff_plus` · `research_scientist`。各原型はそのレベルのレビュアーが期待する lead-bullet のシグナルを内蔵しており、mid 仕事を staff では守れない scope claim に昇格させてしまうことを防ぎます。
+
 ## レビュアー視点の監査(`cli.py review`)
 
 ![8 項目の自動レビュアースコアカードとレンダリング済み履歴書、トレンドスパークライン](docs/assets/reviewer_audit.png)
