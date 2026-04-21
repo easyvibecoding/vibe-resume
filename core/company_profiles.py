@@ -213,7 +213,14 @@ def days_since_verification(profile: CompanyProfile, today: date | None = None) 
     return (ref - profile.verified_date()).days
 
 
-STALE_DEFAULT_DAYS = 180
+# 90-day default — the AI/tech hiring market currently rebrands products,
+# restructures interview processes, and shifts tech-stack expectations on
+# roughly quarterly cadence (e.g. Kolr was renamed from KOL Radar within
+# a single year, LINE-Naver tech ties were severed end-2024, Anthropic's
+# AI-in-application policy flipped twice in 2025). A 90-day ceiling keeps
+# bundled profiles close to that rhythm without forcing verification on
+# every résumé run. Override via ``--stale-days`` for looser checks.
+STALE_DEFAULT_DAYS = 90
 
 
 def is_stale(
@@ -225,7 +232,9 @@ def is_stale(
 
     Used both at CLI level (print a warning whenever a stale profile is
     applied via ``--company``) and inside the verify workflow to decide
-    whether an auto-refresh is due.
+    whether an auto-refresh is due. Default threshold tracks
+    :data:`STALE_DEFAULT_DAYS` (90 days) to match the current AI-hiring
+    market's quarterly rebrand / restack cadence.
     """
     return days_since_verification(profile, today) > threshold_days
 
@@ -237,10 +246,12 @@ def stale_profiles(
 ) -> list[CompanyProfile]:
     """Return all profiles older than *threshold_days* since last verified.
 
-    The 180-day default mirrors the half-year "external-fact refresh" cadence
-    recommended for hiring-process and product-name claims; tighten via the
-    argument when a specific workflow needs fresher guarantees. Sorted by
-    oldest-first so callers can print a "fix these next" list directly.
+    The 90-day default matches the quarterly cadence at which AI-company
+    products, interview processes, and stack expectations visibly shift in
+    the 2025-2026 market. Tighten via the argument when a specific workflow
+    needs fresher guarantees (e.g. 30-day for frontier-lab profiles), or
+    loosen for lower-churn enterprise employers. Sorted oldest-first so
+    callers can print a "fix these next" list directly.
     """
     reg = registry or COMPANY_PROFILES
     ref = today or date.today()

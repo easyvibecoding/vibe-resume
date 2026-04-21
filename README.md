@@ -422,7 +422,8 @@ uv run vibe-resume company list --tier jp
 # keyword anchors, enrich_bias, review_tips, verified date)
 uv run vibe-resume company show openai
 
-# Age table across all 70 — flags profiles past the 180-day threshold
+# Age table across all 70 — flags profiles past the 90-day threshold
+# (quarterly-refresh cadence matched to current AI-hiring market churn)
 uv run vibe-resume company audit
 uv run vibe-resume company audit --only-stale --stale-days 90
 ```
@@ -443,7 +444,7 @@ uv run vibe-resume review  --company rakuten  --level senior --locale ja_JP
 ```
 
 **Every `--company` apply auto-checks verification age.** If the profile
-is older than 180 days, the CLI prints a loud warning and suggests the
+is older than 90 days, the CLI prints a loud warning and suggests the
 refresh path — it never silently biases a résumé against stale research.
 
 **Refresh a stale profile:**

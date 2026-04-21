@@ -198,7 +198,8 @@ employer on top of locale/persona/JD. Each profile carries
 - `uv run vibe-resume company show <key>` — full profile (must-haves,
   red flags, keyword anchors, enrich_bias, review_tips, verified date).
 - `uv run vibe-resume company audit [--only-stale]` — age table across
-  all profiles; default staleness threshold is 180 days.
+  all profiles; default staleness threshold is 90 days (quarterly refresh
+  cadence matched to current AI-hiring market churn).
 - `uv run vibe-resume company verify <key> [--apply]` — delegates a
   fact-check to `claude -p`; saves the markdown report under
   `data/verification_reports/`; auto-bumps the verified date when the
@@ -214,7 +215,7 @@ adds a 0-10 "Company keyword coverage" score that counts how many
 `keyword_anchors` actually surface in the résumé.
 
 Every `--company` apply auto-prints a warning and the refresh
-instruction when the profile is older than 180 days — never silently
+instruction when the profile is older than 90 days — never silently
 tailors against stale research.
 
 ## Useful sibling commands

@@ -30,9 +30,11 @@ def _warn_if_company_stale(company_key: str | None) -> None:
 
     Both ``enrich`` and ``review`` call this right before they pass the key
     down into their respective biasers, so operators never silently tailor a
-    résumé against a profile that is months out of date. The warning links
-    to the refresh command (``company verify``) and the local mark-clean
-    command (``company mark-verified``) so the remediation path is obvious.
+    résumé against a profile that has aged past the 90-day default (a
+    quarterly refresh cadence matched to current AI-hiring market churn).
+    The warning names both the refresh command (``company verify``) and
+    the local mark-clean command (``company mark-verified``) so the
+    remediation path is obvious without flipping back to the docs.
     """
     if not company_key:
         return
@@ -46,7 +48,8 @@ def _warn_if_company_stale(company_key: str | None) -> None:
         age = days_since_verification(c)
         console.print(
             f"[red bold]⚠ company profile for '{c.key}' is {age} days old "
-            f"(last verified {c.last_verified_at})[/red bold]"
+            f"(last verified {c.last_verified_at}; "
+            "past the 90-day quarterly-refresh threshold)[/red bold]"
         )
         console.print(
             "[yellow]run `vibe-resume company verify "
@@ -581,15 +584,33 @@ VERIFICATION_REPORTS_DIR = ROOT / "data" / "verification_reports"
 _VERIFY_PROMPT = """\
 You are fact-checking a company résumé-review profile to prevent LLM-
 hallucinated content from biasing résumés. Use your web-search and web-fetch
-tools (cap at ~5 queries) to verify the specific factual claims in the YAML
-below.
+tools (cap at ~8 queries total) to verify the specific factual claims in
+the YAML below.
+
+IMPORTANT — cross-reference BOTH timescales before classifying any claim:
+
+1. RECENT (last ~90 days): rebrands, org/leadership shifts, interview-
+   process changes, product launches or sunsets, new hiring freezes /
+   mass layoffs, regulator actions. The AI hiring market moves on a
+   quarterly cadence; miss a 60-day-old rebrand and the profile is
+   actively misleading.
+2. MULTI-YEAR (last 2-3 years): whether the claim reflects a stable
+   pattern or a one-off announcement. A claim supported only by a single
+   recent press release is weaker than one consistently documented
+   across multiple years. Conversely, a claim supported only by
+   pre-2024 sources should be marked STALE unless you can confirm it
+   still holds in 2025-2026.
 
 For each non-generic claim (named products, documented hiring process,
-required documents, tech-stack claims, cited culture points), decide:
+required documents, tech-stack claims, cited culture points, named
+market verticals, language requirements), decide:
 
-- CONFIRMED — primary or reputable secondary source found (quote URL)
-- STALE — weakly supported or now outdated (quote URL + caveat)
-- WRONG — contradicted by evidence (quote URL + correction)
+- CONFIRMED — both recent AND multi-year sources agree (quote URL and
+  say which timeframe each source covers)
+- STALE — only old sources support it OR a recent change has reversed
+  it (quote URL + caveat + timeframe)
+- WRONG — contradicted by current evidence; profile's claim is
+  fabricated or was never true (quote URL + correction)
 
 Output format — plain markdown, nothing else:
 
@@ -597,12 +618,13 @@ Output format — plain markdown, nothing else:
 
 Verified on: {today}
 Profile source: core/profiles/{key}.yaml
+Timeframes queried: recent (<=90d), multi-year (2023-present)
 
 ## Findings
 
-- CONFIRMED: ...
-- STALE: ...
-- WRONG: ...
+- CONFIRMED: <claim> — recent: <URL, summary>; historical: <URL, summary>
+- STALE: <claim> — only supported by <URL, year>; no recent corroboration
+- WRONG: <claim> — contradicted by <URL>; correct fact is …
 
 ## Verdict
 
@@ -788,7 +810,7 @@ def company_mark_verified(key: str, date_str: str | None, yes: bool) -> None:
     "--stale-days",
     type=int,
     default=None,
-    help="Override the default staleness threshold (default: 180 days).",
+    help="Override the default staleness threshold (default: 90 days — quarterly refresh cadence for the current AI hiring market).",
 )
 @click.option(
     "--only-stale",

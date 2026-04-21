@@ -98,7 +98,7 @@ You are operating inside (or next to) the `vibe-resume` project. Use the current
 | `uv run python cli.py completion zsh --install` | install shell completion so `--locale <tab>` expands |
 | `uv run python cli.py company list [--tier X]` | browse 70 bundled employer profiles |
 | `uv run python cli.py company show <key>` | full profile (must-haves / red flags / tips) |
-| `uv run python cli.py company audit [--only-stale]` | age table; flag profiles past 180-day threshold |
+| `uv run python cli.py company audit [--only-stale]` | age table; flag profiles past 90-day threshold |
 | `uv run python cli.py company verify <key> [--apply]` | delegate fact-check to claude agent; auto-bump date on clean verdict |
 | `uv run python cli.py company mark-verified <key>` | bump `last_verified_at` after manual fact-check |
 | `scripts/backup_claude_projects.sh` | macOS/Linux rsync of `~/.claude/projects` |
@@ -114,7 +114,7 @@ a named employer and seniority bracket:
   0-10 "Company keyword coverage" score to the review card (counts how
   many `keyword_anchors` the résumé actually surfaces). Apply auto-checks
   `last_verified_at` and prints a loud warning if the profile is older
-  than 180 days — prompt the user to run `company verify <key>` before
+  than 90 days — prompt the user to run `company verify <key>` before
   biasing against stale research.
 - **`--level`** — one of `new_grad` / `junior` / `mid` / `senior` /
   `staff_plus` / `research_scientist`. Bakes in the lead-bullet signal

@@ -300,7 +300,7 @@ def test_stale_profiles_returns_oldest_first():
         "fresh": _profile_with_date("2026-04-01"),
     }
     # tie-break only needs to work: the "fresh" one should NOT be stale at
-    # 180 days; the other two should appear oldest-first.
+    # 90 days; the other two should appear oldest-first.
     stale = stale_profiles(today=date(2026, 4, 21), registry=fake_registry)
     assert len(stale) == 2
     assert stale[0].last_verified_at == "2025-01-01"
@@ -446,11 +446,15 @@ def test_is_stale_over_threshold():
 
 
 def test_is_stale_respects_custom_threshold():
-    p = _profile_with_date("2026-01-01")
-    # age ~= 110 days — fresh at default 180, stale at custom 60
+    # Pick a date ~60 days before the reference: fresh under the 90-day
+    # default, stale under a tighter 30-day override.
+    p = _profile_with_date("2026-02-20")
     ref = date(2026, 4, 21)
-    assert not is_stale(p, today=ref)
-    assert is_stale(p, threshold_days=60, today=ref)
+    assert not is_stale(p, today=ref)  # ~60 days, within default 90
+    assert is_stale(p, threshold_days=30, today=ref)
+    # And the original 110-day case: now stale under the new default.
+    p_old = _profile_with_date("2026-01-01")
+    assert is_stale(p_old, today=ref)
 
 
 def test_update_last_verified_at_round_trips(tmp_path: Path):
