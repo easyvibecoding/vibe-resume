@@ -1,0 +1,47 @@
+key: twilio
+label: Twilio
+tier: us_tier2
+locale_hint: en_US
+must_haves:
+- >-
+  Distributed-systems depth for CPaaS platform work — Twilio's product is
+  communications APIs (SMS, voice, email, video) at scale
+- JVM-language fluency (Java primary; Kotlin / Scala acceptable) for backend
+  platform roles
+- RESTful API design and event-driven architecture (Kafka, SQS) experience
+plus_signals:
+- Prior telecom / SMS / voice / video infrastructure work
+- Observability tooling experience (Prometheus, Datadog, Grafana, OpenTelemetry)
+- High-availability at four-nines / five-nines reliability targets
+- Multi-region / global carrier-network integration
+red_flags:
+- Pure frontend / consumer-app résumé for platform-engineering roles
+- Missing event-driven / queue-based architecture experience for senior
+  backend
+- Backend résumé without API-design framing at a CPaaS-grade level
+format_rules:
+- 1-2 pages, no photo
+- Reliability bullets name availability target (4-nines, 5-nines) and
+  regional coverage
+- API design and event-architecture vocabulary explicit for platform roles
+keyword_anchors:
+- CPaaS
+- Java
+- Kafka
+- SQS
+- RESTful
+- observability
+- multi-region
+- four-nines
+enrich_bias: >-
+  This résumé will be reviewed by Twilio. Distributed-systems depth is the
+  platform-engineering bar — event-driven architecture (Kafka, SQS), API
+  design for CPaaS-grade public consumption, and four-nines reliability
+  framing. AWS experience is a baseline expectation. Observability
+  vocabulary (Prometheus, Datadog, Grafana) is a positive alongside
+  JVM-language depth.
+review_tips: >-
+  Twilio reviewers read for distributed-systems depth + JVM backend + API
+  design at CPaaS grade. Flag: consumer-app résumés for platform roles,
+  missing event-driven architecture for senior backend, API bullets
+  without developer-facing / versioning / idempotency framing.

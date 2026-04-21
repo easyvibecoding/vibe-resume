@@ -1,0 +1,47 @@
+key: hubspot
+label: HubSpot
+tier: us_tier2
+locale_hint: en_US
+must_haves:
+- >-
+  Marketing / sales / CRM SaaS domain familiarity — HubSpot's product is the
+  integrated CRM platform for SMBs and mid-market
+- TypeScript / Java / JavaScript backend or product-engineering depth
+- SMB / mid-market SaaS operational awareness — different from enterprise or
+  consumer scale
+plus_signals:
+- Prior CRM / marketing-automation / sales-tooling experience (Salesforce,
+  Marketo, Mailchimp, Zendesk, Pipedrive, Intercom)
+- App-marketplace or integration-platform engineering
+- Growth / PLG (product-led growth) engineering experience
+- Remote-flexible working evidence (HubSpot is hybrid / remote-friendly)
+red_flags:
+- Generic backend résumé with no CRM / SaaS-domain dimension
+- Enterprise-only career for SMB / mid-market product roles
+- Missing integration / third-party-API-connector experience for platform
+  tracks
+format_rules:
+- 1-2 pages, no photo
+- Growth / PLG / funnel metrics surfaced when the role is product-facing
+- CRM / marketing / sales domain exposure explicit when present
+keyword_anchors:
+- CRM
+- HubSpot
+- marketing automation
+- PLG
+- TypeScript
+- Java
+- SMB
+- integration
+enrich_bias: >-
+  This résumé will be reviewed by HubSpot. CRM / marketing / sales domain
+  familiarity is the primary differentiator — surface prior CRM or
+  marketing-automation experience early. TypeScript / Java depth is the
+  engineering baseline. Growth / PLG / funnel-metric awareness is a
+  culture-fit positive for product-engineering roles.
+review_tips: >-
+  HubSpot reviewers read for CRM-domain familiarity + SMB / mid-market
+  awareness + integration-platform experience. Flag: generic backend
+  résumés without domain dimension, enterprise-only career for SMB
+  product roles, missing third-party integration experience for
+  connector / marketplace tracks.

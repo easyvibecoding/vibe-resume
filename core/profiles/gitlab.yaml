@@ -1,0 +1,48 @@
+key: gitlab
+label: GitLab
+tier: us_tier2
+locale_hint: en_US
+must_haves:
+- >-
+  All-remote working fluency — GitLab has been all-remote since founding
+  and runs an open handbook-first culture
+- Ruby on Rails or Go production depth (GitLab's dominant server stacks)
+- Handbook-first documentation mindset — written artefacts carry the same
+  weight as verbal communication
+plus_signals:
+- Open-source contributions to GitLab, GitHub-adjacent, or DevOps tooling
+  ecosystems
+- DevOps / CI-CD / Kubernetes / GitOps platform experience
+- SRE or incident-response work at consumer-developer scale
+- Multi-timezone async coordination evidence
+red_flags:
+- In-office-only career with no async / remote evidence for all-remote roles
+- Missing handbook / written-documentation bias for cultural fit
+- Pure product-development résumé with no DevOps / tooling dimension for
+  platform roles
+format_rules:
+- 1-2 pages, no photo
+- Remote / async evidence surfaced explicitly — timezones covered,
+  documentation produced, async-decision-making examples
+- OSS contributions linked
+keyword_anchors:
+- all remote
+- Rails
+- Go
+- Kubernetes
+- CI/CD
+- DevOps
+- handbook
+- async
+enrich_bias: >-
+  This résumé will be reviewed by GitLab. All-remote / async / handbook-
+  first working style is the cultural bar — surface evidence of written-
+  artefact production, multi-timezone async collaboration, and
+  documentation-first decision-making. Ruby on Rails or Go depth is the
+  technical baseline. OSS contributions (especially to GitLab itself
+  or DevOps tooling) are clear differentiators.
+review_tips: >-
+  GitLab reviewers read for all-remote readiness + handbook-first
+  documentation + Rails/Go depth + OSS trail. Flag: in-office-only
+  career markers, missing async / documentation evidence, product-only
+  résumés without DevOps tooling dimension for platform tracks.

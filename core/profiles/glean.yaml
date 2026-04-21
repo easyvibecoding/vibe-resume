@@ -1,0 +1,48 @@
+key: glean
+label: Glean
+tier: ai_unicorn
+locale_hint: en_US
+must_haves:
+- >-
+  Enterprise search or information-retrieval depth — Glean's core product is
+  "Work AI" unified search + agents across SaaS knowledge silos
+- Retrieval + permissions awareness — Glean's defining challenge is
+  respecting per-user ACLs when indexing Google Drive, Slack, Jira, Confluence
+- Python / Go / Java backend depth for platform roles
+plus_signals:
+- Prior work at Elastic, Algolia, Splunk, Coveo, or comparable enterprise-
+  search companies
+- SSO / OAuth / SAML / SCIM enterprise-auth integration experience
+- RAG / embeddings / vector-search infrastructure at enterprise scale
+- Connector / ETL engineering for many third-party SaaS APIs
+red_flags:
+- Consumer-search background with no enterprise-auth / ACL dimension
+- Backend résumé without retrieval or search-infrastructure vocabulary
+- Missing connector / third-party-API integration experience for ingestion
+  roles
+format_rules:
+- 1-2 pages, no photo
+- Search / retrieval bullets name the index size, query latency (p95), and
+  relevance metric (MRR, NDCG, precision)
+- Per-tenant ACL / permissions awareness explicitly surfaced
+keyword_anchors:
+- enterprise search
+- RAG
+- embeddings
+- permissions
+- ACL
+- connectors
+- vector search
+- MRR
+enrich_bias: >-
+  This résumé will be reviewed by Glean. Enterprise search with per-user
+  ACLs is the defining challenge — surface retrieval + permissions depth
+  together, not separately. Connector engineering for multiple SaaS APIs
+  is a Glean-specific differentiator. RAG / embedding / vector-search
+  vocabulary expected for ML-adjacent platform roles.
+review_tips: >-
+  Glean reviewers filter on enterprise-search + permissions + connector-
+  engineering together. Flag: consumer-search framing without ACL
+  dimension, backend résumés without retrieval vocabulary, missing
+  third-party-SaaS-API integration experience for ingestion / connector
+  roles.

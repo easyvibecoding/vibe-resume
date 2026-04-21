@@ -1,0 +1,49 @@
+key: shopify
+label: Shopify
+tier: us_tier2
+locale_hint: en_US
+must_haves:
+- >-
+  Ruby on Rails production depth — Shopify runs one of the world's largest
+  Rails monoliths with heavy sharding for merchant multi-tenancy
+- Async / written-communication fluency — Shopify is digital-by-default
+  (fully remote since 2020)
+- Consumer / merchant SaaS scale awareness (BFCM peak, merchant-count
+  scaling, checkout throughput)
+plus_signals:
+- Prior e-commerce platform experience (BigCommerce, WooCommerce, Magento,
+  Salesforce Commerce)
+- Payments / checkout / fraud / tax-engine experience
+- React / TypeScript depth for consumer-app roles
+- Live-on-call / incident-response experience at consumer peak scale
+red_flags:
+- Pure in-office career with no async or distributed-team evidence
+- Generic-backend résumé with no merchant / consumer-SaaS dimension
+- Missing peak-event (BFCM, flash-sale, launch) experience for platform roles
+format_rules:
+- 1-2 pages, no photo
+- BFCM or consumer-peak scale referenced with specific throughput / latency
+  numbers
+- Async / written-communication evidence surfaced when present
+keyword_anchors:
+- Rails
+- Ruby
+- merchant
+- BFCM
+- React
+- TypeScript
+- remote
+- multi-tenant
+enrich_bias: >-
+  This résumé will be reviewed by Shopify. Ruby on Rails production depth
+  is the platform baseline — the Shopify monolith is one of the largest in
+  the world. Merchant-SaaS awareness with peak-event framing (BFCM,
+  flash sales, launch events) is the scale differentiator. Digital-by-
+  default async / written-communication evidence is a culture-fit
+  positive.
+review_tips: >-
+  Shopify reviewers read for Rails depth + merchant-SaaS scale + async /
+  remote readiness. Flag: pure in-office career for distributed-team
+  roles, generic-backend résumés without merchant / consumer-SaaS
+  dimension, missing BFCM / peak-event experience for senior platform
+  candidates.

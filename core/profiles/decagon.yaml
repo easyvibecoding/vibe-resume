@@ -1,0 +1,48 @@
+key: decagon
+label: Decagon
+tier: ai_unicorn
+locale_hint: en_US
+must_haves:
+- >-
+  Conversational-AI or customer-support platform experience — Decagon builds
+  enterprise AI support agents for brands like Bilt, Eventbrite, Notion
+- LLM agent depth — tool use, knowledge-base integration, escalation logic
+- Python / TypeScript production depth
+plus_signals:
+- Prior work at Zendesk, Intercom, Gorgias, Salesforce Service Cloud, or
+  comparable CX platforms
+- Multi-tenant enterprise SaaS deployment experience
+- Evaluation-driven LLM development — hallucination reduction, resolution-rate
+  optimisation
+- Enterprise onboarding / data-integration engineering
+red_flags:
+- Consumer chatbot résumé with no enterprise-CX depth
+- LLM work that stops at prompt engineering
+- Missing evaluation / resolution-rate / hallucination vocabulary for agent
+  roles
+format_rules:
+- 1-2 pages, no photo
+- Agent bullets name the model, tools exposed, eval metric, and deployment
+  tenant / scale
+- CX-platform background (Zendesk, Intercom, etc.) surfaced when present
+keyword_anchors:
+- support AI
+- agents
+- tool use
+- hallucination
+- resolution rate
+- multi-tenant
+- Zendesk
+- enterprise CX
+enrich_bias: >-
+  This résumé will be reviewed by Decagon. Surface enterprise support-AI
+  depth — tool-use, knowledge-base integration, escalation logic, and
+  per-tenant configuration. Evaluation-driven LLM development with named
+  resolution-rate or hallucination metrics is the bar. CX-platform
+  lineage (Zendesk, Intercom, Gorgias, Service Cloud) is a clear
+  differentiator when present.
+review_tips: >-
+  Decagon reviewers read for enterprise-agent depth + eval-driven LLM
+  development + CX-platform lineage. Flag: consumer-chatbot framing,
+  prompt-engineering-only LLM bullets, and missing resolution-rate or
+  hallucination metrics for agent-track roles.

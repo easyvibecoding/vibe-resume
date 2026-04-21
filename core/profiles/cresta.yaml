@@ -1,0 +1,47 @@
+key: cresta
+label: Cresta
+tier: ai_unicorn
+locale_hint: en_US
+must_haves:
+- >-
+  Voice-AI or real-time speech ML depth — Cresta's core product is AI for
+  contact-center agents with live coaching and real-time transcription
+- Low-latency inference experience — real-time voice requires sub-100ms
+  turn-taking and ASR responsiveness
+- Python + PyTorch production ML experience
+plus_signals:
+- ASR / speaker diarization / turn detection / real-time-transcription
+  experience
+- Prior work at voice-AI companies (Deepgram, AssemblyAI, Speechmatics,
+  Rev, Twilio Voice, Gong)
+- Contact-center analytics, agent-coaching, or call-scoring research
+- Enterprise multi-tenant deployment with SLO requirements
+red_flags:
+- ML résumé with no real-time or low-latency serving dimension
+- Voice work limited to offline batch transcription for real-time roles
+- Missing contact-center or CX-analytics domain for product-team positions
+format_rules:
+- 1-2 pages, no photo
+- Voice / real-time bullets name model + latency budget (p50 / p95) +
+  evaluation metric (WER, F1, retention lift)
+- Contact-center or agent-coaching domain experience surfaced when present
+keyword_anchors:
+- voice AI
+- ASR
+- real-time
+- turn detection
+- contact center
+- agent coaching
+- low latency
+- PyTorch
+enrich_bias: >-
+  This résumé will be reviewed by Cresta. Surface voice-AI + real-time
+  serving depth — ASR, speaker diarization, turn detection, low-latency
+  inference. Contact-center and agent-coaching domain experience is a
+  clear differentiator. Every voice bullet should name the latency
+  budget alongside the evaluation metric.
+review_tips: >-
+  Cresta reviewers filter on real-time voice-AI depth + contact-center
+  domain + low-latency serving. Flag: batch-only speech work for real-
+  time roles, ML résumés without latency budgets, and missing CX /
+  contact-center experience for product-team positions.
