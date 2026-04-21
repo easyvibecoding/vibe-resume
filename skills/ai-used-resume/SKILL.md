@@ -128,13 +128,11 @@ Invoke this skill whenever the user wants to **turn their AI-tool usage history 
 
 ## Pitfalls
 
-- **Japanese `role_label` leaking Simplified Chinese.** The noun-phrase prompt has an anti-leak rule, but it only fires when `--locale ja_JP` is passed. Always be explicit about locale on `enrich`.
-- **`git_repos` / `aider` extractors scanning the entire `$HOME` take 1–3 min on first run.** If the user is waiting and asks why, switch `scan.mode` to `whitelist` in `config.yaml` and list their project directories in `scan.roots`.
-- **`data/imports/` is gitignored except for `sample_jd.txt`.** The user's real JD files live here and must NOT end up in commits.
-- **`claude -p` is optional.** If the user has no `claude` binary, the enricher falls back to rule-based summaries — functional but weaker. Tell the user.
-- **`--all-locales` honours `config.render.all_locales_formats`, not `--format`.** If they passed `-f docx`, that overrides. If they omitted `-f`, the config list drives output (default `["md"]`).
-- **Contact line wrap in CJK locales.** If `review` flags `contact_line_width`, the fix is usually splitting the contact row into two lines (already done in the zh_TW template; port if a new locale is added).
-- **`profile.yaml` should never be committed** — it's in `.gitignore` and contains the user's real PII. If the user accidentally stages it, refuse and tell them.
+The full catalogue of failure modes and their fixes — mixed-script
+locale leaks, `--all-locales` format quirk, first-run extraction
+slowness, CJK contact-line wrapping, the `claude -p` optional fallback,
+and the privacy rules around `profile.yaml` / `data/imports/` — lives
+in [references/troubleshooting.md](references/troubleshooting.md).
 
 ## Verification
 

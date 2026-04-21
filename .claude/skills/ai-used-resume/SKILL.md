@@ -119,13 +119,12 @@ guard, and the drop-in recipe for adding a new employer profile.
 
 ## How to help the user
 
-- **Missing tool** — if the user says "my resume is missing X tool", check `extractors/{local,cloud_export,api}/`. If the tool isn't there, add a new extractor following `extractors/base.py`'s contract and register it in `core/runner.py`. Path conventions live in `config.yaml`.
-- **Wrong language output** — if an enrich run produces mixed-script output (e.g. Japanese `role_label` with 简体 characters), pass `--locale <target>` so the correct prompt template + lang_label is selected. The noun-phrase prompt has explicit anti-leak rules but depends on the locale flag.
-- **Score dropped after a change** — run `cli.py review --diff` (default on) to show Δ vs the previous review of the same locale, then `cli.py trend --locale <L>` for the whole history.
-- **New section on résumé** — edit `profile.yaml` (`custom_sections` for awards/talks/hobbies or a bespoke key); for a new template section also edit `render/templates/resume.<locale>.md.j2`.
-- **Tailor for multiple JDs** — keep multiple `data/imports/jd_<company>.txt`; enrich+render+review each before the interview cycle. `trend` shows whether tailoring helped.
-- **Rollback a draft** — `cli.py list-versions` then `cd data/resume_history && git checkout <sha> -- resume_v001_en_US.md`.
-- **Speed** — if extraction is slow, `git_repos`/`aider` scanning `$HOME` is usually the bottleneck. Switch `scan.mode` to `whitelist` and narrow `scan.roots`.
+Common failure modes and their fixes — mixed-script locale leaks, slow
+extraction, score regressions, missing extractors, rollback, and the
+privacy rules around `profile.yaml` / `data/imports/` — are catalogued
+in [references/troubleshooting.md](references/troubleshooting.md).
+Consult it when the user reports an issue or asks how to extend the
+pipeline.
 
 ## Schema contract (for adding an extractor)
 
