@@ -257,6 +257,317 @@ COMPANY_PROFILES: dict[str, CompanyProfile] = {
             "numbers."
         ),
     ),
+    "google_deepmind": CompanyProfile(
+        key="google_deepmind",
+        label="Google DeepMind",
+        tier=TIER_FRONTIER_AI,
+        locale_hint="en_US",
+        must_haves=(
+            "Named research projects with depth — every listed project must be "
+            "something the candidate can discuss for 30+ minutes",
+            "One-page résumé unless senior/research-heavy (two pages max)",
+            "JD-keyword alignment — DeepMind screens with keyword overlap first",
+        ),
+        plus_signals=(
+            "Peer-reviewed publications at NeurIPS / ICML / ICLR / JMLR",
+            "Gemini, AlphaFold, RL, or interpretability-adjacent contributions",
+            "Strong referral or mutual-network connection — still a meaningful "
+            "signal in DeepMind's funnel",
+        ),
+        red_flags=(
+            "Project list without depth — every project must withstand a "
+            "technical deep-dive",
+            "Two-plus pages without commensurate research record",
+            "Generic ML blurbs instead of project-specific narratives",
+        ),
+        format_rules=(
+            "1 page (2 allowed for PhD / senior research)",
+            "No photo",
+            "Per-project: what you built, what question it answered, what the "
+            "result was — in that order",
+        ),
+        keyword_anchors=(
+            "research", "publication", "RL", "transformers", "evaluation",
+            "benchmark", "dataset", "reproducibility",
+        ),
+        enrich_bias=(
+            "This résumé will be reviewed by Google DeepMind. Treat every "
+            "project entry as a mini-abstract: problem statement, method, "
+            "concrete result. Prefer naming specific artefacts (paper titles, "
+            "benchmark deltas, open-source repos) over listing frameworks. "
+            "Match keywords to the target job description — DeepMind's "
+            "screener weights keyword overlap heavily — but never fabricate "
+            "experience to hit a keyword."
+        ),
+        review_tips=(
+            "DeepMind reviewers expect every project to be defensible in a "
+            "technical deep-dive. Flag: project lists without outcomes, "
+            "résumés over one page without a research record, keyword-"
+            "stuffed skill sections disconnected from the project narrative."
+        ),
+    ),
+    "meta_fair": CompanyProfile(
+        key="meta_fair",
+        label="Meta FAIR",
+        tier=TIER_FRONTIER_AI,
+        locale_hint="en_US",
+        must_haves=(
+            "PhD (or equivalent practical experience) in CS / ML / stats / "
+            "applied math",
+            "Peer-reviewed publications in AI/ML venues — FAIR filters hard "
+            "on this at the résumé stage",
+            "Demonstrable Python / PyTorch proficiency with public code",
+        ),
+        plus_signals=(
+            "Prior postdoc / faculty / industry research lab experience",
+            "Agents, reasoning, planning, or multimodal-model work",
+            "Grants, fellowships, patents, or top-tier competition placements",
+        ),
+        red_flags=(
+            "No publications listed for a research-scientist role — this is a "
+            "near-automatic filter at FAIR",
+            "Industry-only track record framed as research — FAIR looks for "
+            "peer-reviewed contribution, not internal shipping",
+            "Missing dataset / benchmark / code links under each contribution",
+        ),
+        format_rules=(
+            "1-2 pages; publication list can overflow to an extra page",
+            "No photo",
+            "Publications section must list venue + year + role (first author, "
+            "co-author) explicitly",
+        ),
+        keyword_anchors=(
+            "publication", "PhD", "PyTorch", "agents", "reasoning",
+            "multimodal", "benchmark", "dataset",
+        ),
+        enrich_bias=(
+            "This résumé will be reviewed by Meta FAIR. Publications are the "
+            "primary currency — surface them first, with venue, year, and "
+            "author position. For each paper or project, name the dataset, "
+            "the benchmark, and what the candidate contributed specifically "
+            "versus co-authors. Industry engineering work, if present, should "
+            "be framed as 'infrastructure enabling X paper' rather than as "
+            "shipping stories."
+        ),
+        review_tips=(
+            "FAIR reviewers filter on publications + venue quality + "
+            "reproducibility artefacts. Flag: research-scientist résumé "
+            "without peer-reviewed publications; papers listed without "
+            "venue; industry bullets shaped like product-launch narratives "
+            "instead of research contributions."
+        ),
+    ),
+    "amazon_aws": CompanyProfile(
+        key="amazon_aws",
+        label="Amazon AWS (Applied Scientist)",
+        tier=TIER_FRONTIER_AI,
+        locale_hint="en_US",
+        must_haves=(
+            "PhD in CS / ML / stats / related — or MS with 4+ years industry "
+            "ML experience",
+            "Every past role must survive a 'Science Depth' deep-dive: what, "
+            "why, how, outcome, what you'd do differently",
+            "Production-scale ML experience (SageMaker, Spark, EMR, or "
+            "equivalent)",
+        ),
+        plus_signals=(
+            "Publications in NLP / RL / GenAI / LLMs at recognised venues",
+            "Amazon Leadership-Principle-shaped bullets (Customer Obsession, "
+            "Ownership, Dive Deep, Bias for Action)",
+            "Cost-saving or operational-efficiency wins at scale",
+        ),
+        red_flags=(
+            "Vague 'contributed to' bullets that collapse under deep-dive "
+            "questioning",
+            "No Leadership Principle alignment visible in narrative",
+            "Research framing with no connection to business-measurable "
+            "outcome (AWS blends research + applied)",
+        ),
+        format_rules=(
+            "1-2 pages",
+            "STAR-shaped bullets (Situation, Task, Action, Result) are the "
+            "house style for deep-dive prep — résumé should foreshadow them",
+            "Include AWS / cloud keywords (SageMaker, S3, EC2, Lambda) so "
+            "ATS recognises relevance",
+        ),
+        keyword_anchors=(
+            "SageMaker", "Spark", "EMR", "Leadership Principles",
+            "customer obsession", "dive deep", "LLM", "A/B test",
+        ),
+        enrich_bias=(
+            "This résumé will be reviewed by Amazon AWS for an Applied "
+            "Scientist or ML Engineer role. Every bullet must be something "
+            "the candidate is ready to deep-dive on for 10+ minutes — no "
+            "bragging claims without an underlying project. Use STAR shape "
+            "(Situation, Task, Action, Result) implicitly. Name AWS-native "
+            "services where relevant so the résumé surfaces in Amazon's "
+            "internal ATS."
+        ),
+        review_tips=(
+            "AWS reviewers will deep-dive any bullet in the on-site interview. "
+            "Flag: any claim the candidate cannot support with a 5-minute "
+            "narrative; missing Leadership-Principle-shaped framing; research "
+            "bullets with no business outcome."
+        ),
+    ),
+    "mercari": CompanyProfile(
+        key="mercari",
+        label="メルカリ / Mercari",
+        tier=TIER_JP,
+        locale_hint="ja_JP",
+        must_haves=(
+            "職務経歴書 (work-history CV) with *narrative between roles* — "
+            "Mercari's HR explicitly reads for the story linking each move to "
+            "the next",
+            "Public artefact trail — GitHub profile, tech blog, conference "
+            "talks; Mercari's HR states they always read submitted profiles",
+            "Clear motivation for joining Mercari specifically (not 'any "
+            "Japanese tech company')",
+        ),
+        plus_signals=(
+            "OSS contributions to Go / Kubernetes / cloud-native ecosystem",
+            "English-capable engineering (Mercari runs English-first for "
+            "product dev)",
+            "C2C-marketplace, trust-and-safety, or ML-for-recommendation "
+            "experience",
+        ),
+        red_flags=(
+            "履歴書 that is clearly template-filled with no personality — "
+            "Mercari's HR states they 'basically don't read' a hollow 履歴書",
+            "Job-hopping history with no connecting narrative between roles",
+            "Missing public-artefact links (no GitHub, no blog, no talks) "
+            "for an engineer with 3+ years of experience",
+        ),
+        format_rules=(
+            "履歴書 + 職務経歴書 both required, but 職務経歴書 is the primary "
+            "document — it should read as a cohesive story, not a list",
+            "Photo optional (Mercari's modernised hiring allows no-photo)",
+            "English résumé accepted and often preferred for engineering roles",
+        ),
+        keyword_anchors=(
+            "職務経歴書", "GitHub", "OSS", "Go", "Kubernetes",
+            "microservices", "C2C", "trust and safety",
+        ),
+        enrich_bias=(
+            "This résumé will be reviewed by Mercari — a 'new-school' "
+            "Japanese tech company that reads 職務経歴書 and public-artefact "
+            "trails over 履歴書 formalities. For each role, explain *why* "
+            "the candidate moved and how that move connected to the next — "
+            "Mercari's HR explicitly evaluates this narrative thread. Surface "
+            "GitHub repos, blog posts, and conference talks; the review team "
+            "will follow the links."
+        ),
+        review_tips=(
+            "Mercari reviewers follow public-artefact links and read for "
+            "inter-role narrative. Flag: 職務経歴書 that reads as a bullet "
+            "list with no thread; missing GitHub / blog / talks for engineers "
+            "with non-trivial experience; generic 'I like Japan' motivation "
+            "that applies to any JP company."
+        ),
+    ),
+    # ---------------- D. Taiwan local ----------------------------------------
+    "taiwan_mobile": CompanyProfile(
+        key="taiwan_mobile",
+        label="台灣大哥大 / Taiwan Mobile",
+        tier=TIER_TW_LOCAL,
+        locale_hint="zh_TW",
+        must_haves=(
+            "Java stack depth (Spring / RESTful APIs / relational DB)",
+            "Cross-team coordination experience — telco IT stacks span "
+            "billing, CRM, OTT, network, and third-party integration",
+            "Stable employment pattern — telcos discount short-tenure "
+            "job-hopping for stability-oriented back-office roles",
+        ),
+        plus_signals=(
+            "Telco billing / OSS/BSS / CRM / subscription-management "
+            "experience",
+            "OTT / streaming / payments third-party integration work",
+            "Maintenance + rewrite of legacy systems (vs. only greenfield)",
+        ),
+        red_flags=(
+            "Adjective-heavy résumé without quantification (Taiwanese "
+            "recruiters increasingly penalise 熟悉 / 精通 / 負責 soup)",
+            "Job-hop every year without reason — signals flight risk for "
+            "stable-track roles",
+            "Only describes tasks, never outcomes — 104-style lint failure",
+        ),
+        format_rules=(
+            "中文 (zh_TW) or 中英對照 acceptable",
+            "1-2 pages; tables/grids for technical-stack section are fine",
+            "Company + role + dates + tech stack + quantified outcome per "
+            "position",
+        ),
+        keyword_anchors=(
+            "Java", "Spring", "REST API", "第三方串接", "跨部門",
+            "系統維運", "CRM", "計費",
+        ),
+        enrich_bias=(
+            "This résumé will be reviewed by Taiwan Mobile. Use Traditional "
+            "Chinese. For each role, show cross-team coordination (業務 / "
+            "產品 / 網管 / 客服) explicitly — telco IT work is inherently "
+            "cross-functional. Replace adjectives (熟悉 / 精通 / 負責) with "
+            "verbs + quantified outcomes. Surface stable tenure and "
+            "maintenance / migration work, not only greenfield shipping."
+        ),
+        review_tips=(
+            "Taiwan Mobile reviewers weigh stability + cross-team coordination "
+            "+ telco-stack familiarity. Flag: adjective-heavy phrasing without "
+            "metrics; pure task descriptions with no outcome line; missing "
+            "cross-team or third-party-integration evidence for senior roles."
+        ),
+    ),
+    # ---------------- H. Korea -----------------------------------------------
+    "kakao": CompanyProfile(
+        key="kakao",
+        label="Kakao",
+        tier=TIER_KR,
+        locale_hint="ko_KR",
+        must_haves=(
+            "Hangul-first résumé with English technical terms in parentheses "
+            "— Korean ATS scans Hangul first, then English equivalents",
+            "Demonstrated scale experience (Kakao serves 90%+ of Korean "
+            "messaging traffic)",
+            "Clear tenure timeline with month-level precision",
+        ),
+        plus_signals=(
+            "Prior NKLCB experience (Naver / Kakao / Line / Coupang / Baedal "
+            "Minjok / Danggeun / Toss) — widely used as a trust signal "
+            "across the Korean tech network",
+            "Kakao / KakaoBank / KakaoPay / KakaoGames ecosystem work",
+            "High-QPS backend, messaging, or payments experience",
+        ),
+        red_flags=(
+            "English-only résumé without Hangul fallback — misses the "
+            "Korean ATS first pass",
+            "Missing photo in traditional submission channels (photo is "
+            "standard for most Korean résumés)",
+            "No mention of tenure duration — Korean reviewers read this "
+            "alongside the company name",
+        ),
+        format_rules=(
+            "Hangul primary + English tech terms; photo commonly expected",
+            "Reverse-chronological; company names in Korean with English "
+            "short forms",
+            "1-2 pages",
+        ),
+        keyword_anchors=(
+            "카카오", "대규모 트래픽", "백엔드", "메시징", "결제",
+            "Java", "Kotlin", "MSA",
+        ),
+        enrich_bias=(
+            "This résumé will be reviewed by Kakao. Produce Korean "
+            "(Hangul) as the primary language with English technical terms in "
+            "parentheses — Korean ATS scans Hangul first. Surface scale "
+            "(QPS, DAU, messaging volume) using numerical values that match "
+            "Kakao's own product scale. If the candidate has prior NKLCB "
+            "experience, it is a trust signal — name the company plainly."
+        ),
+        review_tips=(
+            "Kakao reviewers scan for Hangul primary + scale numbers + NKLCB "
+            "lineage. Flag: English-only résumé; missing tenure months; "
+            "backend roles without a QPS / DAU / messaging-volume scale line."
+        ),
+    ),
 }
 
 
