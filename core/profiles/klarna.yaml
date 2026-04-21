@@ -1,0 +1,45 @@
+key: klarna
+label: Klarna
+tier: eu
+locale_hint: en_US
+must_haves:
+- >-
+  Consumer-fintech or BNPL-adjacent experience — Klarna's product is
+  buy-now-pay-later at European-retail scale
+- Python or JVM backend depth for engineering roles; React / Swift / Kotlin
+  for consumer-client roles
+- Product-velocity mindset — Klarna operates closer to consumer-startup cadence
+  than traditional banking
+plus_signals:
+- Credit decisioning, fraud detection, or underwriting ML experience
+- Multi-market European product experience (localisation, regulation)
+- AI-first initiatives — Klarna publicly pushes customer-support AI adoption
+red_flags:
+- Traditional-banking-only résumé framed with slow-moving enterprise cadence
+- Missing product / velocity signals for IC roles
+- Credit / risk work without any ML or model-accuracy dimension
+format_rules:
+- 1-2 pages, no photo
+- Product-metric bullets (conversion, approval rate, GMV) when the role
+  touches consumer-facing flows
+- Localisation / multi-market evidence for senior roles
+keyword_anchors:
+- BNPL
+- consumer fintech
+- credit
+- fraud
+- Python
+- multi-market
+- product velocity
+- AI
+enrich_bias: >-
+  This résumé will be reviewed by Klarna. Surface consumer-product velocity
+  (shipping cadence, A/B-test discipline, conversion metrics) alongside
+  fintech-specific concerns (credit, fraud, underwriting, regulation). Klarna
+  is publicly AI-forward — any AI / ML work that reduced cost, improved
+  accuracy, or replaced a manual process should be surfaced early.
+review_tips: >-
+  Klarna reviewers read for consumer-fintech velocity + ML-for-risk +
+  European multi-market awareness. Flag: traditional-banking cadence with no
+  product signals, credit / risk roles without accuracy or model metrics, and
+  missing multi-market evidence for senior candidates.

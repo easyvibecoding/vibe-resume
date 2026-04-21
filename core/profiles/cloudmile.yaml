@@ -1,0 +1,42 @@
+key: cloudmile
+label: CloudMile / 萬里雲
+tier: tw_local
+locale_hint: zh_TW
+must_haves:
+- >-
+  GCP 或主流公有雲平台深度 —— CloudMile 是 Google Cloud Partner,客戶案子
+  幾乎都落地在 GCP
+- >-
+  AoD 領域對齊 —— 履歷訊號明確落在 Infra Mod / App Mod / Security /
+  Data / AI/ML 其中一條,不做全才包裝
+- 客戶顧問性格 —— CloudMile 工程師同時是顧問,要能跨產業交付
+plus_signals:
+- GCP 官方認證 (Professional Cloud Architect / Data Engineer / ML Engineer)
+- 金融、零售、製造、政府標案的雲遷移 / AI 導入實戰
+- 香港、新加坡跨地區專案經驗 (CloudMile 在三地有辦公室)
+- 開源社群或技術分享 (公司定期辦知識沙龍)
+red_flags:
+- 雲端履歷但無任何 GCP 實戰,只有 AWS / Azure
+- 純 SWE 背景無顧問性接觸客戶的訊號 (CloudMile 工程師都要 client-facing)
+- AoD 五個領域都列卻無任何深度 —— 萬金油反而扣分
+format_rules:
+- 中英對照佳;國際客戶提案以英文為主
+- 1-2 頁;技能段落按 AoD 五領域分區,突出深度而非廣度
+- 每個專案列: 客戶產業 + 雲平台 + 技術組件 + 量化成果
+keyword_anchors:
+- GCP
+- BigQuery
+- Dataflow
+- Kubernetes
+- Vertex AI
+- AoD
+- 雲遷移
+- 顧問
+enrich_bias: >-
+  這份履歷將由 CloudMile 審閱。技能段落按 AoD 五領域 (Infra Mod / App Mod /
+  Security / Data / AI/ML) 分區,突出其中一到兩條的深度,不要把五條都做成
+  通用列表。每個客戶案子要同時呈現技術面 (GCP 組件) 與顧問面 (客戶產業、
+  商業痛點、交付成果)。GCP 官方認證前置顯示。
+review_tips: >-
+  CloudMile 審閱者會檢查 GCP 實戰深度 + AoD 對齊 + 顧問敏感度三項。Flag:
+  無 GCP 實戰但投雲端職;AoD 五領域都列卻都淺;純技術實作但無客戶顧問訊號。

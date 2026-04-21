@@ -1,0 +1,50 @@
+key: wise
+label: Wise
+tier: eu
+locale_hint: en_US
+must_haves:
+- >-
+  Cross-border payments, multi-currency, or FX experience — Wise's product is
+  transparent international money transfer
+- Backend depth — Wise runs primarily on JVM (Java / Kotlin) with significant
+  Go and Python alongside
+- >-
+  Transparency-driven engineering culture fit — Wise famously publishes fees,
+  exchange rates, and internal decision-making
+plus_signals:
+- Regulatory / financial-licensing experience (EMI, banking licence,
+  multi-jurisdictional compliance)
+- High-availability money-movement systems (reconciliation, ledger, balance
+  integrity)
+- Mission-aligned engineers (fee reduction, access to financial services)
+red_flags:
+- Pure consumer-app background with no money-movement or ledger dimension
+- Missing reliability / correctness framing for systems that handle funds
+- Opacity-oriented enterprise framing that clashes with Wise's transparency
+  ethos
+format_rules:
+- 1-2 pages, no photo
+- Ledger / balance / reconciliation work should surface correctness proofs
+  (invariants, audit trails, reconciliation rules)
+- Multi-currency / cross-border work should name the corridor or jurisdiction
+keyword_anchors:
+- cross-border
+- FX
+- ledger
+- reconciliation
+- Java
+- Kotlin
+- Go
+- EMI
+enrich_bias: >-
+  This résumé will be reviewed by Wise. Surface money-movement correctness
+  work — ledger design, balance invariants, reconciliation, audit trails —
+  not just throughput. Wise runs a JVM-dominant stack with Go / Python
+  alongside; name the language and the financial-domain concern together.
+  Transparency-aligned framing (open metrics, published fees, audit-friendly
+  decisions) is a cultural positive.
+review_tips: >-
+  Wise reviewers read for money-movement correctness + JVM depth +
+  transparency alignment. Flag: throughput-only backend framing with no
+  correctness dimension, missing multi-currency or cross-border exposure for
+  senior roles, and consumer-app backgrounds with no ledger experience.

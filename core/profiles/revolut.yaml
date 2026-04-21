@@ -1,0 +1,45 @@
+key: revolut
+label: Revolut
+tier: eu
+locale_hint: en_US
+must_haves:
+- >-
+  Very-fast-shipping mindset — Revolut's engineering culture is aggressive
+  cadence + large scope per IC
+- Python backend depth for most engineering roles (secondary: Java, Kotlin, Go)
+- Comfort with rapid product iteration and high-ambiguity projects
+plus_signals:
+- Prior Rev-celerator graduate-programme or equivalent fast-scale fintech path
+- Banking licence / compliance / KYC / AML system experience
+- Multi-product / multi-country deployment (Revolut operates in most of Europe,
+  UK, US, AU, JP, SG)
+- Greenfield product launches with measurable user-growth contribution
+red_flags:
+- Slow-cadence enterprise track with no rapid-iteration evidence
+- Pure ops / consulting résumé for IC engineering roles
+- Missing scale or scope markers — Revolut expects large blast-radius ownership
+  per IC
+format_rules:
+- 1-2 pages, no photo
+- Per-role scope line — how many products, how many countries, how many users
+- Velocity evidence — time-from-idea-to-ship, shipping cadence per quarter
+keyword_anchors:
+- Python
+- fintech
+- rapid iteration
+- KYC
+- AML
+- multi-country
+- Rev-celerator
+- consumer scale
+enrich_bias: >-
+  This résumé will be reviewed by Revolut. Lean into velocity and scope —
+  how many products launched per year, how many countries, how fast from
+  concept to production. Python depth is the baseline; banking-regulation
+  fluency (KYC / AML / licence-specific work) is a clear differentiator.
+  Avoid slow-cadence enterprise framing.
+review_tips: >-
+  Revolut reviewers read for velocity + per-IC scope + fintech-regulation
+  fluency. Flag: slow-cadence narratives, missing country / product breadth
+  for senior roles, and non-Python backend résumés without a clear reason to
+  be in the funnel.

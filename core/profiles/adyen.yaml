@@ -1,0 +1,46 @@
+key: adyen
+label: Adyen
+tier: eu
+locale_hint: en_US
+must_haves:
+- >-
+  Payments, fintech, or high-availability financial systems experience —
+  Adyen's core product is payment processing at merchant scale
+- Strong JVM-language fluency (Java / Kotlin) at production depth
+- >-
+  Problem-solving bullets that trace from ambiguous input to shipped
+  outcome — Adyen explicitly selects for this trait
+plus_signals:
+- Card schemes, acquiring, fraud-detection, or reconciliation experience
+- Multi-region / regulated-finance / PCI-DSS deployment background
+- Strong-typed language depth beyond Java (Go, Scala, Rust)
+- Engineering writing or conference talks on distributed systems
+red_flags:
+- Purely dynamic-language résumé for backend roles (Adyen's stack is JVM-first)
+- No exposure to high-availability / financial-grade reliability concerns
+- Bullets that jump to solutions without naming the ambiguous problem first
+format_rules:
+- 1-2 pages, no photo
+- Each bullet should name the problem surface (what was unclear / contested)
+  before naming the action taken
+- Payments-domain vocabulary when relevant (acquirer, issuer, scheme, 3DS)
+keyword_anchors:
+- payments
+- Java
+- Kotlin
+- JVM
+- high availability
+- acquirer
+- PCI
+- reconciliation
+enrich_bias: >-
+  This résumé will be reviewed by Adyen. Adyen's brand is "problem-solving
+  over fashion" — frame each bullet as ambiguous input → method of inquiry →
+  shipped resolution. Surface JVM-language depth (Java / Kotlin) explicitly
+  for backend roles. Payments-domain vocabulary (acquirer, issuer, scheme,
+  3DS, PCI) is a clear differentiator when present.
+review_tips: >-
+  Adyen reviewers scan for problem-framing + JVM depth + payments / HA
+  exposure. Flag: solution-first bullets that skip the ambiguous-problem
+  statement, dynamic-language-only backend résumés, and missing financial-
+  grade reliability markers for senior roles.

@@ -1,0 +1,50 @@
+key: spotify
+label: Spotify
+tier: eu
+locale_hint: en_US
+must_haves:
+- >-
+  Product-scale backend, data, or infrastructure experience — Spotify's
+  engineering brand is built on consumer scale and reliability at that scale
+- >-
+  Comfort with async, distributed-team communication — Spotify operates
+  multi-office (Stockholm, NYC, Boston, London, remote) and writes heavily
+- Named ownership of a service, feature, or platform with SLOs and on-call
+plus_signals:
+- Music / audio / recommendations / personalisation domain background
+- Experience with Spotify's published patterns (Squad / Chapter / Tribe /
+  Guild) — being able to speak that vocabulary natively
+- Backstage / Golden Path / developer-productivity tooling work
+- Public engineering writing (blog posts, conference talks)
+red_flags:
+- Résumé that reads identical for any generic SaaS company — no consumer-scale or
+  reliability dimension
+- Missing ownership markers (no 'owned X service' bullet for mid-plus candidates)
+- Enterprise-only career with no consumer-grade scale exposure
+format_rules:
+- 1-2 pages, no photo
+- Each role names the squad / team mission explicitly, not just the tech stack
+- p95 / p99 latency and DAU / MAU / throughput numbers where relevant
+keyword_anchors:
+- squad
+- chapter
+- Backstage
+- golden path
+- on-call
+- SLO
+- consumer scale
+- reliability
+enrich_bias: >-
+  This résumé will be reviewed by Spotify. Use consumer-scale framing —
+  DAU / MAU, p95 latency, on-call rotations, SLO attainment — and make
+  ownership granular (which service, which platform, which tier of user
+  traffic). Where the candidate has adjacent experience with Spotify's own
+  engineering patterns (Backstage, Golden Path, Squad-Chapter-Tribe), name
+  them in the candidate's own voice. Async / written-communication
+  signals are a plus for remote-friendly teams.
+review_tips: >-
+  Spotify reviewers read for consumer-scale reliability + async/written
+  communication + squad-level ownership. Flag: résumés without SLO / on-call
+  markers at mid-plus level, enterprise-only career paths for product-team
+  roles, and missing team-mission framing (tech stack listed but not what the
+  team was actually building).

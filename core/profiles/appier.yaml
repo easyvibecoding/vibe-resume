@@ -1,0 +1,41 @@
+key: appier
+label: Appier / 沛星互動
+tier: tw_local
+locale_hint: zh_TW
+must_haves:
+- >-
+  MarTech / AdTech / 推薦系統或投放 AI 領域實戰 —— Appier 產品 (AIQUA /
+  AIXON / BotBonnie) 都建立在這三個場景
+- 機器學習或資料工程背景,能在億級事件流上建模或做特徵工程
+- 快節奏產品開發適應力 —— Appier 在 2025-2026 大舉擴編,跨亞太多市場同步推進
+plus_signals:
+- 日本、韓國、東南亞市場 SaaS 落地經驗 (Appier 多國客戶)
+- 競賽背景 (Kaggle / KDD Cup / NTU AI Challenge)
+- 跨組協作 (資料科學家 + 後端 + PM + 客戶成功) 的產品 shipping 經驗
+- 跨語言環境 (中 / 英 / 日 / 韓) 工作能力
+red_flags:
+- 單純廣告代理商經驗無技術深度,與 Appier 的 AI 平台定位不符
+- 機器學習履歷只有模型準確率,缺乏「上線規模 + 業務影響」的連結
+- 無跨國協作訊號但投遞 senior 職
+format_rules:
+- 中英對照建議,Appier 內部工作語言為英文
+- 1-2 頁反向時序;AI / ML 專案需列出資料規模、模型架構、評估指標、上線規模
+- 客戶產業 + 市場 (台 / 日 / 韓 / 星) 在專案條目中明示
+keyword_anchors:
+- MarTech
+- 推薦系統
+- 廣告投放
+- CDP
+- embeddings
+- 多市場
+- SaaS
+- 跨國
+enrich_bias: >-
+  這份履歷將由 Appier 審閱。建議中英對照。每個 AI / ML 專案以三元組呈現:
+  資料規模 (事件數 / 使用者數) + 模型架構或方法 + 業務 outcome
+  (轉換率提升、ROAS、CTR、留存)。跨亞太多市場 (台/日/韓/星) 的 shipping
+  經驗是差異化訊號。Appier 快節奏文化成立,但加班常態需有心理準備。
+review_tips: >-
+  Appier 審閱者會對 MarTech 領域深度 + 跨國 SaaS 經驗 + 資料規模量化三點
+  特別敏感。Flag: 模型準確率無業務指標連結;廣告代理商背景無技術深度;
+  senior 投遞但無跨市場 / 跨團隊協作訊號。
