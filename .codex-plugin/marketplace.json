@@ -1,0 +1,23 @@
+{
+  "name": "vibe-resume",
+  "interface": {
+    "displayName": "vibe-resume",
+    "shortDescription": "AI-coding-era résumé generator across 10 locales",
+    "developerName": "easyvibecoding",
+    "category": "Productivity"
+  },
+  "plugins": [
+    {
+      "name": "vibe-resume",
+      "source": {
+        "source": "github",
+        "repo": "easyvibecoding/vibe-resume"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

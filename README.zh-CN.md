@@ -100,9 +100,13 @@ ChatGPT · Claude.ai · Gemini Takeout · Grok · Perplexity · Mistral Le Chat 
 /plugin marketplace add easyvibecoding/vibe-resume
 /plugin install vibe-resume@vibe-resume
 
-# OpenAI Codex(走 .codex-plugin/plugin.json)
-codex plugin install easyvibecoding/vibe-resume
+# OpenAI Codex ≥ 0.121(走 .codex-plugin/{plugin,marketplace}.json)
+codex plugin marketplace add easyvibecoding/vibe-resume
+codex
+/plugins   # 在 TUI 里找到 vibe-resume 并安装
 ```
+
+Codex plugin 支持从 [codex-cli v0.121.0](https://developers.openai.com/codex/changelog)(2026-04-15)才开始提供。更旧版本请改走 Tier 1(`npx skills add …`)。你也可以在 `/plugins` 面板交互式添加 marketplace,不一定要用 shell 指令。
 
 Plugin 会把 skill 以及未来要带的 commands / agents / hooks / MCP servers 打包成一个安装单元。skill 以 `/vibe-resume:ai-used-resume`(有 namespace)调用,而不是直接 `/ai-used-resume`。
 

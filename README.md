@@ -107,9 +107,13 @@ pick the one that matches your agent, not eight separate `ln -s` commands.
 /plugin marketplace add easyvibecoding/vibe-resume
 /plugin install vibe-resume@vibe-resume
 
-# OpenAI Codex (uses .codex-plugin/plugin.json)
-codex plugin install easyvibecoding/vibe-resume
+# OpenAI Codex ≥ 0.121 (uses .codex-plugin/{plugin,marketplace}.json)
+codex plugin marketplace add easyvibecoding/vibe-resume
+codex
+/plugins   # in the TUI: find vibe-resume and install
 ```
+
+Codex plugin support shipped in [codex-cli v0.121.0](https://developers.openai.com/codex/changelog) (2026-04-15). On older Codex, fall back to Tier 1 (`npx skills add …`). In the TUI's `/plugins` pane you can also add the marketplace interactively instead of the shell command.
 
 Plugins wrap the skill plus future commands/agents/hooks/MCP servers in
 one installable unit. Skill is exposed as `/vibe-resume:ai-used-resume`
@@ -663,4 +667,3 @@ The closest adjacent projects cover only one of the three:
 - [javiera-vasquez/claude-code-job-tailor](https://github.com/javiera-vasquez/claude-code-job-tailor) — YAML experience → JD-tailored PDF in Claude Code. Complementary at the JD-match stage; our `--tailor` is the same idea but starts from extracted activity rather than hand-maintained YAML.
 
 `vibe-resume` is the only tool in this list that **extracts from multiple AI tools + renders in 10 culture-specific locales + includes reviewer audit with trend tracking**.
-

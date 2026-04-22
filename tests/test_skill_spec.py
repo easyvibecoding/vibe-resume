@@ -38,6 +38,8 @@ PLUGIN_MANIFESTS = [
     REPO_ROOT / ".codex-plugin" / "plugin.json",
 ]
 CODEX_PLUGIN_MANIFEST = REPO_ROOT / ".codex-plugin" / "plugin.json"
+CODEX_MARKETPLACE_MANIFEST = REPO_ROOT / ".codex-plugin" / "marketplace.json"
+CLAUDE_MARKETPLACE_MANIFEST = REPO_ROOT / ".claude-plugin" / "marketplace.json"
 
 ALLOWED_FRONTMATTER_KEYS = {
     "name",
@@ -174,6 +176,36 @@ def test_codex_plugin_manifest_publish_readiness() -> None:
     assert all(isinstance(item, str) and item.strip() for item in default_prompt), (
         "Codex plugin `interface.defaultPrompt` entries must be non-empty strings"
     )
+
+
+def test_marketplace_manifests_installable() -> None:
+    """Both Claude Code and Codex marketplaces must exist so that
+    `<agent> plugin marketplace add easyvibecoding/vibe-resume` works.
+
+    A single plugin at repo root still needs a marketplace.json listing it;
+    otherwise the marketplace-add step fails silently for end users.
+    """
+    for path, required_top_level in [
+        (CLAUDE_MARKETPLACE_MANIFEST, ("name", "owner", "plugins")),
+        (CODEX_MARKETPLACE_MANIFEST, ("name", "interface", "plugins")),
+    ]:
+        assert path.is_file(), f"Marketplace manifest missing: {path}"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        for key in required_top_level:
+            assert key in data, f"{path.name} must define `{key}`"
+        plugins = data["plugins"]
+        assert isinstance(plugins, list) and plugins, f"{path.name} must list at least one plugin"
+        entry = plugins[0]
+        assert entry.get("name") == "vibe-resume", (
+            f"{path.name} single-plugin entry must be named `vibe-resume`"
+        )
+        source = entry.get("source")
+        assert isinstance(source, dict) and source.get("source") == "github", (
+            f"{path.name} must use a github source so remote install works identically to local"
+        )
+        assert source.get("repo") == "easyvibecoding/vibe-resume", (
+            f"{path.name} github source must point at easyvibecoding/vibe-resume"
+        )
 
 
 @pytest.mark.parametrize("path", SKILL_PATHS, ids=[p.parent.name + "/" + p.parent.parent.name for p in SKILL_PATHS])
