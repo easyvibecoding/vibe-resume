@@ -39,6 +39,8 @@ class Source(str, Enum):
     CODEX = "codex"
     ZED = "zed"
     GEMINI = "gemini"
+    GEMINI_CLI = "gemini-cli"
+    ANTIGRAVITY = "antigravity"
     GROK = "grok"
     PERPLEXITY = "perplexity"
     MISTRAL = "mistral"

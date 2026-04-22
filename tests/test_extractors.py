@@ -311,6 +311,101 @@ def test_codex_archive_dedupes_on_session_uuid(tmp_path: Path) -> None:
     assert acts[0].session_id == "shared-uuid"
 
 
+def test_gemini_cli_chats_and_logs_merge(tmp_path: Path) -> None:
+    """A project dir with both chats/session-*.json AND logs.json should
+    surface one Activity per unique sessionId (chats wins on dedupe).
+    """
+    from extractors.local import gemini_cli
+
+    hash_dir = tmp_path / "tmp" / "abc123def4567890"
+    chats_dir = hash_dir / "chats"
+    chats_dir.mkdir(parents=True)
+
+    # chats/ — rich session with assistant turns
+    (chats_dir / "session-2026-04-22T10-00-rich.json").write_text(
+        json.dumps(
+            {
+                "sessionId": "session-rich",
+                "projectHash": "abc123def4567890",
+                "startTime": "2026-04-22T10:00:00Z",
+                "lastUpdated": "2026-04-22T10:05:00Z",
+                "messages": [
+                    {"id": 0, "timestamp": "2026-04-22T10:00:00Z", "type": "user", "content": "set up redis"},
+                    {"id": 1, "timestamp": "2026-04-22T10:00:15Z", "type": "gemini", "content": "Sure, I'll help."},
+                    {"id": 2, "timestamp": "2026-04-22T10:02:00Z", "type": "user", "content": "verify with redis-cli"},
+                ],
+            }
+        )
+    )
+
+    # logs.json — older log-only records, one session overlaps with chats
+    (hash_dir / "logs.json").write_text(
+        json.dumps(
+            [
+                {"sessionId": "session-rich", "messageId": 0, "type": "user", "message": "set up redis", "timestamp": "2026-04-22T10:00:00Z"},
+                {"sessionId": "session-logs-only", "messageId": 0, "type": "user", "message": "migrate to node 22", "timestamp": "2025-08-06T08:26:14Z"},
+                {"sessionId": "session-logs-only", "messageId": 1, "type": "user", "message": "clean old versions", "timestamp": "2025-08-06T08:27:36Z"},
+            ]
+        )
+    )
+
+    acts = gemini_cli.extract({"extractors": {"gemini_cli": {"path": str(tmp_path / "tmp")}}})
+    ids = sorted(a.session_id for a in acts)
+    assert ids == ["session-logs-only", "session-rich"]
+
+    rich = next(a for a in acts if a.session_id == "session-rich")
+    assert rich.source == Source.GEMINI_CLI
+    assert rich.user_prompts_count == 2
+    assert rich.extra["assistant_turns"] == 1
+    assert rich.extra["source_shape"] == "chats"
+    assert rich.project == "gemini:abc123def456"
+    assert rich.timestamp_start == datetime(2026, 4, 22, 10, 0, 0, tzinfo=UTC)
+
+    logs_only = next(a for a in acts if a.session_id == "session-logs-only")
+    assert logs_only.user_prompts_count == 2
+    assert logs_only.extra["source_shape"] == "logs"
+    assert "migrate to node 22" in logs_only.summary
+    assert logs_only.timestamp_start == datetime(2025, 8, 6, 8, 26, 14, tzinfo=UTC)
+
+
+def test_gemini_cli_missing_path(tmp_path: Path) -> None:
+    from extractors.local import gemini_cli
+
+    acts = gemini_cli.extract(
+        {"extractors": {"gemini_cli": {"path": str(tmp_path / "nope")}}}
+    )
+    assert acts == []
+
+
+def test_gemini_cli_skips_bin_and_malformed(tmp_path: Path) -> None:
+    """bin/ helper dir and malformed json must not break extraction."""
+    from extractors.local import gemini_cli
+
+    root = tmp_path / "tmp"
+    (root / "bin").mkdir(parents=True)  # should be skipped
+    (root / "bin" / "logs.json").write_text("not json")
+
+    good = root / "good-hash"
+    good.mkdir()
+    (good / "logs.json").write_text(
+        json.dumps(
+            [
+                {"sessionId": "g1", "messageId": 0, "type": "user", "message": "hi", "timestamp": "2026-04-22T10:00:00Z"},
+            ]
+        )
+    )
+
+    bad = root / "bad-hash"
+    bad.mkdir()
+    (bad / "logs.json").write_text("{ malformed")
+
+    acts = gemini_cli.extract({"extractors": {"gemini_cli": {"path": str(root)}}})
+    # Only the good project's session comes through; bin/ and malformed dir
+    # are silently skipped.
+    assert len(acts) == 1
+    assert acts[0].session_id == "g1"
+
+
 def test_codex_malformed_lines_dropped(tmp_path: Path) -> None:
     """Non-JSON lines in the middle of a rollout must be skipped, not crash."""
     from extractors.local import codex

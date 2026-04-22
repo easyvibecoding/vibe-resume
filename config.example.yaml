@@ -30,6 +30,15 @@ extractors:
     # Codex moves sessions here when archived from the TUI — flat directory,
     # not dated. Deduplicated against `path` by session UUID.
     archived_path: "~/.codex/archived_sessions"
+  gemini_cli:
+    enabled: true
+    # Gemini CLI + Antigravity IDE share ~/.gemini/ as the base dir.
+    # CLI sessions live under ~/.gemini/tmp/<project_hash>/ — each project
+    # dir carries logs.json (user-prompt stream) and an optional chats/
+    # subdir with full session-*.json files (richer data).
+    # Antigravity conversations/*.pb are protobuf-binary and not yet
+    # extractable without the .proto schema; see ROADMAP.md.
+    path: "~/.gemini/tmp"
   cursor:
     enabled: true
     path: "~/Library/Application Support/Cursor/User"

@@ -16,11 +16,13 @@ Living doc. PRs welcome against any unchecked item.
 
 ### Post-0.2.0
 
-- **Codex extractor** (`extractors/local/codex.py`) — reads `~/.codex/sessions/**/rollout-*.jsonl`; emits one `Activity` per session with `cwd`, `git.branch`, `cli_version`, user-prompt count, function-call count, file paths. Registered as `Source.CODEX`. 3 unit tests (happy path, missing path, malformed lines).
+- **Codex extractor** (`extractors/local/codex.py`) — reads `~/.codex/sessions/**/rollout-*.jsonl` AND `~/.codex/archived_sessions/*.jsonl`; emits one `Activity` per session with `cwd`, `git.branch`, `cli_version`, user-prompt count, function-call count, file paths. Session-UUID dedup across the two trees. Registered as `Source.CODEX`. 5 unit tests. Live sanity on the author's machine: 65 sessions (50 active + 15 archived).
+- **Gemini CLI extractor** (`extractors/local/gemini_cli.py`) — reads `~/.gemini/tmp/<project_hash>/chats/session-*.json` (rich) AND `~/.gemini/tmp/<project_hash>/logs.json` (fallback). Session-ID dedup across the two shapes; skips `bin/` helper dir and malformed JSON silently. Registered as `Source.GEMINI_CLI`. 3 unit tests. Live sanity: 61 sessions (9 chats + 52 logs-only) across 19 project-hash dirs.
 
 ## 🚧 Up next (short list)
 
-- [ ] **Description trigger refresh** — the `ai-used-resume` SKILL.md frontmatter description still enumerates "Codex" in the cloud-export sense (ChatGPT/Codex cloud cut). Explicitly add **"Codex CLI sessions at `~/.codex/sessions/`"** as a trigger so skill-selection picks us up for Codex-user prompts.
+- [ ] **Description trigger refresh** — the `ai-used-resume` SKILL.md frontmatter description still enumerates "Codex" in the cloud-export sense. Now that we have native extractors, add **"Codex CLI sessions (`~/.codex/sessions/`, archived too) + Gemini CLI sessions (`~/.gemini/tmp/`)"** as explicit triggers so skill-selection picks us up for those tools' users.
+- [ ] **Antigravity `.pb` conversations extractor** — Antigravity IDE shares `~/.gemini/` with Gemini CLI but stores conversations at `~/.gemini/antigravity/conversations/*.pb` (binary protobuf, 23 files on author's machine) and annotations as `.pbtxt` (text protobuf). Blocked on obtaining the `.proto` schema — options: (a) reverse-engineer from [google-gemini/gemini-cli](https://github.com/google-gemini/gemini-cli) source, (b) probe the binary with `protoc --decode_raw` and reconstruct message types, (c) wait for Google to publish the schema. Code tracker (`~/.gemini/antigravity/code_tracker/active/<project>/<hash>_<filename>`) is already JSON-parseable and carries real repo names like `air-chiuchau_104a4bfd...` — could be a lighter first pass that emits one Activity per touched file even before .pb is solved.
 - [ ] **iter-1 skill eval follow-through** — benchmark found 2 baseline failures worth defending against regressions in the main SKILL.md body:
   - Add explicit "canonical subcommand list; do not invent others" line to Procedure
   - Add `review --jd <path>` reminder in Quick Reference (baseline forgot the flag)

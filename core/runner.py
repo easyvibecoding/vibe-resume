@@ -28,6 +28,7 @@ LOCAL_EXTRACTORS = [
     "claude_code",
     "claude_code_archive",
     "codex",
+    "gemini_cli",
     "cursor",
     "copilot_vscode",
     "cline",
