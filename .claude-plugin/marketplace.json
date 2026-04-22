@@ -1,0 +1,39 @@
+{
+  "name": "vibe-resume",
+  "owner": {
+    "name": "easyvibecoding",
+    "url": "https://github.com/easyvibecoding"
+  },
+  "metadata": {
+    "description": "Single-plugin marketplace for vibe-resume — turns AI coding history into a versioned résumé.",
+    "version": "0.2.0"
+  },
+  "plugins": [
+    {
+      "name": "vibe-resume",
+      "source": {
+        "source": "github",
+        "repo": "easyvibecoding/vibe-resume"
+      },
+      "description": "Turn your AI coding history (Claude Code, Codex CLI, Gemini CLI, Cursor, Copilot, Cline, Continue, Aider, Windsurf, Zed AI + cloud chat exports + AIGC tools) into a versioned, reviewer-scored résumé across 10 locales. Bundles the ai-used-resume skill.",
+      "version": "0.2.0",
+      "author": {
+        "name": "easyvibecoding"
+      },
+      "homepage": "https://github.com/easyvibecoding/vibe-resume",
+      "license": "MIT",
+      "category": "productivity",
+      "keywords": [
+        "resume",
+        "cv",
+        "ai-coding",
+        "claude-code",
+        "codex",
+        "gemini-cli",
+        "copilot",
+        "cursor",
+        "skill"
+      ]
+    }
+  ]
+}
