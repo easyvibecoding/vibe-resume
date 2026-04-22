@@ -20,8 +20,24 @@
     "ats-friendly"
   ],
   "skills": "./skills/",
-  "displayName": "vibe-resume",
-  "shortDescription": "AI-coding-era résumé generator across 10 locales",
-  "developerName": "easyvibecoding",
-  "category": "productivity"
+  "interface": {
+    "displayName": "vibe-resume",
+    "shortDescription": "AI-coding-era résumé generator across 10 locales",
+    "longDescription": "Generate, tailor, review, and trend a versioned résumé from AI coding and git history.",
+    "developerName": "easyvibecoding",
+    "category": "Productivity",
+    "capabilities": [
+      "Write",
+      "Analyze"
+    ],
+    "websiteURL": "https://github.com/easyvibecoding/vibe-resume",
+    "privacyPolicyURL": "https://github.com/easyvibecoding/vibe-resume/blob/main/SECURITY.md",
+    "termsOfServiceURL": "https://github.com/easyvibecoding/vibe-resume/blob/main/LICENSE",
+    "defaultPrompt": [
+      "Generate my résumé from AI coding logs and git history.",
+      "Tailor my résumé bullets for this job description.",
+      "Review and score my latest résumé draft."
+    ],
+    "brandColor": "#0F766E"
+  }
 }

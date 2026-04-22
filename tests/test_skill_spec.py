@@ -37,6 +37,7 @@ PLUGIN_MANIFESTS = [
     REPO_ROOT / ".claude-plugin" / "plugin.json",
     REPO_ROOT / ".codex-plugin" / "plugin.json",
 ]
+CODEX_PLUGIN_MANIFEST = REPO_ROOT / ".codex-plugin" / "plugin.json"
 
 ALLOWED_FRONTMATTER_KEYS = {
     "name",
@@ -145,6 +146,34 @@ def test_plugin_manifests_agree_on_identity() -> None:
             f"Plugin manifests disagree on `{field}`: "
             f"Claude={claude[field]!r} vs Codex={codex[field]!r}"
         )
+
+
+def test_codex_plugin_manifest_publish_readiness() -> None:
+    """Codex plugin publish guardrails:
+    - skills path must resolve to a shipped directory
+    - interface metadata must exist for marketplace presentation
+    """
+    data = json.loads(CODEX_PLUGIN_MANIFEST.read_text(encoding="utf-8"))
+
+    skills = data.get("skills")
+    assert isinstance(skills, str) and skills.startswith("./"), "`skills` must be a relative path like ./skills/"
+    skills_dir = (REPO_ROOT / skills[2:]).resolve()
+    assert skills_dir.is_dir(), f"Codex plugin `skills` path does not exist: {skills!r}"
+
+    interface = data.get("interface")
+    assert isinstance(interface, dict), "Codex plugin manifest must include an `interface` object"
+    for field in ("displayName", "shortDescription", "developerName", "category"):
+        assert isinstance(interface.get(field), str) and interface[field].strip(), (
+            f"Codex plugin manifest `interface.{field}` must be a non-empty string"
+        )
+
+    default_prompt = interface.get("defaultPrompt")
+    assert isinstance(default_prompt, list) and 1 <= len(default_prompt) <= 3, (
+        "Codex plugin `interface.defaultPrompt` must contain 1 to 3 starter prompts"
+    )
+    assert all(isinstance(item, str) and item.strip() for item in default_prompt), (
+        "Codex plugin `interface.defaultPrompt` entries must be non-empty strings"
+    )
 
 
 @pytest.mark.parametrize("path", SKILL_PATHS, ids=[p.parent.name + "/" + p.parent.parent.name for p in SKILL_PATHS])
