@@ -216,6 +216,101 @@ def test_codex_missing_path(tmp_path: Path) -> None:
     assert acts == []
 
 
+def test_codex_archived_sessions_captured(tmp_path: Path) -> None:
+    """Rollouts under archived_sessions/ must be extracted alongside the
+    dated sessions/ tree — Codex moves user-archived sessions here.
+    """
+    from extractors.local import codex
+
+    sessions = tmp_path / "sessions" / "2026" / "04" / "22"
+    sessions.mkdir(parents=True)
+    _write_jsonl(
+        sessions / "rollout-active.jsonl",
+        [
+            {
+                "timestamp": "2026-04-22T10:00:00Z",
+                "type": "session_meta",
+                "payload": {"id": "active-id", "cwd": "/a"},
+            },
+            {
+                "timestamp": "2026-04-22T10:00:01Z",
+                "type": "response_item",
+                "payload": {"type": "message", "role": "user", "content": "active task"},
+            },
+        ],
+    )
+
+    archived = tmp_path / "archived_sessions"
+    archived.mkdir()
+    _write_jsonl(
+        archived / "rollout-archived.jsonl",
+        [
+            {
+                "timestamp": "2026-02-11T16:23:06Z",
+                "type": "session_meta",
+                "payload": {"id": "archived-id", "cwd": "/b"},
+            },
+            {
+                "timestamp": "2026-02-11T16:23:07Z",
+                "type": "response_item",
+                "payload": {"type": "message", "role": "user", "content": "old task"},
+            },
+        ],
+    )
+
+    acts = codex.extract(
+        {
+            "extractors": {
+                "codex": {
+                    "path": str(sessions.parent.parent.parent),  # ~/.codex/sessions
+                    "archived_path": str(archived),
+                }
+            }
+        }
+    )
+    session_ids = {a.session_id for a in acts}
+    assert session_ids == {"active-id", "archived-id"}
+
+
+def test_codex_archive_dedupes_on_session_uuid(tmp_path: Path) -> None:
+    """If the same session UUID appears in both active and archived trees
+    (can happen mid-archive), it should be counted exactly once.
+    """
+    from extractors.local import codex
+
+    sessions = tmp_path / "sessions" / "2026" / "04" / "22"
+    sessions.mkdir(parents=True)
+    shared_entries = [
+        {
+            "timestamp": "2026-04-22T10:00:00Z",
+            "type": "session_meta",
+            "payload": {"id": "shared-uuid", "cwd": "/dup"},
+        },
+        {
+            "timestamp": "2026-04-22T10:00:01Z",
+            "type": "response_item",
+            "payload": {"type": "message", "role": "user", "content": "hi"},
+        },
+    ]
+    _write_jsonl(sessions / "rollout-one.jsonl", shared_entries)
+    archived = tmp_path / "archived_sessions"
+    archived.mkdir()
+    _write_jsonl(archived / "rollout-one-archived.jsonl", shared_entries)
+
+    acts = codex.extract(
+        {
+            "extractors": {
+                "codex": {
+                    "path": str(sessions.parent.parent.parent),
+                    "archived_path": str(archived),
+                }
+            }
+        }
+    )
+    assert len(acts) == 1
+    assert acts[0].session_id == "shared-uuid"
+
+
 def test_codex_malformed_lines_dropped(tmp_path: Path) -> None:
     """Non-JSON lines in the middle of a rollout must be skipped, not crash."""
     from extractors.local import codex

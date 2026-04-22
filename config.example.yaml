@@ -27,6 +27,9 @@ extractors:
     enabled: true
     # Default; respects $CODEX_HOME if your Codex CLI overrides the location.
     path: "~/.codex/sessions"
+    # Codex moves sessions here when archived from the TUI — flat directory,
+    # not dated. Deduplicated against `path` by session UUID.
+    archived_path: "~/.codex/archived_sessions"
   cursor:
     enabled: true
     path: "~/Library/Application Support/Cursor/User"

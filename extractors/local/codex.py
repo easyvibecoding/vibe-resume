@@ -17,6 +17,11 @@ Each row is {timestamp, type, payload}. Event types we care about:
 Codex respects $CODEX_HOME to relocate the base dir; the extractor reads
 its path from `cfg["extractors"]["codex"]["path"]` so users who set
 CODEX_HOME just need to mirror it in config.yaml.
+
+Archived sessions (`~/.codex/archived_sessions/rollout-*.jsonl`) sit at a
+sibling path, not under the dated tree. Codex moves sessions there when
+the user archives them from the TUI. Config supports `archived_path` so
+those are included by default.
 """
 from __future__ import annotations
 
@@ -80,14 +85,29 @@ def _extract_file_paths(args: Any) -> list[str]:
 
 
 def extract(cfg: dict[str, Any]) -> list[Activity]:
-    base = Path(cfg["extractors"]["codex"]["path"]).expanduser()
-    if not base.exists():
-        return []
+    codex_cfg = cfg["extractors"]["codex"]
+    bases: list[Path] = []
+    for key in ("path", "archived_path"):
+        raw = codex_cfg.get(key)
+        if raw:
+            p = Path(raw).expanduser()
+            if p.exists():
+                bases.append(p)
 
     activities: list[Activity] = []
-    for rollout_file in base.rglob("rollout-*.jsonl"):
-        act = _process_session(rollout_file)
-        if act:
+    seen_session_ids: set[str] = set()
+    for base in bases:
+        for rollout_file in base.rglob("rollout-*.jsonl"):
+            act = _process_session(rollout_file)
+            if not act:
+                continue
+            # If the same session rolled from active → archived the UUID is
+            # preserved; prefer the earlier-seen copy (active usually still
+            # carries the mtime/ctime the user expects) to avoid a double
+            # count that the aggregator would have to dedupe later anyway.
+            if act.session_id in seen_session_ids:
+                continue
+            seen_session_ids.add(act.session_id)
             activities.append(act)
     return activities
 
