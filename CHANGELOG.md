@@ -77,6 +77,62 @@ All notable changes to `vibe-resume`. Format follows
 - **JP 履歴書 legacy cells**: optional 通勤時間 / 扶養家族 / 配偶者 cells (some traditional employers still expect these).
 - **Prompt coverage**: verify ko_KR / zh_CN LLM output end-to-end (same way we verified zh_TW/ja_JP/de_DE/fr_FR in 0.1).
 
+## [0.3.0] — 2026-04-22
+
+Three new native CLI-session extractors + Codex plugin marketplace
+distribution. Published fresh tarball so `npx skills add …` and
+`skills.sh` registries pick up the new extractors and corrected install
+instructions.
+
+### Added
+
+- **Codex CLI extractor** (`extractors/local/codex.py`) — reads
+  `~/.codex/sessions/**/rollout-*.jsonl` **and**
+  `~/.codex/archived_sessions/*.jsonl`. Session-UUID dedup across the
+  two trees. Emits one `Activity` per session with `cwd`, `git.branch`,
+  `cli_version`, user-prompt count, function-call count, file paths.
+  Registered as `Source.CODEX`. 5 unit tests.
+- **Gemini CLI extractor** (`extractors/local/gemini_cli.py`) — reads
+  `~/.gemini/tmp/<project_hash>/chats/session-*.json` (rich) **and**
+  `~/.gemini/tmp/<project_hash>/logs.json` (fallback). Session-ID
+  dedup across the two shapes; skips `bin/` helper dir and malformed
+  JSON silently. Registered as `Source.GEMINI_CLI`. 3 unit tests.
+- **Copilot CLI extractor** (`extractors/local/copilot_cli.py`) — reads
+  `~/.copilot/session-state/<uuid>/events.jsonl`. Parses
+  `session.start` (sessionId, cwd, copilotVersion, producer),
+  `user.message`, `assistant.message` with `toolRequests` (tool-call
+  count + file-path extraction), `session.shutdown`. Registered as
+  `Source.COPILOT_CLI`. Separate from `copilot_vscode`. 3 unit tests.
+- **Claude Code plugin marketplace** —
+  `.claude-plugin/marketplace.json` lets users run
+  `/plugin marketplace add easyvibecoding/vibe-resume` and install
+  via the standard two-step flow.
+- **OpenAI Codex plugin marketplace** —
+  `.codex-plugin/marketplace.json` mirrors the Claude Code pattern
+  so `codex plugin marketplace add easyvibecoding/vibe-resume` works
+  on codex-cli ≥ 0.121.0.
+- **Codex plugin `interface` object** in `.codex-plugin/plugin.json`
+  (displayName, shortDescription, longDescription, capabilities,
+  URLs, defaultPrompt × 3, brandColor) so the marketplace listing
+  renders a full card, not a placeholder.
+- **`scripts/validate_plugin_e2e.sh`** — JSON parse → shared manifest
+  invariants → Codex publish-readiness → marketplace installability
+  → `claude plugin validate` in one pass.
+- `test_codex_plugin_manifest_publish_readiness` and
+  `test_marketplace_manifests_installable` guard both marketplace
+  manifests and the Codex interface schema.
+
+### Changed
+
+- READMEs (en / zh-TW / zh-CN / ja) Tier 0 section: replaced the
+  invalid `/plugin install <owner>/<repo>` shorthand with the correct
+  two-step flow, and added the codex-cli ≥ 0.121 version floor with
+  a Tier 1 fallback pointer for older installs.
+- `core/runner.py::LOCAL_EXTRACTORS` grew to 14 entries
+  (`codex`, `gemini_cli`, `copilot_cli` added).
+- `config.example.yaml` gained `codex` (with `archived_path`),
+  `gemini_cli`, and `copilot_cli` stanzas.
+
 ## [0.1.0] — 2026-04-20
 
 First public-ready cut: end-to-end pipeline from AI-tool extractors through

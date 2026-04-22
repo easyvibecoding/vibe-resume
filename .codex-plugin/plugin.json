@@ -1,6 +1,6 @@
 {
   "name": "vibe-resume",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Turn your AI coding history (Claude Code, Cursor, Copilot, Cline, Continue, Aider, Windsurf, Zed AI, ChatGPT/Claude.ai/Gemini/Grok/Perplexity/Mistral/Poe exports, ComfyUI/Midjourney/Suno/ElevenLabs, git commits) into a versioned, reviewer-scored résumé across 10 locales with Markdown / DOCX / PDF output and an 8-point reviewer audit. Bundles the ai-used-resume skill.",
   "author": {
     "name": "easyvibecoding"
