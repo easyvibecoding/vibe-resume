@@ -23,6 +23,10 @@ extractors:
   claude_code_archive:
     enabled: true
     path: "~/ClaudeCodeArchive/current"
+  codex:
+    enabled: true
+    # Default; respects $CODEX_HOME if your Codex CLI overrides the location.
+    path: "~/.codex/sessions"
   cursor:
     enabled: true
     path: "~/Library/Application Support/Cursor/User"

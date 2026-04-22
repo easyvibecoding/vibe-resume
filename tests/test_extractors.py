@@ -103,6 +103,137 @@ def test_claude_code_missing_path(tmp_path: Path) -> None:
     assert acts == []
 
 
+# ─────────────────────────────── codex ────────────────────────────────────────
+
+
+@pytest.fixture()
+def codex_sessions(tmp_path: Path) -> Path:
+    """Fake ~/.codex/sessions tree with one rollout jsonl under YYYY/MM/DD/."""
+    root = tmp_path / "sessions"
+    rollout = root / "2026" / "04" / "22" / "rollout-2026-04-22T14-30-00-xyz789.jsonl"
+    _write_jsonl(
+        rollout,
+        [
+            {
+                "timestamp": "2026-04-22T14:30:00.000Z",
+                "type": "session_meta",
+                "payload": {
+                    "id": "0199bd82-4b9a-76e0-94e9-8d9ddaa39c8c",
+                    "cwd": "/Users/test/codex-proj",
+                    "originator": "codex_cli",
+                    "cli_version": "0.42.0",
+                    "git": {"branch": "feat/resume"},
+                },
+            },
+            {
+                "timestamp": "2026-04-22T14:30:05.000Z",
+                "type": "response_item",
+                "payload": {
+                    "type": "message",
+                    "role": "user",
+                    "content": [{"type": "input_text", "text": "refactor extract flow"}],
+                },
+            },
+            {
+                "timestamp": "2026-04-22T14:30:10.000Z",
+                "type": "response_item",
+                "payload": {
+                    "type": "function_call",
+                    "name": "apply_patch",
+                    "arguments": '{"file_path": "/Users/test/codex-proj/cli.py"}',
+                },
+            },
+            {
+                "timestamp": "2026-04-22T14:30:15.000Z",
+                "type": "response_item",
+                "payload": {
+                    "type": "function_call",
+                    "name": "apply_patch",
+                    "arguments": '{"file_path": "/Users/test/codex-proj/README.md"}',
+                },
+            },
+            {
+                "timestamp": "2026-04-22T14:35:00.000Z",
+                "type": "response_item",
+                "payload": {
+                    "type": "message",
+                    "role": "user",
+                    "content": [{"type": "input_text", "text": "now add tests"}],
+                },
+            },
+            # event_msg user_message echo — MUST NOT double-count
+            {
+                "timestamp": "2026-04-22T14:35:01.000Z",
+                "type": "event_msg",
+                "payload": {"type": "user_message", "message": "now add tests"},
+            },
+            # response_item with a system-reminder prefix — must be filtered
+            {
+                "timestamp": "2026-04-22T14:36:00.000Z",
+                "type": "response_item",
+                "payload": {
+                    "type": "message",
+                    "role": "user",
+                    "content": [{"type": "input_text", "text": "<system-reminder>stale task</system-reminder>"}],
+                },
+            },
+        ],
+    )
+    return root
+
+
+def test_codex_happy_path(codex_sessions: Path) -> None:
+    from extractors.local import codex
+
+    acts = codex.extract({"extractors": {"codex": {"path": str(codex_sessions)}}})
+
+    assert len(acts) == 1
+    a = acts[0]
+    assert a.source == Source.CODEX
+    assert a.activity_type == ActivityType.CODING
+    # Two genuine user prompts; event_msg echo and system-reminder are excluded.
+    assert a.user_prompts_count == 2
+    assert a.tool_calls_count == 2
+    # session_id pulled from session_meta payload.id
+    assert a.session_id == "0199bd82-4b9a-76e0-94e9-8d9ddaa39c8c"
+    assert a.project == "/Users/test/codex-proj"
+    assert "apply_patch" in a.keywords
+    assert "/Users/test/codex-proj/cli.py" in a.files_touched
+    assert "/Users/test/codex-proj/README.md" in a.files_touched
+    assert a.extra["git_branch"] == "feat/resume"
+    assert a.extra["cli_version"] == "0.42.0"
+    assert a.timestamp_start == datetime(2026, 4, 22, 14, 30, 0, tzinfo=UTC)
+    assert "refactor extract flow" in a.summary
+    assert str(codex_sessions) in a.raw_ref
+
+
+def test_codex_missing_path(tmp_path: Path) -> None:
+    from extractors.local import codex
+
+    acts = codex.extract(
+        {"extractors": {"codex": {"path": str(tmp_path / "nope")}}}
+    )
+    assert acts == []
+
+
+def test_codex_malformed_lines_dropped(tmp_path: Path) -> None:
+    """Non-JSON lines in the middle of a rollout must be skipped, not crash."""
+    from extractors.local import codex
+
+    root = tmp_path / "sessions" / "2026" / "04" / "22"
+    root.mkdir(parents=True)
+    rollout = root / "rollout-corrupt.jsonl"
+    rollout.write_text(
+        '{"timestamp":"2026-04-22T14:30:00Z","type":"session_meta","payload":{"id":"s1","cwd":"/a"}}\n'
+        "this is not json\n"
+        '{"timestamp":"2026-04-22T14:30:10Z","type":"response_item","payload":{"type":"message","role":"user","content":"hello"}}\n'
+    )
+
+    acts = codex.extract({"extractors": {"codex": {"path": str(tmp_path / "sessions")}}})
+    assert len(acts) == 1
+    assert acts[0].user_prompts_count == 1
+
+
 def test_claude_code_system_reminders_ignored(tmp_path: Path) -> None:
     """User bubbles containing <system-reminder> must not count as prompts."""
     from extractors.local import claude_code

@@ -27,6 +27,7 @@ CACHE_DIR = ROOT / "data" / "cache"
 LOCAL_EXTRACTORS = [
     "claude_code",
     "claude_code_archive",
+    "codex",
     "cursor",
     "copilot_vscode",
     "cline",
