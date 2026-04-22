@@ -104,7 +104,8 @@ pick the one that matches your agent, not eight separate `ln -s` commands.
 
 ```bash
 # Claude Code (uses .claude-plugin/plugin.json)
-/plugin install easyvibecoding/vibe-resume
+/plugin marketplace add easyvibecoding/vibe-resume
+/plugin install vibe-resume@vibe-resume
 
 # OpenAI Codex (uses .codex-plugin/plugin.json)
 codex plugin install easyvibecoding/vibe-resume

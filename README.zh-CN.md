@@ -97,7 +97,8 @@ ChatGPT · Claude.ai · Gemini Takeout · Grok · Perplexity · Mistral Le Chat 
 
 ```bash
 # Claude Code(走 .claude-plugin/plugin.json)
-/plugin install easyvibecoding/vibe-resume
+/plugin marketplace add easyvibecoding/vibe-resume
+/plugin install vibe-resume@vibe-resume
 
 # OpenAI Codex(走 .codex-plugin/plugin.json)
 codex plugin install easyvibecoding/vibe-resume
