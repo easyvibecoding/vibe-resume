@@ -129,30 +129,33 @@ Code, Cursor, Windsurf, Gemini CLI, GitHub Copilot, Codex, Qwen Code, Kimi
 Code, Roo Code, Kilo Code, Goose, Trae, OpenCode, Amp, Antigravity, Kiro,
 Factory, Junie, and more. To restrict, pass `-a <slug>`:
 ```bash
-npx skills add easyvibecoding/vibe-resume -a claude -a cursor-agent -a windsurf
+npx skills add easyvibecoding/vibe-resume -a claude-code -a cursor -a windsurf
 ```
 
 <details>
 <summary>Full list of Tier-1 agent slugs (for <code>-a</code> flag)</summary>
 
+Slugs verified against `skills@latest` on 2026-04-22. Run `npx skills add … -a unknown` to have the CLI print the up-to-date list.
+
 | Agent | slug |  | Agent | slug |
 |---|---|---|---|---|
-| Amp | `amp` |  | Kilo Code | `kilocode` |
-| Antigravity | `agy` |  | Kimi Code | `kimi` |
-| Auggie CLI | `auggie` |  | Kiro CLI | `kiro-cli` |
-| Claude Code | `claude` |  | Mistral Vibe | `vibe` |
-| CodeBuddy CLI | `codebuddy` |  | opencode | `opencode` |
-| Codex CLI | `codex` |  | Pi Coding Agent | `pi` |
-| Cursor | `cursor-agent` |  | Qoder CLI | `qodercli` |
-| Forge | `forge` |  | Qwen Code | `qwen` |
-| Gemini CLI | `gemini` |  | Roo Code | `roo` |
-| GitHub Copilot | `copilot` |  | SHAI (OVHcloud) | `shai` |
-| Goose | `goose` |  | Tabnine CLI | `tabnine` |
-| IBM Bob | `bob` |  | Trae | `trae` |
-| iFlow CLI | `iflow` |  | Windsurf | `windsurf` |
-| Junie | `junie` |  |  |  |
+| Amp | `amp` |  | Kilo Code | `kilo` |
+| Antigravity | `antigravity` |  | Kimi Code CLI | `kimi-cli` |
+| Augment | `augment` |  | Kiro CLI | `kiro-cli` |
+| Claude Code | `claude-code` |  | Mistral Vibe | `mistral-vibe` |
+| Cline | `cline` |  | opencode | `opencode` |
+| CodeBuddy | `codebuddy` |  | OpenHands | `openhands` |
+| Codex CLI | `codex` |  | Pi | `pi` |
+| Continue | `continue` |  | Qoder | `qoder` |
+| Cursor | `cursor` |  | Qwen Code | `qwen-code` |
+| Gemini CLI | `gemini-cli` |  | Replit | `replit` |
+| GitHub Copilot | `github-copilot` |  | Roo | `roo` |
+| Goose | `goose` |  | Trae | `trae` / `trae-cn` |
+| IBM Bob | `bob` |  | Warp | `warp` |
+| iFlow CLI | `iflow-cli` |  | Windsurf | `windsurf` |
+| Junie | `junie` |  | Zencoder | `zencoder` |
 
-Latest list: [vercel-labs/skills](https://github.com/vercel-labs/skills).
+Universal fallback: `-a universal` drops the skill under `.agents/skills/`, which Claude Code / Codex / Gemini CLI / Cursor / Warp / Amp / Cline / OpenCode / Antigravity read natively — one install covers all of them. Latest slug list: [vercel-labs/skills](https://github.com/vercel-labs/skills).
 </details>
 
 **Tier 2 — OpenClaw (own ClawHub marketplace + 5,400+ skill registry)**
