@@ -36,6 +36,7 @@ class Source(str, Enum):
     WINDSURF = "windsurf"
     COPILOT_VSCODE = "copilot-vscode"
     COPILOT_ACTIVITY = "copilot-activity"
+    COPILOT_CLI = "copilot-cli"
     CODEX = "codex"
     ZED = "zed"
     GEMINI = "gemini"

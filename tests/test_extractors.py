@@ -406,6 +406,117 @@ def test_gemini_cli_skips_bin_and_malformed(tmp_path: Path) -> None:
     assert acts[0].session_id == "g1"
 
 
+def test_copilot_cli_happy_path(tmp_path: Path) -> None:
+    from extractors.local import copilot_cli
+
+    session_dir = tmp_path / "session-state" / "34ea38e6-a566-4d3a-9f22-6b6ebc9e3aae"
+    session_dir.mkdir(parents=True)
+    _write_jsonl(
+        session_dir / "events.jsonl",
+        [
+            {
+                "type": "session.start",
+                "timestamp": "2026-04-22T04:47:53.899Z",
+                "data": {
+                    "sessionId": "34ea38e6-a566-4d3a-9f22-6b6ebc9e3aae",
+                    "copilotVersion": "1.0.34",
+                    "producer": "copilot-agent",
+                    "startTime": "2026-04-22T04:47:53.886Z",
+                    "context": {"cwd": "/Users/test/proj"},
+                },
+            },
+            {
+                "type": "user.message",
+                "timestamp": "2026-04-22T04:48:00.000Z",
+                "data": {"content": "refactor the auth module"},
+            },
+            {
+                "type": "assistant.turn_start",
+                "timestamp": "2026-04-22T04:48:01.000Z",
+                "data": {},
+            },
+            {
+                "type": "assistant.message",
+                "timestamp": "2026-04-22T04:48:03.000Z",
+                "data": {
+                    "content": "I'll start by reading the file.",
+                    "toolRequests": [
+                        {"name": "read_file", "arguments": {"file_path": "/Users/test/proj/auth.py"}},
+                        {"name": "edit_file", "arguments": {"file_path": "/Users/test/proj/auth.py"}},
+                    ],
+                },
+            },
+            {
+                "type": "user.message",
+                "timestamp": "2026-04-22T04:50:00.000Z",
+                "data": {"content": "now add a test"},
+            },
+            {
+                "type": "session.shutdown",
+                "timestamp": "2026-04-22T04:52:00.000Z",
+                "data": {},
+            },
+        ],
+    )
+
+    acts = copilot_cli.extract(
+        {"extractors": {"copilot_cli": {"path": str(tmp_path / "session-state")}}}
+    )
+    assert len(acts) == 1
+    a = acts[0]
+    assert a.source == Source.COPILOT_CLI
+    assert a.session_id == "34ea38e6-a566-4d3a-9f22-6b6ebc9e3aae"
+    assert a.user_prompts_count == 2
+    assert a.tool_calls_count == 2
+    assert a.project == "/Users/test/proj"
+    assert "read_file" in a.keywords
+    assert "edit_file" in a.keywords
+    assert "/Users/test/proj/auth.py" in a.files_touched
+    assert a.extra["copilot_version"] == "1.0.34"
+    assert a.extra["producer"] == "copilot-agent"
+    assert a.timestamp_start == datetime(2026, 4, 22, 4, 47, 53, 886000, tzinfo=UTC)
+
+
+def test_copilot_cli_missing_path(tmp_path: Path) -> None:
+    from extractors.local import copilot_cli
+
+    acts = copilot_cli.extract(
+        {"extractors": {"copilot_cli": {"path": str(tmp_path / "nope")}}}
+    )
+    assert acts == []
+
+
+def test_copilot_cli_empty_session_dir_skipped(tmp_path: Path) -> None:
+    """A session dir without events.jsonl must not break extraction."""
+    from extractors.local import copilot_cli
+
+    root = tmp_path / "session-state"
+    # One valid session…
+    good = root / "good-uuid"
+    good.mkdir(parents=True)
+    _write_jsonl(
+        good / "events.jsonl",
+        [
+            {
+                "type": "session.start",
+                "timestamp": "2026-04-22T10:00:00Z",
+                "data": {"sessionId": "good-uuid", "context": {"cwd": "/a"}},
+            },
+            {
+                "type": "user.message",
+                "timestamp": "2026-04-22T10:00:01Z",
+                "data": {"content": "hi"},
+            },
+        ],
+    )
+    # …and one stub dir with no events.jsonl.
+    (root / "stub-uuid").mkdir()
+
+    acts = copilot_cli.extract({"extractors": {"copilot_cli": {"path": str(root)}}})
+    assert len(acts) == 1
+    assert acts[0].session_id == "good-uuid"
+
+
 def test_codex_malformed_lines_dropped(tmp_path: Path) -> None:
     """Non-JSON lines in the middle of a rollout must be skipped, not crash."""
     from extractors.local import codex

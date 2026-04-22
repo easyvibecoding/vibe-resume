@@ -31,6 +31,7 @@ LOCAL_EXTRACTORS = [
     "gemini_cli",
     "cursor",
     "copilot_vscode",
+    "copilot_cli",
     "cline",
     "continue_dev",
     "aider",

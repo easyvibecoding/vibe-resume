@@ -56,6 +56,12 @@ extractors:
   copilot_vscode:
     enabled: true
     path: "~/Library/Application Support/Code/User/workspaceStorage"
+  copilot_cli:
+    enabled: true
+    # GitHub Copilot CLI — respects $COPILOT_HOME if set.
+    # Each <uuid>/ contains events.jsonl (session event stream) plus
+    # workspace artefacts (plans, checkpoints, tracked files).
+    path: "~/.copilot/session-state"
   zed:
     enabled: true
   claude_desktop:
