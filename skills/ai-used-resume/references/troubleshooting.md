@@ -10,7 +10,14 @@ Common issues the user will hit, and the fix.
 
 ## Enrichment
 
-- **`claude -p` is optional.** No `claude` binary on PATH → enricher falls back to rule-based summaries. Functional but weaker bullets. Tell the user.
+- **`claude -p` is optional but billed separately as of 2026-06-15.** The
+  `--mode subprocess` path spawns `claude -p`, which bills against the
+  Anthropic Agent SDK monthly quota pool (Pro $20 / Max 20x $200), not
+  your Claude Code subscription. The default `--mode prompt` flow keeps
+  everything inside the current Claude Code session (uses subscription
+  quota). If `claude` is missing on PATH, `--mode subprocess` automatically
+  falls back to `--mode rule-based`.
+  ([Anthropic billing change](https://codersera.com/blog/anthropic-june-2026-billing-change-claude-code/))
 - **Score dropped after a change.** Run `uv run vibe-resume review --diff` (default on) for Δ vs the previous review of the same locale, then `uv run vibe-resume trend --locale <L>` for the whole history.
 - **Tailoring for multiple JDs.** Keep `data/imports/jd_<company>.txt` per target. Enrich + render + review each before the interview cycle. `trend` shows whether tailoring helped.
 
