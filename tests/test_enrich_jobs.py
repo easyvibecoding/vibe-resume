@@ -71,3 +71,82 @@ def test_manifest_rejects_naive_created_at():
             level=None,
             groups=[],
         )
+
+
+# ---------------------------------------------------------------------------
+# emit_jobs tests (T2)
+# ---------------------------------------------------------------------------
+from pathlib import Path  # noqa: E402
+
+from core.enrich_jobs import emit_jobs  # noqa: E402
+from core.schema import ProjectGroup, Source  # noqa: E402
+
+
+def _fake_group(name: str = "proj-foo") -> ProjectGroup:
+    """Minimal ProjectGroup good enough for prompt emission."""
+    return ProjectGroup(
+        name=name,
+        path=None,
+        first_activity=datetime(2026, 1, 1, tzinfo=UTC),
+        last_activity=datetime(2026, 2, 1, tzinfo=UTC),
+        sources=[Source.CLAUDE_CODE],
+        total_sessions=5,
+        tech_stack=["FastAPI", "PostgreSQL"],
+        category_counts={"backend": 3, "frontend": 2},
+        capability_breadth=2,
+        activities=[],
+    )
+
+
+def test_emit_writes_manifest_and_prompt_per_group(tmp_path: Path):
+    groups = [_fake_group("proj-foo"), _fake_group("proj-bar")]
+    jobs_dir = emit_jobs(
+        groups=groups,
+        out_root=tmp_path,
+        persona=None,
+        locale="en_US",
+        tailor_keywords=None,
+        company=None,
+        level=None,
+    )
+
+    assert jobs_dir == tmp_path / "default" / "en_US"
+    manifest_path = jobs_dir / "manifest.json"
+    assert manifest_path.exists()
+
+    from core.enrich_jobs import EnrichJobManifest
+    m = EnrichJobManifest.model_validate_json(manifest_path.read_text())
+    assert m.locale == "en_US"
+    assert m.persona is None
+    assert len(m.groups) == 2
+    assert m.groups[0].status == "pending"
+
+    for entry in m.groups:
+        p = jobs_dir / entry.prompt_path
+        assert p.exists() and p.stat().st_size > 0
+
+
+def test_emit_separates_locales_under_same_persona(tmp_path: Path):
+    """zh_TW and en_US runs must not stomp each other."""
+    groups = [_fake_group("proj-foo")]
+    en_dir = emit_jobs(groups, tmp_path, persona="tech_lead", locale="en_US",
+                       tailor_keywords=None, company=None, level=None)
+    zh_dir = emit_jobs(groups, tmp_path, persona="tech_lead", locale="zh_TW",
+                       tailor_keywords=None, company=None, level=None)
+    assert en_dir != zh_dir
+    assert (en_dir / "manifest.json").exists()
+    assert (zh_dir / "manifest.json").exists()
+
+
+def test_emit_preserves_existing_yaml_on_re_emit(tmp_path: Path):
+    """Re-running emit must NOT delete *.yaml the session has already written."""
+    groups = [_fake_group("proj-foo")]
+    out = emit_jobs(groups, tmp_path, persona=None, locale="en_US",
+                    tailor_keywords=None, company=None, level=None)
+
+    yaml_path = out / "001_proj-foo.yaml"
+    yaml_path.write_text("summary: hi\n")
+
+    emit_jobs(groups, tmp_path, persona=None, locale="en_US",
+              tailor_keywords=None, company=None, level=None)
+    assert yaml_path.exists(), "re-emit should not delete user-written yaml"
