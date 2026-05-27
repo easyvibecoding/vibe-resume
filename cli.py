@@ -605,6 +605,7 @@ def company_show(key: str) -> None:
 # ---------------------------------------------------------------------------
 
 VERIFICATION_REPORTS_DIR = ROOT / "data" / "verification_reports"
+VERIFICATION_JOBS_DIR = ROOT / "data" / "verification_jobs"
 
 _VERIFY_PROMPT = """\
 You are fact-checking a company résumé-review profile to prevent LLM-
@@ -681,81 +682,20 @@ def _parse_verdict(report_text: str) -> str:
     return m.group(1).strip().lower()
 
 
-@company.command("verify")
-@click.argument("key")
-@click.option(
-    "--apply",
-    is_flag=True,
-    default=False,
-    help="If the agent verdict is 'clean', auto-bump last_verified_at to today.",
-)
-@click.option(
-    "--timeout",
-    type=int,
-    default=300,
-    help="Claude CLI timeout in seconds (default: 300).",
-)
-def company_verify(key: str, apply: bool, timeout: int) -> None:
-    """Fact-check ``<key>``'s profile via a Claude agent and save the report.
-
-    Spawns ``claude -p`` with a structured fact-check prompt (max ~5 web
-    queries recommended to the agent), then writes the returned markdown
-    report to ``data/verification_reports/<key>_<YYYY-MM-DD>.md``. Requires
-    the ``claude`` binary on PATH — if missing, prints a clear instruction.
-    """
+def _handle_verdict(key: str, verdict: str, apply_flag: bool) -> None:
+    """Print verdict outcome + optionally bump last_verified_at on clean+apply."""
     from datetime import date
 
-    from core.company_profiles import COMPANY_PROFILES, PROFILES_DIR
+    from core.company_profiles import ProfileLoadError, update_last_verified_at
 
-    profile = COMPANY_PROFILES.get(key)
-    if profile is None:
-        raise click.UsageError(
-            f"unknown company key {key!r}. "
-            "Run `vibe-resume company list` to see available keys."
-        )
-
-    yaml_path = PROFILES_DIR / f"{key}.yaml"
-    yaml_body = yaml_path.read_text(encoding="utf-8")
-    today = date.today().isoformat()
-    prompt = _VERIFY_PROMPT.format(key=key, today=today, yaml_body=yaml_body)
-
-    console.print(
-        f"[cyan]verifying {profile.label} ({key}) via claude -p…[/cyan] "
-        "(this may take a minute)"
-    )
-
-    from core.enricher import _call_claude
-
-    report = _call_claude(prompt, timeout=timeout)
-    if not report:
+    if verdict == "clean" and apply_flag:
+        try:
+            path = update_last_verified_at(key, date.today().isoformat())
+        except ProfileLoadError as e:
+            raise click.UsageError(str(e)) from e
         console.print(
-            "[red]claude CLI unavailable or call failed. "
-            "Install claude (or re-run with a longer --timeout), "
-            "or mark-verified manually after a browser fact-check.[/red]"
-        )
-        raise click.Abort()
-
-    VERIFICATION_REPORTS_DIR.mkdir(parents=True, exist_ok=True)
-    out_path = VERIFICATION_REPORTS_DIR / f"{key}_{today}.md"
-    out_path.write_text(report, encoding="utf-8")
-    console.print(f"[green]✓[/green] saved report to {out_path.relative_to(ROOT)}")
-
-    verdict = _parse_verdict(report)
-    console.print(f"[bold]verdict:[/bold] {verdict}")
-
-    # Print a short preview so operators don't have to open the file to triage
-    preview_lines = [line for line in report.splitlines() if line.strip()][:18]
-    console.print()
-    for line in preview_lines:
-        console.print(f"  {line}")
-    console.print()
-
-    if verdict == "clean" and apply:
-        from core.company_profiles import update_last_verified_at
-
-        update_last_verified_at(key, today)
-        console.print(
-            f"[green]✓[/green] auto-applied: {key}.yaml last_verified_at → {today}"
+            f"[green]✓[/green] verdict clean — bumped {path.relative_to(ROOT)} "
+            f"last_verified_at → today"
         )
     elif verdict == "clean":
         console.print(
@@ -773,6 +713,131 @@ def company_verify(key: str, apply: bool, timeout: int) -> None:
             "[yellow]verdict could not be parsed from the agent output. "
             "Review the full report before marking verified.[/yellow]"
         )
+
+
+def _build_verify_prompt(key: str, profile, yaml_body: str) -> str:
+    from datetime import date
+    today = date.today().isoformat()
+    return _VERIFY_PROMPT.format(key=key, today=today, yaml_body=yaml_body)
+
+
+def _verify_emit(key, profile, profiles_dir, today, job_dir) -> None:
+    import orjson
+
+    job_dir.mkdir(parents=True, exist_ok=True)
+    yaml_body = (profiles_dir / f"{key}.yaml").read_text(encoding="utf-8")
+    prompt = _build_verify_prompt(key, profile, yaml_body)
+    (job_dir / "prompt.md").write_text(prompt, encoding="utf-8")
+
+    manifest = {
+        "version": 1,
+        "key": key, "label": profile.label,
+        "created_at": today,
+        "prompt": "prompt.md",
+        "report": "report.md",
+        "status": "pending",
+    }
+    (job_dir / "manifest.json").write_bytes(
+        orjson.dumps(manifest, option=orjson.OPT_INDENT_2)
+    )
+    console.print(f"[green]✓[/green] wrote verify job to {job_dir.relative_to(ROOT)}")
+    console.print(
+        f"[cyan]Next:[/cyan] in your Claude Code session, run the WebSearch + WebFetch "
+        f"workflow against prompt.md, save the report to {job_dir.name}/report.md, then run "
+        f"`uv run vibe-resume company verify --ingest {key}`."
+    )
+
+
+def _verify_ingest(key: str, job_dir: Path, apply_flag: bool) -> None:
+    report_path = job_dir / "report.md"
+    if not report_path.exists():
+        console.print(f"[red]no report.md at {report_path}[/red]")
+        raise click.Abort()
+
+    VERIFICATION_REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    final = VERIFICATION_REPORTS_DIR / f"{job_dir.name}.md"
+    final.write_text(report_path.read_text(encoding="utf-8"), encoding="utf-8")
+    console.print(f"[green]✓[/green] saved report to {final.relative_to(ROOT)}")
+
+    verdict = _parse_verdict(final.read_text(encoding="utf-8"))
+    _handle_verdict(key, verdict, apply_flag)
+
+
+def _verify_subprocess(key, profile, profiles_dir, today, timeout, apply_flag) -> None:
+    """Old 0.3.x path — kept for CI/headless."""
+    from core.enricher import _call_claude
+
+    yaml_body = (profiles_dir / f"{key}.yaml").read_text(encoding="utf-8")
+    prompt = _build_verify_prompt(key, profile, yaml_body)
+    console.print(
+        f"[cyan]verifying {profile.label} ({key}) via claude -p subprocess…[/cyan]"
+    )
+    report = _call_claude(prompt, timeout=timeout)
+    if not report:
+        console.print("[red]claude CLI unavailable or call failed.[/red]")
+        raise click.Abort()
+
+    VERIFICATION_REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    final = VERIFICATION_REPORTS_DIR / f"{key}_{today}.md"
+    final.write_text(report, encoding="utf-8")
+    console.print(f"[green]✓[/green] saved report to {final.relative_to(ROOT)}")
+    verdict = _parse_verdict(report)
+    _handle_verdict(key, verdict, apply_flag)
+
+
+@company.command("verify")
+@click.argument("key")
+@click.option("--emit", "do_emit", is_flag=True, default=False,
+              help="Write prompt.md + manifest.json to data/verification_jobs/<key>_<date>/ for the Claude Code session to process. Default behaviour when no --ingest or --mode subprocess.")
+@click.option("--ingest", "do_ingest", is_flag=True, default=False,
+              help="Read report.md from data/verification_jobs/<key>_<date>/ and save it to data/verification_reports/.")
+@click.option("--mode",
+              type=click.Choice(["prompt", "subprocess"], case_sensitive=False),
+              default="prompt", show_default=True,
+              help="prompt (default): emit + ingest pair. subprocess: spawn `claude -p` (bills Agent SDK quota pool since 2026-06-15).")
+@click.option("--apply", is_flag=True, default=False,
+              help="On ingest with verdict 'clean', auto-bump last_verified_at to today.")
+@click.option("--timeout", type=int, default=300,
+              help="claude CLI timeout in seconds (subprocess mode only).")
+def company_verify(key: str, do_emit: bool, do_ingest: bool, mode: str,
+                   apply: bool, timeout: int) -> None:
+    """Fact-check a company profile.
+
+    Default (prompt mode): emit prompt + manifest for the Claude Code session
+    to process with WebSearch / WebFetch tools; call again with --ingest to
+    save the report and parse the verdict.
+
+    --mode subprocess: spawn `claude -p` (old 0.3.x behaviour, bills against
+    Agent SDK quota pool from 2026-06-15).
+    """
+    from datetime import date
+
+    from core.company_profiles import COMPANY_PROFILES, PROFILES_DIR
+
+    profile = COMPANY_PROFILES.get(key)
+    if profile is None:
+        raise click.UsageError(
+            f"unknown company key {key!r}. Run `vibe-resume company list`."
+        )
+
+    today = date.today().isoformat()
+    job_dir = VERIFICATION_JOBS_DIR / f"{key}_{today}"
+
+    if do_ingest:
+        _verify_ingest(key, job_dir, apply)
+        return
+
+    if mode == "subprocess":
+        console.print(
+            "[red]⚠ --mode subprocess spawns `claude -p`, billing against the "
+            "Agent SDK quota pool (separate from Claude Code subscription, "
+            "2026-06-15 change). Default mode 'prompt' uses your session quota.[/red]"
+        )
+        _verify_subprocess(key, profile, PROFILES_DIR, today, timeout, apply)
+        return
+
+    # Default = prompt mode = emit
+    _verify_emit(key, profile, PROFILES_DIR, today, job_dir)
 
 
 @company.command("mark-verified")
