@@ -102,6 +102,21 @@ def aggregate(ctx: click.Context) -> None:
     default=None,
     help="Career level key: new_grad / junior / mid / senior / staff_plus / research_scientist — biases bullet ambition to the seniority bracket.",
 )
+@click.option(
+    "--mode",
+    type=click.Choice(["prompt", "subprocess", "rule-based"], case_sensitive=False),
+    default="prompt",
+    show_default=True,
+    help="prompt: emit *.prompt.md for the Claude Code session (uses subscription quota). "
+         "subprocess: spawn `claude -p` (bills Agent SDK quota pool since 2026-06-15). "
+         "rule-based: no LLM, fallback summaries only.",
+)
+@click.option(
+    "--ingest",
+    is_flag=True,
+    default=False,
+    help="Read *.yaml back from data/enrich_jobs/<persona>/<locale>/ and merge into the per-locale cache.",
+)
 @click.pass_context
 def enrich(
     ctx: click.Context,
@@ -111,8 +126,10 @@ def enrich(
     persona: str | None,
     company: str | None,
     level: str | None,
+    mode: str,
+    ingest: bool,
 ) -> None:
-    """Ask Claude Code agent skill to summarize each project group."""
+    """Generate per-group résumé bullets via Claude Code session (default) or claude -p subprocess."""
     from core.runner import run_enricher
 
     _warn_if_company_stale(company)
@@ -124,6 +141,8 @@ def enrich(
         persona=persona,
         company=company,
         level=level,
+        mode=mode,
+        ingest=ingest,
     )
 
 

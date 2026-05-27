@@ -161,18 +161,17 @@ def run_enricher(
     persona: str | None = None,
     company: str | None = None,
     level: str | None = None,
+    *,
+    mode: str = "prompt",
+    ingest: bool = False,
 ) -> None:
     from core.enricher import enrich_groups
 
     enrich_groups(
-        cfg,
-        CACHE_DIR,
-        limit=limit,
-        locale=locale,
-        tailor=tailor,
-        persona=persona,
-        company=company,
-        level=level,
+        cfg, CACHE_DIR,
+        limit=limit, locale=locale, tailor=tailor,
+        persona=persona, company=company, level=level,
+        mode=mode, ingest=ingest,
     )
 
 

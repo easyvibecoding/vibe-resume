@@ -38,3 +38,15 @@ def test_subprocess_mode_emits_red_quota_warning(seeded_cache, monkeypatch, caps
     import re
     out = re.sub(r"\s+", " ", capsys.readouterr().out)
     assert "Agent SDK" in out and "subprocess" in out
+
+
+def test_cli_enrich_help_lists_mode_and_ingest():
+    """Smoke: --mode and --ingest flags are wired up."""
+    import subprocess
+    r = subprocess.run(
+        ["uv", "run", "python", "cli.py", "enrich", "--help"],
+        capture_output=True, text=True, timeout=30,
+    )
+    assert r.returncode == 0, r.stderr
+    assert "--mode" in r.stdout
+    assert "--ingest" in r.stdout
