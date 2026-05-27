@@ -4,6 +4,59 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] — 2026-05-27
+
+### Breaking changes
+
+- **`enrich` default mode changed.** Was: spawn `claude -p` per group
+  (billed against Anthropic Agent SDK quota pool as of 2026-06-15).
+  Now: emit `*.prompt.md` files to `data/enrich_jobs/<persona>/<locale>/`
+  for the current Claude Code session to process (uses subscription
+  quota). Process the prompts in your session, then run
+  `vibe-resume enrich --ingest --locale <L>` to merge the YAML back.
+  CI / non-interactive: opt back into the old path with
+  `--mode subprocess` (the CLI prints a red warning explaining the
+  billing implication). Background:
+  https://codersera.com/blog/anthropic-june-2026-billing-change-claude-code/
+
+- **Enriched cache is now per-locale.** The cache file
+  `_project_groups.<persona>.json` became
+  `_project_groups.<persona-or-default>.<locale>.json`. This eliminates
+  the previous hazard where `enrich --locale zh_TW` then
+  `enrich --locale en_US` would overwrite each other.
+
+  **Migration:**
+  ```bash
+  rm data/cache/_project_groups.*.json   # delete 0.3.x enriched caches
+  uv run vibe-resume enrich --locale <L>  # re-run for each locale you need
+  uv run vibe-resume enrich --ingest --locale <L>
+  ```
+
+- **`company verify` mirrored the same three-mode pattern.** Default
+  emits prompt + manifest to `data/verification_jobs/<key>_<date>/`;
+  session writes `report.md`; `verify --ingest <key>` finalises it.
+  `--mode subprocess` keeps the old `claude -p` behaviour.
+
+- **`personas-compare` now requires `--locale`** (cache is per-locale).
+
+### Added
+
+- `core/enrich_jobs.py` — `EnrichJobManifest` + `emit_jobs` + `ingest_jobs`
+- `data/enrich_jobs/` and `data/verification_jobs/` working-directory
+  layout (both gitignored)
+- `tests/fixtures/enrich_jobs_sample/` — reference manifest + prompt + yaml
+  so new contributors can see the schema shape (the live working dir is
+  gitignored)
+- New test suites: `test_enrich_jobs.py`, `test_per_locale_cache.py`,
+  `test_cli_enrich_modes.py`, `test_company_verify_jobs.py`
+
+### Verified
+
+- No sensitive data ever entered git history (audit covered `profile.yaml`,
+  `data/cache/*`, `data/resume_history/*`, `data/reviews/*`, secret
+  patterns, credential file extensions). Historical `config.yaml` content
+  was example-grade with no PII.
+
 ## [Unreleased]
 
 ### Added (on `main`, not yet tagged)
