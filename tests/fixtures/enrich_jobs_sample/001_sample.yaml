@@ -1,0 +1,7 @@
+summary: "Built a sample backend service for fixture documentation purposes"
+role_label: "Backend"
+achievements:
+  - "Designed FastAPI service with 1k qps throughput"
+  - "Optimized pgvector index, cutting p95 latency from 300ms to 200ms"
+tech_stack: ["FastAPI", "PostgreSQL", "pgvector"]
+keywords_for_ats: ["RAG", "vector-search"]

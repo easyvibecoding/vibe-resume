@@ -78,6 +78,8 @@ def test_manifest_rejects_naive_created_at():
 # ---------------------------------------------------------------------------
 from pathlib import Path  # noqa: E402
 
+REPO_ROOT = Path(__file__).resolve().parent.parent
+
 from core.enrich_jobs import emit_jobs  # noqa: E402
 from core.schema import ProjectGroup, Source  # noqa: E402
 
@@ -252,3 +254,18 @@ def test_ingest_warns_on_invalid_yaml(tmp_path: Path, monkeypatch):
 
     enriched, warnings = ingest_jobs(jobs_dir / "manifest.json")
     assert any("proj-foo" in w for w in warnings)
+
+
+# ---------------------------------------------------------------------------
+# fixture sanity (T14)
+# ---------------------------------------------------------------------------
+
+
+def test_sample_fixture_manifest_parses():
+    """Sanity: the shipped sample fixture stays in sync with the schema."""
+    fixture = REPO_ROOT / "tests" / "fixtures" / "enrich_jobs_sample" / "manifest.json"
+    m = EnrichJobManifest.model_validate_json(fixture.read_text())
+    assert m.locale == "en_US"
+    assert m.groups[0].status == "done"
+    assert (fixture.parent / m.groups[0].prompt_path).exists()
+    assert (fixture.parent / m.groups[0].output_path).exists()
