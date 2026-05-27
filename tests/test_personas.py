@@ -133,15 +133,19 @@ def test_resolve_persona_list_accepts_single_csv_and_all() -> None:
 
 
 def test_groups_path_for_is_persona_scoped(tmp_path, monkeypatch) -> None:
-    """Persona-less pipelines keep writing to the canonical file; persona runs
-    split into sibling files so variants don't clobber each other."""
+    """Persona-without-locale still returns raw GROUPS_PATH (back-compat seam)."""
+    monkeypatch.setattr("core.aggregator.GROUPS_PATH", tmp_path / "_project_groups.json")
     from core.aggregator import GROUPS_PATH, groups_path_for
 
+    # No locale → always raw aggregator path (locale-free)
     assert groups_path_for(None) == GROUPS_PATH
-    p = groups_path_for("tech_lead")
+    assert groups_path_for(None, None) == GROUPS_PATH
+    assert groups_path_for("tech_lead") == GROUPS_PATH       # no locale
+
+    # Locale present → per-locale path even without persona
+    p = groups_path_for("tech_lead", "en_US")
     assert p.parent == GROUPS_PATH.parent
-    assert p.name == "_project_groups.tech_lead.json"
-    assert groups_path_for("tech_lead") != groups_path_for("hr")
+    assert p.name == "_project_groups.tech_lead.en_US.json"
 
 
 def test_load_groups_falls_back_to_canonical_when_persona_cache_missing(

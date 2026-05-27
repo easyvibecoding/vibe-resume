@@ -391,29 +391,41 @@ def load_observed_summary() -> dict | None:
     return orjson.loads(OBSERVED_SUMMARY_PATH.read_bytes())
 
 
-def groups_path_for(persona: str | None = None) -> Path:
-    """Cache path for project groups, scoped to a reviewer persona when set.
+def groups_path_for(persona: str | None = None, locale: str | None = None) -> Path:
+    """Cache path for enriched project groups, scoped to (persona, locale).
 
-    Persona-less pipelines write to ``_project_groups.json`` (backwards compat).
-    Per-persona runs write to ``_project_groups.<persona>.json`` so two enrich
-    passes can coexist and render can pick the right variant by filename.
+    - groups_path_for(None, None)  → GROUPS_PATH (raw aggregator output)
+    - groups_path_for(persona_or_none, locale) → _project_groups.<persona-or-default>.<locale>.json
+
+    Per-locale split (added 0.4.0) prevents zh_TW enrich from overwriting
+    a prior en_US enrich. Aggregator still writes the locale-free GROUPS_PATH;
+    enrich --ingest writes the per-locale variants.
     """
-    if not persona:
+    if locale is None:
         return GROUPS_PATH
-    return GROUPS_PATH.parent / f"_project_groups.{persona}.json"
+    p = persona or "default"
+    return GROUPS_PATH.parent / f"_project_groups.{p}.{locale}.json"
 
 
-def load_groups(persona: str | None = None) -> list[ProjectGroup]:
-    """Load groups for the given persona, falling back to the default file.
+def load_groups(
+    persona: str | None = None,
+    locale: str | None = None,
+) -> list[ProjectGroup]:
+    """Load enriched groups with fallback chain.
 
-    The fallback matters for `render --persona X` when the user hasn't run
-    `enrich --persona X` yet: they still get a reasonable draft instead of
-    an empty one.
+    Order: (persona, locale) → (None, locale) → GROUPS_PATH → [].
+    The final fallback (raw aggregator output) lets `render` show something
+    coherent even when enrich has not been run for the requested locale yet.
     """
-    path = groups_path_for(persona)
-    if not path.exists():
-        path = GROUPS_PATH
-        if not path.exists():
-            return []
-    raw = orjson.loads(path.read_bytes())
-    return [ProjectGroup(**g) for g in raw]
+    candidates: list[Path] = []
+    if locale is not None:
+        candidates.append(groups_path_for(persona, locale))
+        if persona is not None:
+            candidates.append(groups_path_for(None, locale))
+    candidates.append(GROUPS_PATH)
+
+    for path in candidates:
+        if path.exists():
+            raw = orjson.loads(path.read_bytes())
+            return [ProjectGroup(**g) for g in raw]
+    return []
