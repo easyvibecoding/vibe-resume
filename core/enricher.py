@@ -6,10 +6,11 @@ If `claude` is missing, fall back to a naive rule-based summary.
 """
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import orjson
 import yaml
@@ -21,6 +22,8 @@ from core.levels import LevelArchetype
 from core.personas import Persona
 from core.schema import ProjectGroup
 from render.i18n import get_locale
+
+EnrichMode = Literal["prompt", "subprocess", "rule-based"]
 
 # --- field caps applied after LLM parse -------------------------------------
 # All limits are chosen so a malformed/oversized LLM response can never blow
@@ -86,6 +89,11 @@ vocabulary) over generic phrasing when the data supports it.
 
 console = Console()
 
+ENRICH_JOBS_DIR = (
+    Path(os.environ.get("VIBE_RESUME_ROOT") or Path(__file__).parent.parent)
+    / "data"
+    / "enrich_jobs"
+)
 
 # Two shapes of bullet writing — pick by locale style.
 PROMPT_TEMPLATE_XYZ = """You are drafting resume bullets for a software engineer, following 2026 hiring focus points:
@@ -389,27 +397,127 @@ def enrich_groups(
     persona: str | None = None,
     company: str | None = None,
     level: str | None = None,
+    *,
+    mode: EnrichMode = "prompt",
+    ingest: bool = False,
 ) -> None:
+    """Run the enrich stage in one of three modes.
+
+    - prompt (default): write prompt files to data/enrich_jobs/<persona>/<locale>/
+      for the Claude Code main session to process; user runs --ingest after.
+      Uses subscription quota (not the 2026-06-15 Agent SDK quota pool).
+    - subprocess: spawn `claude -p` per group (old 0.3.x behaviour). Bills
+      against the Agent SDK quota pool — prints a red warning.
+    - rule-based: skip LLM entirely; every group gets _fallback_summary().
+    """
     persona_keys = _resolve_persona_list(persona)
+    locale_key = locale or cfg.get("render", {}).get("locale") or "en_US"
+
+    if ingest:
+        for p_key in persona_keys:
+            _do_ingest(p_key, locale_key)
+        return
+
+    if mode == "subprocess":
+        console.print(
+            "[red]⚠ --mode subprocess spawns `claude -p`, which bills against "
+            "the Anthropic Agent SDK quota pool (separate from your Claude Code "
+            "subscription, 2026-06-15 change). Default mode 'prompt' uses your "
+            "session quota.[/red]"
+        )
+
     if len(persona_keys) > 1:
         label_list = ", ".join(k for k in persona_keys if k)
         console.print(f"[cyan]multi-persona run:[/cyan] {label_list}")
+
     for p_key in persona_keys:
         if len(persona_keys) > 1:
             console.print(f"\n[bold cyan]── persona: {p_key} ──[/bold cyan]")
-        _enrich_one_persona(
-            cfg,
-            cache_dir,
-            limit,
-            locale,
-            tailor,
-            persona_key=p_key,
-            company_key=company,
-            level_key=level,
+        if mode == "prompt":
+            _do_emit(cfg, p_key, locale_key, tailor, company, level, limit)
+        elif mode == "subprocess":
+            _enrich_with_subprocess(
+                cfg, cache_dir, limit, locale_key, tailor,
+                persona_key=p_key, company_key=company, level_key=level,
+            )
+        else:  # rule-based
+            _enrich_rule_based_only(cache_dir, p_key, locale_key, limit)
+
+
+def _do_emit(cfg, persona, locale_key, tailor, company, level, limit) -> None:
+    from core.aggregator import load_groups as _load
+    from core.enrich_jobs import emit_jobs
+    from core.review import parse_jd_keywords
+
+    groups = _load()
+    if not groups:
+        console.print("[yellow]no groups to enrich — run aggregate first[/yellow]")
+        return
+
+    tailor_keywords = None
+    if tailor:
+        p = Path(tailor)
+        tailor_keywords = parse_jd_keywords(p) if p.exists() else None
+
+    jobs_dir = emit_jobs(
+        groups, ENRICH_JOBS_DIR,
+        persona=persona, locale=locale_key,
+        tailor_keywords=tailor_keywords,
+        company=company, level=level, limit=limit,
+    )
+    persona_arg = f" --persona {persona}" if persona else ""
+    n = len(groups[:limit]) if limit else len(groups)
+    console.print(f"[green]✓[/green] wrote {n} prompts to {jobs_dir}")
+    console.print(
+        f"[cyan]Next:[/cyan] in your Claude Code session, process each "
+        f"*.prompt.md → write *.yaml (see SKILL.md §4a), then run "
+        f"`uv run vibe-resume enrich --ingest --locale {locale_key}{persona_arg}`"
+    )
+
+
+def _do_ingest(persona: str | None, locale_key: str) -> None:
+    from core.aggregator import groups_path_for
+    from core.enrich_jobs import ingest_jobs
+
+    jobs_dir = ENRICH_JOBS_DIR / (persona or "default") / locale_key
+    manifest = jobs_dir / "manifest.json"
+    if not manifest.exists():
+        persona_arg = f" --persona {persona}" if persona else ""
+        console.print(
+            f"[red]no manifest at {manifest} — "
+            f"run `vibe-resume enrich --locale {locale_key}{persona_arg}` first[/red]"
         )
+        raise SystemExit(1)
+
+    enriched, warnings = ingest_jobs(manifest)
+    for w in warnings:
+        console.print(f"  [yellow]{w}[/yellow]")
+
+    out_path = groups_path_for(persona, locale_key)
+    out_path.write_bytes(orjson.dumps(
+        [g.model_dump(mode="json") for g in enriched],
+        option=orjson.OPT_INDENT_2,
+    ))
+    console.print(f"[green]✓[/green] ingested → {out_path.name} ({len(enriched)} groups)")
 
 
-def _enrich_one_persona(
+def _enrich_rule_based_only(cache_dir, persona, locale_key, limit) -> None:
+    """All-fallback path: useful for CI without any LLM."""
+    groups = load_groups()
+    enriched: list[dict[str, Any]] = []
+    selected = groups if limit is None else groups[:limit]
+    for g in selected:
+        _apply_parsed_output(g, _fallback_summary(g))
+        enriched.append(g.model_dump(mode="json"))
+    if limit:
+        for g in groups[limit:]:
+            enriched.append(g.model_dump(mode="json"))
+    groups_path_for(persona, locale_key).write_bytes(
+        orjson.dumps(enriched, option=orjson.OPT_INDENT_2)
+    )
+
+
+def _enrich_with_subprocess(
     cfg: dict[str, Any],
     cache_dir: Path,
     limit: int | None,
@@ -509,6 +617,6 @@ def _enrich_one_persona(
         _apply_parsed_output(g, parsed)
         enriched.append(g.model_dump(mode="json"))
 
-    out_path = groups_path_for(persona_key)
+    out_path = groups_path_for(persona_key, locale_meta["_key"])
     out_path.write_bytes(orjson.dumps(enriched, option=orjson.OPT_INDENT_2))
     console.print(f"[green]✓[/green] wrote enriched groups → {out_path.name}")
