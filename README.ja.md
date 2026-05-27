@@ -33,7 +33,7 @@
 | **Europass ラベル付き個人情報** | ✅ `en_EU` テンプレート | ❌ | ❌ | ❌ |
 | **レビュー監査** | 8 項目スコアカード + トレンドスパークライン | — | ATS スコアのみ | — |
 | **JD テーラリング** | `enrich --tailor JD.txt`(LLM プロンプト注入) | — | ✅ LLM 書き直し | — |
-| **プライバシー** | 完全ローカル;`claude -p` ヘッドレス、データは手元から出ない | 状況による(OpenAI キー任意) | クラウド API 必須 | 完全ローカル |
+| **プライバシー** | 完全ローカル。デフォルトモードは LLM 作業を Claude Code セッション内に留め(サブスク枠を使用);`--mode subprocess` のみ `claude -p` を起動(2026-06-15 以降は Agent SDK 月枠を消費)。 | 状況による(OpenAI キー任意) | クラウド API 必須 | 完全ローカル |
 | **形態** | Python CLI パイプライン | Web UI | Web UI | Node CLI |
 | **Agent-Skill 対応ホスト数** | **8**(Claude Code · Gemini CLI · Copilot CLI · Cursor · Warp · OpenClaw · OpenCode · Hermes)—— 単一 canonical SKILL.md | — | — | — |
 
@@ -212,7 +212,7 @@ $EDITOR profile.yaml        # 最低でも name / target_role
 # 4. パイプライン実行
 uv run vibe-resume extract          # 4× 並列 extract + プログレスバー
 uv run vibe-resume aggregate        # プロジェクト分類 + スタック推定
-uv run vibe-resume enrich           # claude -p で XYZ 箇条書き生成
+uv run vibe-resume enrich           # デフォルトは Claude Code セッション用にプロンプトを出力(XYZ bullet)
 uv run vibe-resume render -f all    # md + docx + pdf + git スナップショット
 ```
 
@@ -496,7 +496,7 @@ vibe-resume/
 │   ├── stats.py           # ローリング統計(30d/7d)
 │   ├── privacy.py         # 遮蔽 + ブロックリスト + 技術抽象
 │   ├── aggregator.py      # 分類 + headline + 重要度ランキング
-│   ├── enricher.py        # claude -p → ロケール別 XYZ / 名詞句 bullet
+│   ├── enricher.py        # mode dispatcher: prompt(デフォルト)/ subprocess / rule-based
 │   ├── review.py          # 8 項目スコアカード + トレンドスパークライン
 │   ├── versioning.py      # 草稿の git スナップショット
 │   └── runner.py          # ThreadPoolExecutor パイプライン + rich.progress

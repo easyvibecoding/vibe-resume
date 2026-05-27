@@ -33,7 +33,7 @@
 | **Europass 帶標籤個人資料** | ✅ `en_EU` 模板 | ❌ | ❌ | ❌ |
 | **履歷審核器** | 8 項評分表 + 趨勢稀疏圖 | — | 只有 ATS 分數 | — |
 | **JD 客製化** | `enrich --tailor JD.txt`(LLM prompt 注入) | — | ✅ LLM 重寫 | — |
-| **隱私** | 全本地;`claude -p` 無頭模式,資料不出本機 | 視情況(OpenAI key 可選) | 必須雲端 API | 全本地 |
+| **隱私** | 全本地;預設模式 LLM 工作留在當前 Claude Code session(吃訂閱額度);`--mode subprocess` 才走 `claude -p`(2026-06-15 後吃 Agent SDK 額度池)。 | 視情況(OpenAI key 可選) | 必須雲端 API | 全本地 |
 | **形態** | Python CLI pipeline | Web UI | Web UI | Node CLI |
 | **Agent-Skill 相容 host 數** | **8**(Claude Code · Gemini CLI · Copilot CLI · Cursor · Warp · OpenClaw · OpenCode · Hermes)—— 單一 canonical SKILL.md | — | — | — |
 
@@ -212,7 +212,7 @@ $EDITOR profile.yaml        # 至少填 name / target_role
 # 4. 跑 pipeline
 uv run vibe-resume extract          # 4× 並行 extract + 進度條
 uv run vibe-resume aggregate        # 依專案分組 + 推斷技術棧
-uv run vibe-resume enrich           # 透過 claude -p 產生 XYZ bullet
+uv run vibe-resume enrich           # 預設 emit prompts 給 Claude Code session 處理(XYZ bullet)
 uv run vibe-resume render -f all    # md + docx + pdf + git 快照
 ```
 
@@ -496,7 +496,7 @@ vibe-resume/
 │   ├── stats.py           # 滾動時間窗統計(30d/7d)
 │   ├── privacy.py         # 遮蔽 + 黑名單 + 技術抽象
 │   ├── aggregator.py      # 分組 + headline + 重要度排序
-│   ├── enricher.py        # claude -p → 各 locale 的 XYZ / 名詞片語 bullet
+│   ├── enricher.py        # mode dispatcher:prompt(預設)/ subprocess / rule-based
 │   ├── review.py          # 8 項評分 + 趨勢 sparkline
 │   ├── versioning.py      # 草稿 git 快照
 │   └── runner.py          # ThreadPoolExecutor pipeline + rich.progress

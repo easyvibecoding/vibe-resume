@@ -33,7 +33,7 @@
 | **Europass labelled personal-info** | ✅ `en_EU` template | ❌ | ❌ | ❌ |
 | **Reviewer audit** | 8-point scorecard + trend sparkline | — | ATS score only | — |
 | **JD tailoring** | `enrich --tailor JD.txt` (LLM prompt injection) | — | ✅ LLM rewrite | — |
-| **Privacy** | Fully local; `claude -p` headless; nothing leaves your machine | Varies (OpenAI-key optional) | Cloud API required | Fully local |
+| **Privacy** | Fully local. Default mode keeps LLM work inside the Claude Code session (subscription quota); `--mode subprocess` spawns `claude -p` (Agent SDK quota pool, 2026-06-15 change). | Varies (OpenAI-key optional) | Cloud API required | Fully local |
 | **Shape** | Python CLI pipeline | Web UI | Web UI | Node CLI |
 | **Agent-Skill hosts** | **8** (Claude Code · Gemini CLI · Copilot CLI · Cursor · Warp · OpenClaw · OpenCode · Hermes) — single canonical SKILL.md | — | — | — |
 
@@ -236,7 +236,7 @@ $EDITOR profile.yaml        # at least name / target_role
 # 4. run pipeline
 uv run vibe-resume extract          # parallel extract with progress bar
 uv run vibe-resume aggregate        # group by project + infer stack
-uv run vibe-resume enrich           # XYZ bullets via claude -p
+uv run vibe-resume enrich           # XYZ bullets — emits prompts for the Claude Code session by default
 uv run vibe-resume render -f all    # md + docx + pdf + git snapshot
 ```
 
@@ -600,7 +600,7 @@ vibe-resume/
 │   ├── stats.py           # rolling window stats (30d/7d)
 │   ├── privacy.py         # redaction + blocklist + tech abstraction
 │   ├── aggregator.py      # grouping + headline + significance ranking
-│   ├── enricher.py        # claude -p → XYZ / noun-phrase bullets per locale
+│   ├── enricher.py        # mode dispatcher: prompt (default) / subprocess / rule-based
 │   ├── review.py          # 8-point scorecard + trend sparkline
 │   ├── versioning.py      # git snapshots of drafts
 │   └── runner.py          # ThreadPoolExecutor pipeline + rich.progress
