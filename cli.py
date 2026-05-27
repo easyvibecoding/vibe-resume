@@ -231,8 +231,13 @@ def render(
     help="Comma-separated persona keys, or 'all'. Omit to diff every persona that has a cached enrich.",
 )
 @click.option("--limit", "-n", type=int, default=3, help="Show top-N project groups (default: 3)")
+@click.option(
+    "--locale",
+    required=True,
+    help="Locale of the enriched cache to compare (e.g. en_US). Required after 0.4.0 since enriched cache is per-locale.",
+)
 @click.pass_context
-def personas_compare(ctx: click.Context, personas_arg: str | None, limit: int) -> None:
+def personas_compare(ctx: click.Context, personas_arg: str | None, limit: int, locale: str) -> None:
     """Side-by-side diff of persona outputs for the top project groups.
 
     Reads the per-persona cache files written by `enrich --persona <key>` and
@@ -253,7 +258,7 @@ def personas_compare(ctx: click.Context, personas_arg: str | None, limit: int) -
         candidates = [k.strip() for k in personas_arg.split(",") if k.strip() in PERSONAS]
     else:
         # Auto-discover: every persona whose cache file actually exists.
-        candidates = [k for k in list_persona_keys() if groups_path_for(k).exists()]
+        candidates = [k for k in list_persona_keys() if groups_path_for(k, locale).exists()]
 
     if not candidates:
         raise click.UsageError(
@@ -266,7 +271,7 @@ def personas_compare(ctx: click.Context, personas_arg: str | None, limit: int) -
 
     persona_groups: dict[str, list[dict]] = {}
     for k in candidates:
-        p = groups_path_for(k)
+        p = groups_path_for(k, locale)
         if not p.exists():
             out.print(f"[yellow]skip {k}: no cache at {p.name}[/yellow]")
             continue

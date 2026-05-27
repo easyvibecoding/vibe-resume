@@ -50,3 +50,14 @@ def test_cli_enrich_help_lists_mode_and_ingest():
     assert r.returncode == 0, r.stderr
     assert "--mode" in r.stdout
     assert "--ingest" in r.stdout
+
+
+def test_personas_compare_requires_locale():
+    import subprocess
+    r = subprocess.run(
+        ["uv", "run", "python", "cli.py", "personas-compare"],
+        capture_output=True, text=True, timeout=30,
+    )
+    assert r.returncode != 0
+    combined = (r.stderr + r.stdout).lower()
+    assert "locale" in combined
