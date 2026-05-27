@@ -21,3 +21,5 @@ config.yaml
 .claude/agents/
 .claude/cache/
 .secrets/
+data/enrich_jobs/
+data/verification_jobs/
