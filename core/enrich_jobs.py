@@ -44,8 +44,8 @@ _SAFE_NAME = re.compile(r"[^A-Za-z0-9._-]+")
 
 def _slug(name: str) -> str:
     """Make a filesystem-safe slug from a group name."""
-    s = _SAFE_NAME.sub("-", name).strip("-")
-    return s[:60] or "group"
+    s = _SAFE_NAME.sub("-", name)
+    return s[:60].strip("-") or "group"
 
 
 def emit_jobs(
@@ -82,6 +82,17 @@ def emit_jobs(
 
     selected = groups if limit is None else groups[:limit]
 
+    existing_statuses: dict[str, str] = {}
+    manifest_path = jobs_dir / "manifest.json"
+    if manifest_path.exists():
+        try:
+            old = EnrichJobManifest.model_validate_json(manifest_path.read_text())
+            for e in old.groups:
+                if (jobs_dir / e.output_path).exists():
+                    existing_statuses[e.name] = e.status
+        except Exception:
+            existing_statuses = {}
+
     entries: list[EnrichJobEntry] = []
     for i, g in enumerate(selected, 1):
         idx = f"{i:03d}"
@@ -101,7 +112,7 @@ def emit_jobs(
         entries.append(EnrichJobEntry(
             id=idx, name=g.name,
             prompt_path=prompt_name, output_path=output_name,
-            status="pending",
+            status=existing_statuses.get(g.name, "pending"),
         ))
 
     manifest = EnrichJobManifest(

@@ -150,3 +150,48 @@ def test_emit_preserves_existing_yaml_on_re_emit(tmp_path: Path):
     emit_jobs(groups, tmp_path, persona=None, locale="en_US",
               tailor_keywords=None, company=None, level=None)
     assert yaml_path.exists(), "re-emit should not delete user-written yaml"
+
+
+def test_emit_carries_forward_done_status_for_existing_yaml(tmp_path: Path):
+    """Re-emit preserves done status when yaml file is still present."""
+    groups = [_fake_group("proj-foo")]
+    out = emit_jobs(groups, tmp_path, persona=None, locale="en_US",
+                    tailor_keywords=None, company=None, level=None)
+
+    # Mark the entry as done by writing yaml + patching the manifest
+    yaml_path = out / "001_proj-foo.yaml"
+    yaml_path.write_text("summary: from session\n")
+    m = EnrichJobManifest.model_validate_json((out / "manifest.json").read_text())
+    m.groups[0].status = "done"
+    (out / "manifest.json").write_bytes(m.model_dump_json().encode())
+
+    # Re-emit should not flip status back to pending
+    emit_jobs(groups, tmp_path, persona=None, locale="en_US",
+              tailor_keywords=None, company=None, level=None)
+    m2 = EnrichJobManifest.model_validate_json((out / "manifest.json").read_text())
+    assert m2.groups[0].status == "done"
+
+
+def test_emit_resets_to_pending_when_yaml_gone(tmp_path: Path):
+    """If user deletes yaml, re-emit should reset status to pending."""
+    groups = [_fake_group("proj-foo")]
+    out = emit_jobs(groups, tmp_path, persona=None, locale="en_US",
+                    tailor_keywords=None, company=None, level=None)
+    m = EnrichJobManifest.model_validate_json((out / "manifest.json").read_text())
+    m.groups[0].status = "done"
+    (out / "manifest.json").write_bytes(m.model_dump_json().encode())
+    # Note: no yaml file written → done status should NOT be carried forward
+
+    emit_jobs(groups, tmp_path, persona=None, locale="en_US",
+              tailor_keywords=None, company=None, level=None)
+    m2 = EnrichJobManifest.model_validate_json((out / "manifest.json").read_text())
+    assert m2.groups[0].status == "pending"
+
+
+def test_slug_strips_trailing_dash_after_truncation():
+    from core.enrich_jobs import _slug
+    # 59 chars of 'a' + dash-producing char → 60th char would be the dash
+    name = "a" * 59 + " b"  # space becomes dash
+    s = _slug(name)
+    assert not s.endswith("-")
+    assert len(s) <= 60
