@@ -10,10 +10,9 @@ Replaces the headless `claude -p` subprocess path with a two-step flow:
 """
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import AwareDatetime, BaseModel, Field
 
 
 class EnrichJobEntry(BaseModel):
@@ -26,7 +25,7 @@ class EnrichJobEntry(BaseModel):
 
 class EnrichJobManifest(BaseModel):
     version: int = 1
-    created_at: datetime
+    created_at: AwareDatetime
     locale: str
     persona: str | None = None
     tailor_keywords: list[str] | None = None

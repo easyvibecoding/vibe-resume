@@ -1,7 +1,7 @@
 """Tests for core.enrich_jobs — emit/ingest of session-driven enrich prompts."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from pydantic import ValidationError
@@ -14,7 +14,7 @@ def test_manifest_requires_locale():
     with pytest.raises(ValidationError):
         EnrichJobManifest(
             version=1,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             persona=None,
             tailor_keywords=None,
             company=None,
@@ -26,7 +26,7 @@ def test_manifest_requires_locale():
 def test_manifest_round_trips_via_json():
     m = EnrichJobManifest(
         version=1,
-        created_at=datetime(2026, 5, 27, 12, 0, tzinfo=timezone.utc),
+        created_at=datetime(2026, 5, 27, 12, 0, tzinfo=UTC),
         locale="zh_TW",
         persona="tech_lead",
         tailor_keywords=["FastAPI", "RAG"],
@@ -55,4 +55,19 @@ def test_entry_status_must_be_pending_or_done():
             prompt_path="a",
             output_path="b",
             status="in-progress",  # not allowed
+        )
+
+
+def test_manifest_rejects_naive_created_at():
+    """AwareDatetime guards against silent timezone loss on round-trip."""
+    with pytest.raises(ValidationError):
+        EnrichJobManifest(
+            version=1,
+            created_at=datetime(2026, 5, 27, 12, 0),  # naive — no tzinfo
+            locale="en_US",
+            persona=None,
+            tailor_keywords=None,
+            company=None,
+            level=None,
+            groups=[],
         )
