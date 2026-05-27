@@ -195,3 +195,60 @@ def test_slug_strips_trailing_dash_after_truncation():
     s = _slug(name)
     assert not s.endswith("-")
     assert len(s) <= 60
+
+
+# ---------------------------------------------------------------------------
+# ingest_jobs tests (T3)
+# ---------------------------------------------------------------------------
+from core.enrich_jobs import ingest_jobs  # noqa: E402
+
+
+def test_ingest_applies_yaml_back_into_groups(tmp_path: Path, monkeypatch):
+    groups = [_fake_group("proj-foo")]
+    jobs_dir = emit_jobs(groups, tmp_path, persona=None, locale="en_US",
+                         tailor_keywords=None, company=None, level=None)
+
+    yaml_body = """
+summary: "Built RAG pipeline cutting latency 30%"
+role_label: "Backend"
+achievements:
+  - "Designed FastAPI service handling 1k qps"
+  - "Optimized pgvector index, p95 latency 300ms→200ms"
+tech_stack: ["FastAPI", "PostgreSQL", "pgvector"]
+keywords_for_ats: ["RAG"]
+"""
+    (jobs_dir / "001_proj-foo.yaml").write_text(yaml_body)
+
+    monkeypatch.setattr("core.enrich_jobs._load_raw_groups", lambda: groups)
+
+    enriched, warnings = ingest_jobs(jobs_dir / "manifest.json")
+    assert warnings == []
+    assert len(enriched) == 1
+    assert enriched[0].summary.startswith("Built RAG pipeline")
+    assert "Designed FastAPI" in enriched[0].achievements[0]
+
+
+def test_ingest_skips_missing_yaml_with_warning(tmp_path: Path, monkeypatch):
+    groups = [_fake_group("proj-foo"), _fake_group("proj-bar")]
+    jobs_dir = emit_jobs(groups, tmp_path, persona=None, locale="en_US",
+                         tailor_keywords=None, company=None, level=None)
+    (jobs_dir / "001_proj-foo.yaml").write_text(
+        'summary: ok\nachievements: ["Built X"]\ntech_stack: []\n'
+    )
+    monkeypatch.setattr("core.enrich_jobs._load_raw_groups", lambda: groups)
+
+    enriched, warnings = ingest_jobs(jobs_dir / "manifest.json")
+    assert len(enriched) == 2
+    assert enriched[0].summary == "ok"
+    assert any("002" in w or "proj-bar" in w for w in warnings)
+
+
+def test_ingest_warns_on_invalid_yaml(tmp_path: Path, monkeypatch):
+    groups = [_fake_group("proj-foo")]
+    jobs_dir = emit_jobs(groups, tmp_path, persona=None, locale="en_US",
+                         tailor_keywords=None, company=None, level=None)
+    (jobs_dir / "001_proj-foo.yaml").write_text("not: valid: yaml: at: all:\n  - x")
+    monkeypatch.setattr("core.enrich_jobs._load_raw_groups", lambda: groups)
+
+    enriched, warnings = ingest_jobs(jobs_dir / "manifest.json")
+    assert any("proj-foo" in w for w in warnings)

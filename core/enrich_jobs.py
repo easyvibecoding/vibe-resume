@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Literal
 
 import orjson
+import yaml as _yaml
 from pydantic import AwareDatetime, BaseModel, Field
 
 from core.schema import ProjectGroup
@@ -128,3 +129,59 @@ def emit_jobs(
         orjson.dumps(manifest.model_dump(mode="json"), option=orjson.OPT_INDENT_2)
     )
     return jobs_dir
+
+
+def _load_raw_groups() -> list[ProjectGroup]:
+    """Thin seam over aggregator.load_groups() so tests can monkey-patch."""
+    from core.aggregator import load_groups
+    return load_groups()
+
+
+def ingest_jobs(manifest_path: Path) -> tuple[list[ProjectGroup], list[str]]:
+    """Read *.yaml siblings of manifest and apply them onto fresh raw groups.
+
+    Returns (enriched_groups, warnings). Missing or malformed *.yaml never
+    aborts — they become warnings and the group falls back to its rule-based
+    summary so the caller can still write a coherent enriched cache.
+    """
+    from core.enricher import _apply_parsed_output, _fallback_summary
+
+    manifest = EnrichJobManifest.model_validate_json(manifest_path.read_text())
+    jobs_dir = manifest_path.parent
+
+    raw = _load_raw_groups()
+    by_name = {g.name: g for g in raw}
+    warnings: list[str] = []
+    enriched: list[ProjectGroup] = []
+
+    for entry in manifest.groups:
+        g = by_name.get(entry.name)
+        if g is None:
+            warnings.append(
+                f"manifest entry {entry.id} {entry.name!r} has no matching raw group — skipped"
+            )
+            continue
+
+        yaml_path = jobs_dir / entry.output_path
+        parsed: dict | None = None
+        if not yaml_path.exists():
+            warnings.append(f"{entry.id} {entry.name}: missing {entry.output_path}")
+        else:
+            body = yaml_path.read_text(encoding="utf-8").strip()
+            if body.startswith("```"):
+                body = "\n".join(body.splitlines()[1:])
+            if body.endswith("```"):
+                body = "\n".join(body.splitlines()[:-1])
+            try:
+                loaded = _yaml.safe_load(body)
+                if isinstance(loaded, dict):
+                    parsed = loaded
+                else:
+                    warnings.append(f"{entry.id} {entry.name}: yaml root is not a mapping")
+            except _yaml.YAMLError as e:
+                warnings.append(f"{entry.id} {entry.name}: yaml error — {e}")
+
+        _apply_parsed_output(g, parsed or _fallback_summary(g))
+        enriched.append(g)
+
+    return enriched, warnings
