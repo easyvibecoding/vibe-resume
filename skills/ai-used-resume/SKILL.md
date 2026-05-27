@@ -53,7 +53,7 @@ Invoke this skill whenever the user wants to **turn their AI-tool usage history 
 
 | Intent | Command |
 |---|---|
-| Fresh pipeline | `uv run vibe-resume extract && uv run vibe-resume aggregate && uv run vibe-resume enrich --locale en_US && uv run vibe-resume render -f all` |
+| Fresh pipeline | `uv run vibe-resume extract && uv run vibe-resume aggregate && uv run vibe-resume enrich --locale en_US` then process prompts in session, then `enrich --ingest --locale en_US && render -f all --locale en_US` |
 | Render single locale | `uv run vibe-resume render -f md --locale ja_JP` |
 | All 10 locales | `uv run vibe-resume render --all-locales` |
 | JD-tailored run | `uv run vibe-resume enrich --tailor data/imports/jd.txt --locale en_US -n 1 && uv run vibe-resume render -f md --locale en_US --tailor data/imports/jd.txt` |
@@ -94,15 +94,63 @@ Invoke this skill whenever the user wants to **turn their AI-tool usage history 
    - `render.locale` — team default.
    - `render.all_locales_formats` — formats per locale for `--all-locales` (default `["md"]`).
 
-4. **Run extractors → aggregate → enrich.**
+4. **Run extractors → aggregate.**
+
    ```bash
    uv run vibe-resume extract
    uv run vibe-resume status              # sanity-check per-source counts
    uv run vibe-resume aggregate           # → data/cache/_project_groups.json
-   uv run vibe-resume enrich --locale <L> # XYZ (en_*) or noun-phrase (zh/ja/ko/de/fr)
    ```
-   - Add `--tailor data/imports/jd.txt` to bias achievements toward a job description's keywords (never invents matches the raw activity doesn't support).
-   - Add `-n N` to limit to the top-N project groups; out-of-window groups retain prior enrichment rather than being overwritten.
+
+4a. **(Default, uses subscription quota)** Emit + session-driven enrich.
+
+   ```bash
+   uv run vibe-resume enrich --locale <L>
+   # → writes data/enrich_jobs/<persona-or-default>/<L>/manifest.json
+   #   + one *.prompt.md per project group
+   ```
+
+   In the current Claude Code session:
+
+   1. Read `data/enrich_jobs/<persona>/<L>/manifest.json`
+   2. For each `status: pending` entry, read its `*.prompt.md`
+   3. Produce strict YAML matching the schema the prompt requires
+   4. Write to the entry's `output_path` (`NNN_<name>.yaml`)
+
+   When all entries are done:
+
+   ```bash
+   uv run vibe-resume enrich --ingest --locale <L>
+   # → merges *.yaml into _project_groups.<persona>.<L>.json
+   ```
+
+   Multi-locale runs are independent (per-locale subdir + per-locale cache):
+
+   ```bash
+   uv run vibe-resume enrich --locale en_US
+   uv run vibe-resume enrich --locale zh_TW      # does NOT overwrite en_US
+   # process both locales' yaml in session…
+   uv run vibe-resume enrich --ingest --locale en_US
+   uv run vibe-resume enrich --ingest --locale zh_TW
+   uv run vibe-resume render --locale en_US      # reads _project_groups.default.en_US.json
+   uv run vibe-resume render --locale zh_TW      # reads _project_groups.default.zh_TW.json
+   ```
+
+   See `tests/fixtures/enrich_jobs_sample/` for a reference of what the
+   manifest + prompt + yaml triple looks like.
+
+4b. **(Fallback for CI / non-interactive)** Spawn `claude -p` subprocess.
+
+   ```bash
+   uv run vibe-resume enrich --mode subprocess --locale <L>
+   ```
+
+   This bills against the Anthropic Agent SDK monthly quota pool (Pro $20 /
+   Max 20x $200, separate from the Claude Code subscription quota — change
+   effective 2026-06-15). The CLI prints a red warning at startup.
+
+   `--mode rule-based` skips LLM entirely and uses heuristic summaries
+   (works without any `claude` binary).
 
 5. **Render.**
    ```bash
