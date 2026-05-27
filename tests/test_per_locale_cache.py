@@ -66,3 +66,19 @@ def test_load_groups_empty_when_nothing_exists(tmp_path, monkeypatch):
     from core import aggregator
     monkeypatch.setattr(aggregator, "GROUPS_PATH", tmp_path / "_project_groups.json")
     assert aggregator.load_groups(persona="x", locale="en_US") == []
+
+
+def test_render_picks_up_per_locale_cache(tmp_path, monkeypatch):
+    from core import aggregator
+    monkeypatch.setattr(aggregator, "GROUPS_PATH", tmp_path / "_project_groups.json")
+
+    en = [{"name": "from-en-cache", "path": None,
+           "first_activity": "2026-01-01T00:00:00+00:00",
+           "last_activity": "2026-02-01T00:00:00+00:00",
+           "sources": ["claude-code"], "total_sessions": 1,
+           "tech_stack": [], "category_counts": {}, "capability_breadth": 0,
+           "activities": [], "summary": "from per-locale en cache"}]
+    (tmp_path / "_project_groups.default.en_US.json").write_bytes(orjson.dumps(en))
+
+    groups = aggregator.load_groups(persona=None, locale="en_US")
+    assert groups[0].summary == "from per-locale en cache"

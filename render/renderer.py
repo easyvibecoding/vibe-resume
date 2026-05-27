@@ -175,7 +175,15 @@ def _render_md(cfg: dict[str, Any], tailor: str | None, locale: str | None = Non
     env.filters["date_range"] = lambda start, end: format_date_range(start, end, locale_key)
     env.filters["localized"] = lambda obj, key: localized(obj, key, locale_key)
 
-    groups = load_groups(persona=persona)
+    groups = load_groups(persona=persona, locale=locale_key)
+    if groups and all(not (g.summary or g.achievements) for g in groups):
+        from rich.console import Console as _C
+        _C().print(
+            f"[yellow]⚠ no enriched cache for locale={locale_key}; "
+            f"rendering from raw aggregator output. "
+            f"Run `vibe-resume enrich --locale {locale_key}` then "
+            f"`--ingest --locale {locale_key}`.[/yellow]"
+        )
     raw_groups = [g.model_dump(mode="json") for g in groups]
 
     skills: set[str] = set()
