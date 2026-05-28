@@ -45,6 +45,30 @@ def test_owned_group_prompt_has_no_contribution_framing():
     assert "contributed to" not in _build_prompt(_owned_group()).lower()
 
 
+def _many_act_group(n):
+    acts = [Activity(source=Source.GIT, session_id=f"s{i}",
+                     timestamp_start="2026-01-01T00:00:00+00:00",
+                     summary=f"activity-{i} " + "x" * 400) for i in range(n)]
+    return ProjectGroup(name="big", first_activity="2026-01-01T00:00:00+00:00",
+                        last_activity="2026-01-01T00:00:00+00:00",
+                        total_sessions=n, activities=acts)
+
+
+def test_build_prompt_default_window():
+    g = _many_act_group(30)
+    p = _build_prompt(g)
+    assert "activity-11" in p          # first 12 included (0..11)
+    assert "activity-12" not in p      # 13th excluded by default cap 12
+
+
+def test_build_prompt_wider_window():
+    g = _many_act_group(30)
+    p = _build_prompt(g, max_activities=20, char_budget=500)
+    assert "activity-19" in p          # 20 activities now included
+    # 500-char budget keeps more of each line than the 200 default
+    assert p.count("x" * 300) >= 1
+
+
 def _sample_group() -> ProjectGroup:
     return ProjectGroup(
         name="rag-search-platform",

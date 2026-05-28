@@ -235,13 +235,15 @@ def _build_prompt(
     persona: Persona | None = None,
     level: LevelArchetype | None = None,
     company: CompanyProfile | None = None,
+    max_activities: int = 12,
+    char_budget: int = 200,
 ) -> str:
     raw_lines: list[str] = []
-    for a in g.activities[:12]:
+    for a in g.activities[:max_activities]:
         s = (a.summary or "").strip().replace("\n", " ")
         if s:
             s = s.replace("</", "< /")
-            raw_lines.append(f"- [{a.source.value}] {s[:200]}")
+            raw_lines.append(f"- [{a.source.value}] {s[:char_budget]}")
     raw = "\n".join(raw_lines) or "(no summaries available)"
 
     total = sum(g.category_counts.values()) or 1
@@ -526,6 +528,7 @@ def _do_emit(cfg, persona, locale_key, tailor, company, level, limit,
                 strict=tailor_keywords_strict,
             )
 
+    _enr = cfg.get("enrich", {})
     jobs_dir = emit_jobs(
         groups, ENRICH_JOBS_DIR,
         persona=persona, locale=locale_key,
@@ -533,6 +536,8 @@ def _do_emit(cfg, persona, locale_key, tailor, company, level, limit,
         company=company, level=level, limit=limit,
         tailor_info=tailor_info,
         clean=clean,
+        input_activities=int(_enr.get("input_activities", 12)),
+        input_char_budget=int(_enr.get("input_char_budget", 200)),
     )
     persona_arg = f" --persona {persona}" if persona else ""
     n = len(groups[:limit]) if limit else len(groups)
@@ -727,6 +732,9 @@ def _enrich_with_subprocess(
         console.print(f"[dim]career level: {level_obj.label}[/dim]")
 
     use_llm = cfg.get("enrich", {}).get("mode") == "claude-code-agent"
+    enr = cfg.get("enrich", {})
+    input_activities = int(enr.get("input_activities", 12))
+    input_char_budget = int(enr.get("input_char_budget", 200))
     enriched: list[dict[str, Any]] = []
     n_to_enrich = limit if limit else len(groups)
 
@@ -754,6 +762,8 @@ def _enrich_with_subprocess(
                     persona=persona_obj,
                     level=level_obj,
                     company=company_obj,
+                    max_activities=input_activities,
+                    char_budget=input_char_budget,
                 )
             )
             parsed = _parse_yaml(out) if out else None

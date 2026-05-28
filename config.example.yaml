@@ -156,6 +156,8 @@ enrich:
   mode: "claude-code-agent"
   batch_size: 20
   include_snippets: false
+  input_activities: 12      # how many activities per group feed the LLM prompt
+  input_char_budget: 200    # per-activity char budget in the prompt
 
 stats:
   # Windows (in days) to roll up. 30 matches Claude Code's default cleanup window,

@@ -75,6 +75,8 @@ def emit_jobs(
     limit: int | None = None,
     tailor_info: EnrichTailorInfo | None = None,
     clean: bool = False,
+    input_activities: int = 12,
+    input_char_budget: int = 200,
 ) -> Path:
     """Write manifest.json + N *.prompt.md files for the session to process.
 
@@ -131,6 +133,8 @@ def emit_jobs(
             persona=persona_obj,
             level=level_obj,
             company=company_obj,
+            max_activities=input_activities,
+            char_budget=input_char_budget,
         )
         (jobs_dir / prompt_name).write_text(prompt_body, encoding="utf-8")
 
