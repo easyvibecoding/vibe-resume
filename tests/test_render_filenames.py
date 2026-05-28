@@ -90,3 +90,33 @@ def test_render_all_locales_with_persona_list_expands_matrix(tmp_path, monkeypat
     # 10 locales × 2 personas = 20 files
     from render.i18n import LOCALES
     assert len(files) == len(LOCALES) * 2, f"expected {len(LOCALES) * 2}, got {len(files)}: {names}"
+
+
+def test_render_warns_on_empty_profile_summary(tmp_path, monkeypatch, capsys):
+    from render import renderer
+    monkeypatch.setattr(renderer, "_history_path", lambda cfg: tmp_path)
+    def _fake_md(cfg, tailor, locale=None, persona=None):
+        return ("# fake\n", {
+            "locale": {"_key": "en_US"}, "_tpl_name": "fake.j2",
+            "profile": {"summary": ""},
+            "groups": [],
+        })
+    monkeypatch.setattr(renderer, "_render_md", _fake_md)
+    monkeypatch.setattr(renderer, "snapshot", lambda *a, **k: None)
+    renderer.render_draft({}, fmt="md", locale="en_US")
+    assert "summary is empty" in capsys.readouterr().out
+
+
+def test_render_no_warning_when_summary_present(tmp_path, monkeypatch, capsys):
+    from render import renderer
+    monkeypatch.setattr(renderer, "_history_path", lambda cfg: tmp_path)
+    def _fake_md(cfg, tailor, locale=None, persona=None):
+        return ("# fake\n", {
+            "locale": {"_key": "en_US"}, "_tpl_name": "fake.j2",
+            "profile": {"summary": "Senior FS engineer"},
+            "groups": [],
+        })
+    monkeypatch.setattr(renderer, "_render_md", _fake_md)
+    monkeypatch.setattr(renderer, "snapshot", lambda *a, **k: None)
+    renderer.render_draft({}, fmt="md", locale="en_US")
+    assert "summary is empty" not in capsys.readouterr().out

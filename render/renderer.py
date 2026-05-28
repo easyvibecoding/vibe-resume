@@ -407,6 +407,11 @@ def render_draft(
     version = _next_version(hist)
 
     md_text, ctx = _render_md(cfg, tailor, locale=locale, persona=persona)
+    if not (ctx.get("profile", {}).get("summary") or "").strip():
+        console.print(
+            "[yellow]⚠ profile.summary is empty — Top fold check will score ≤6/10. "
+            "Add a 1-sentence summary to profile.yaml to recover the points.[/yellow]"
+        )
     locale_key = ctx["locale"]["_key"]
     loc_suffix = f"_{locale_key}"
     pers_suffix = f"_{persona}" if persona else ""
