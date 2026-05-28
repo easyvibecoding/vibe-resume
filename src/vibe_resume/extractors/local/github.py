@@ -159,6 +159,9 @@ def _changed_files(nwo: str, number: int) -> list[str]:
 def extract(cfg: dict[str, Any]) -> list[Activity]:
     sub = cfg["extractors"]["github"]
     logins = _resolve_logins(sub)
+    # "@me" is gh's literal "current authenticated user" alias, not a real
+    # owner slug — exclude it from owned_set (we can't verify ownership of a
+    # placeholder), so when the login can't be resolved every PR stays external.
     login_set = {x for x in logins if x != "@me"}
     owned_set = login_set | {str(o) for o in (sub.get("owned_owners") or [])}
     max_items = int(sub.get("max_items", 300))
