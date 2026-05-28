@@ -400,6 +400,7 @@ def enrich_groups(
     *,
     mode: EnrichMode = "prompt",
     ingest: bool = False,
+    ingest_all: bool = False,
     tailor_keywords_override: str | None = None,
     tailor_keywords_cap: int = 12,
     tailor_keywords_strict: bool = False,
@@ -421,6 +422,10 @@ def enrich_groups(
 
     if status:
         _show_status()
+        return
+
+    if ingest and ingest_all:
+        _ingest_all_jobs()
         return
 
     if ingest and all_ready:
@@ -583,6 +588,25 @@ def _ingest_all_ready() -> None:
         console.print("[yellow]no ready batches to ingest[/yellow]")
         return
     for j in ready:
+        persona = None if j["persona"] == "default" else j["persona"]
+        _do_ingest(persona, j["locale"])
+
+
+def _ingest_all_jobs() -> None:
+    """Walk every (persona, locale) under ENRICH_JOBS_DIR and ingest each.
+
+    Unlike ``--all-ready`` (which skips incomplete batches), this ingests
+    every batch that has a manifest — including partially-complete ones.
+    Groups with missing *.yaml fall back to rule-based summaries via the
+    normal ``ingest_jobs`` warning path.
+    """
+    from core.enrich_jobs import list_jobs
+
+    jobs = list_jobs(ENRICH_JOBS_DIR)
+    if not jobs:
+        console.print("[yellow]no jobs in data/enrich_jobs/[/yellow]")
+        return
+    for j in jobs:
         persona = None if j["persona"] == "default" else j["persona"]
         _do_ingest(persona, j["locale"])
 

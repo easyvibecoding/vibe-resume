@@ -157,6 +157,15 @@ def aggregate(ctx: click.Context) -> None:
     help="With --ingest: ingest every (persona, locale) job dir whose yaml files are all present. "
          "Skip in-progress batches.",
 )
+@click.option(
+    "--all",
+    "ingest_all",
+    is_flag=True,
+    default=False,
+    help="With --ingest: walk every (persona, locale) under data/enrich_jobs/ and ingest each "
+         "(including partially-complete batches, which fall back to rule-based summaries for "
+         "missing *.yaml). Useful after a multi-persona × multi-locale emit batch.",
+)
 @click.pass_context
 def enrich(
     ctx: click.Context,
@@ -174,6 +183,7 @@ def enrich(
     clean: bool,
     status: bool,
     all_ready: bool,
+    ingest_all: bool,
 ) -> None:
     """Generate per-group résumé bullets via Claude Code session (default) or claude -p subprocess."""
     from core.runner import run_enricher
@@ -189,6 +199,7 @@ def enrich(
         level=level,
         mode=mode,
         ingest=ingest,
+        ingest_all=ingest_all,
         tailor_keywords_override=tailor_keywords,
         tailor_keywords_cap=tailor_keywords_cap,
         tailor_keywords_strict=tailor_keywords_strict,
