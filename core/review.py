@@ -130,7 +130,14 @@ def _example_lines(samples: list[tuple[int, str]], n: int = 2, trim: int = 70) -
 # Red flags, compiled once
 REFERENCES_RE = re.compile(r"references available upon request", re.IGNORECASE)
 IMAGE_TAG_RE = re.compile(r"!\[[^\]]*\]\([^)]+\)")
-DOB_RE = re.compile(r"\b(?:19|20)\d{2}[-/.](?:0?[1-9]|1[012])[-/.](?:0?[1-9]|[12]\d|3[01])\b")
+# DOB rows are universally prefixed with one of these labels — bare ISO dates
+# in summary/target_role/experience-start fields must not trigger the flag.
+DOB_RE = re.compile(
+    r"\b(?:DOB|D\.O\.B\.|Date of birth|Born|生年月日|出生(?:日期|年月日)?)"
+    r"\s*[:：]?\s*"
+    r"(?:19|20)\d{2}[-/.](?:0?[1-9]|1[012])[-/.](?:0?[1-9]|[12]\d|3[01])\b",
+    re.IGNORECASE,
+)
 
 
 # -- data types --------------------------------------------------------------
