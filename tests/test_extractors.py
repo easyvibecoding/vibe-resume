@@ -618,11 +618,11 @@ def test_cursor_empty_bubbles_yields_no_activity(tmp_path: Path) -> None:
 
 # ──────────────────────────────── git_repos ───────────────────────────────────
 
+_RS, _US = "\x1e", "\x1f"
 _FAKE_LOG = (
-    "abc123|2026-02-01T10:00:00+00:00|feat: add auth\n"
-    "10\t2\tsrc/auth.py\n"
-    "3\t0\ttests/test_auth.py\n"
-    "def456|2026-02-15T14:30:00+00:00|fix: typo\n"
+    f"{_RS}abc123{_US}2026-02-01T10:00:00+00:00{_US}feat: add auth{_US}"
+    "10\t2\tsrc/auth.py\n3\t0\ttests/test_auth.py\n"
+    f"{_RS}def456{_US}2026-02-15T14:30:00+00:00{_US}fix: typo{_US}"
     "1\t1\tREADME.md\n"
 )
 
@@ -655,6 +655,33 @@ def test_git_repos_parses_numstat(monkeypatch: pytest.MonkeyPatch, tmp_path: Pat
     assert a.extra["insertions"] == 14
     assert a.extra["deletions"] == 3
     assert "feat: add auth" in a.extra["subjects"]
+
+
+def test_git_log_parses_body_and_files(monkeypatch):
+    import vibe_resume.extractors.local.git_repos as gr
+
+    RS, US = "\x1e", "\x1f"
+    out = (
+        f"{RS}abc123{US}2026-01-01T00:00:00+00:00{US}Fix bug{US}"
+        "Root cause: race in cache.\nWeighed lock vs CAS; chose CAS.\n"
+        "12\t3\tsrc/cache.py\n4\t0\ttests/test_cache.py\n"
+        f"{RS}def456{US}2026-01-02T00:00:00+00:00{US}Tidy{US}"
+        "1\t1\tREADME.md\n"
+    )
+    monkeypatch.setattr(
+        subprocess, "run",
+        lambda *a, **k: subprocess.CompletedProcess(a, 0, stdout=out, stderr=""),
+    )
+    commits = gr._git_log(gr.Path("/x"), ["me@x.com"])
+    assert len(commits) == 2
+    c0 = commits[0]
+    assert c0.subject == "Fix bug"
+    assert "Root cause: race" in c0.body
+    assert "chose CAS" in c0.body
+    assert c0.insertions == 16 and c0.deletions == 3
+    assert c0.files == ["src/cache.py", "tests/test_cache.py"]
+    assert commits[1].body == ""        # commit with no body
+    assert commits[1].files == ["README.md"]
 
 
 def test_git_repos_no_emails_returns_empty(
