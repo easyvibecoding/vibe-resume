@@ -529,6 +529,7 @@ def review(
     source: str = "(in-memory)",
     jd_keywords: list[str] | None = None,
     company: Any = None,
+    persona: Any = None,
 ) -> ReviewReport:
     canon = resolve_locale(locale_key)
     loc = get_locale(canon)
@@ -549,8 +550,17 @@ def review(
         # even when a candidate swaps target employers between runs.
         scores.append(_check_company_keyword_coverage(md_text, company))
     scoring = [s for s in scores if s.max > 0]
-    total = sum(s.score for s in scoring)
-    max_total = sum(s.max for s in scoring)
+    weights = getattr(persona, "review_weights", None) or {}
+    raw_total = sum(s.score for s in scoring)
+    raw_max = sum(s.max for s in scoring)
+    if weights:
+        wsum = sum(s.score * weights.get(s.name, 1.0) for s in scoring)
+        wmax = sum(s.max * weights.get(s.name, 1.0) for s in scoring)
+        total = round(wsum / wmax * raw_max) if wmax else 0
+        max_total = raw_max
+    else:
+        total = raw_total
+        max_total = raw_max
     return ReviewReport(
         source=source,
         locale=canon,
@@ -630,22 +640,21 @@ def review_file(
     # Pre-resolve company so the ``review()`` scorer can apply keyword-anchor
     # coverage in the same pass. Unknown keys fall through cleanly.
     from core.company_profiles import get_company
+    from core.personas import get_persona
 
     c = get_company(company) if company else None
+    p = get_persona(persona) if persona else None
     report = review(
         text,
         locale_key,
         source=str(Path(md_path).name),
         jd_keywords=jd_keywords,
         company=c,
+        persona=p,
     )
-    if persona:
-        from core.personas import get_persona
-
-        p = get_persona(persona)
-        if p is not None:
-            report.persona = p.key
-            report.persona_tips = p.review_tips
+    if p is not None:
+        report.persona = p.key
+        report.persona_tips = p.review_tips
     if c is not None:
         report.company = c.key
         report.company_label = c.label

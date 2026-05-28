@@ -15,7 +15,7 @@ expected audience; store each variant under its own résumé version.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)
@@ -25,7 +25,35 @@ class Persona:
     lens: str  # one-line description of what this reviewer weighs first
     enrich_bias: str  # injected into the enrich LLM prompt
     review_tips: str  # appended to the review scorecard when active
+    review_weights: dict[str, float] | None = field(default=None, compare=False, hash=False)
 
+
+TECH_LEAD_WEIGHTS: dict[str, float] = {
+    "Numbers per bullet": 1.5,
+    "Page count": 0.7,
+    "Contact line width": 0.5,
+    "Top fold": 0.8,
+    "Action-verb first": 0.8,
+}
+HR_WEIGHTS: dict[str, float] = {
+    "Top fold": 1.5,
+    "Keyword echo (JD)": 1.3,
+    "Red flags": 1.5,
+    "Page count": 1.5,
+}
+EXECUTIVE_WEIGHTS: dict[str, float] = {
+    "Top fold": 1.5,
+    "Numbers per bullet": 0.8,
+}
+STARTUP_FOUNDER_WEIGHTS: dict[str, float] = {
+    "Numbers per bullet": 1.3,
+    "Top fold": 1.2,
+}
+ACADEMIC_WEIGHTS: dict[str, float] = {
+    "Density (noun-phrase)": 1.2,
+    "Numbers per bullet": 0.8,
+    "Keyword echo (JD)": 0.8,
+}
 
 PERSONAS: dict[str, Persona] = {
     "tech_lead": Persona(
@@ -45,6 +73,7 @@ PERSONAS: dict[str, Persona] = {
             "specific perf numbers, and trade-off verbs (migrated, introduced, replaced). "
             "Bullets without a metric or a named system tend to get skipped."
         ),
+        review_weights=TECH_LEAD_WEIGHTS,
     ),
     "hr": Persona(
         key="hr",
@@ -63,6 +92,7 @@ PERSONAS: dict[str, Persona] = {
             "each bullet with verb + business outcome; technology is the supporting "
             "detail, not the headline."
         ),
+        review_weights=HR_WEIGHTS,
     ),
     "executive": Persona(
         key="executive",
@@ -81,6 +111,7 @@ PERSONAS: dict[str, Persona] = {
             "it move? Technical depth can land in a later pass — the lead bullet of "
             "each role must read as a business headline, not as a tech changelog."
         ),
+        review_weights=EXECUTIVE_WEIGHTS,
     ),
     "startup_founder": Persona(
         key="startup_founder",
@@ -99,6 +130,7 @@ PERSONAS: dict[str, Persona] = {
             "you shipped alone or on a tiny team, owned your own deploys, and chose "
             "cheap/fast solutions when the stakes allowed."
         ),
+        review_weights=STARTUP_FOUNDER_WEIGHTS,
     ),
     "academic": Persona(
         key="academic",
@@ -117,6 +149,7 @@ PERSONAS: dict[str, Persona] = {
             "dataset sizes, code + paper links) before anything else. Shipping metrics "
             "matter less than evaluation rigour and contribution-to-field framing."
         ),
+        review_weights=ACADEMIC_WEIGHTS,
     ),
 }
 
