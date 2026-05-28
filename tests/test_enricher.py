@@ -12,8 +12,37 @@ from vibe_resume.core.enricher import (
     _fallback_summary,
     _pick_template,
 )
-from vibe_resume.core.schema import ProjectGroup, Source
+from vibe_resume.core.schema import Activity, ProjectGroup, Source
 from vibe_resume.render.i18n import get_locale
+
+
+def _ext_group():
+    a = Activity(source=Source.GITHUB, session_id="facebook/react#1",
+                 timestamp_start="2026-01-01T00:00:00+00:00",
+                 project="facebook/react", summary="fixed a reconciler bug",
+                 extra={"repo": "facebook/react", "contribution": "external",
+                        "merged": True})
+    return ProjectGroup(name="react", first_activity="2026-01-01T00:00:00+00:00",
+                        last_activity="2026-01-01T00:00:00+00:00",
+                        total_sessions=1, activities=[a])
+
+
+def _owned_group():
+    a = Activity(source=Source.GITHUB, session_id="me/app#1",
+                 timestamp_start="2026-01-01T00:00:00+00:00",
+                 project="me/app", summary="built dashboard",
+                 extra={"repo": "me/app", "contribution": "owned", "merged": True})
+    return ProjectGroup(name="app", first_activity="2026-01-01T00:00:00+00:00",
+                        last_activity="2026-01-01T00:00:00+00:00",
+                        total_sessions=1, activities=[a])
+
+
+def test_external_group_prompt_says_contributed_to():
+    assert "contributed to" in _build_prompt(_ext_group()).lower()
+
+
+def test_owned_group_prompt_has_no_contribution_framing():
+    assert "contributed to" not in _build_prompt(_owned_group()).lower()
 
 
 def _sample_group() -> ProjectGroup:

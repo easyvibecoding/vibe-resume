@@ -20,7 +20,7 @@ from vibe_resume.core.company_profiles import CompanyProfile
 from vibe_resume.core.levels import LevelArchetype
 from vibe_resume.core.paths import user_root
 from vibe_resume.core.personas import Persona
-from vibe_resume.core.schema import ProjectGroup
+from vibe_resume.core.schema import ProjectGroup, Source
 from vibe_resume.render.i18n import get_locale
 
 EnrichMode = Literal["prompt", "subprocess", "rule-based"]
@@ -86,6 +86,13 @@ Ground every bullet in what the raw activity actually shows. Prefer
 employer-relevant specificity (named systems, scale markers, domain
 vocabulary) over generic phrasing when the data supports it.
 """
+
+CONTRIBUTION_BLOCK = (
+    "\n\nNOTE: This work is an EXTERNAL open-source contribution to a "
+    "repository the candidate does not own. Frame bullets as "
+    "\"contributed to <project>\" / \"submitted <change> to <project>\" — "
+    "never imply the candidate built or owns the project.\n"
+)
 
 console = Console()
 
@@ -280,6 +287,11 @@ def _build_prompt(
             verified=company.last_verified_at,
             bias=company.enrich_bias,
         )
+    gh_acts = [a for a in g.activities if a.source == Source.GITHUB]
+    if gh_acts and all(
+        (a.extra or {}).get("contribution") == "external" for a in gh_acts
+    ):
+        body += CONTRIBUTION_BLOCK
     return body
 
 
