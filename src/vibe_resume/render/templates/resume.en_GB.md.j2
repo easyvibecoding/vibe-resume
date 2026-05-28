@@ -51,7 +51,7 @@
 _Aggregated from {{ ai_overview | map(attribute='tool') | join(' / ') }} across {{ groups|length }} projects between {{ timespan_start | date }} and {{ timespan_end | date }} ({{ total_sessions }} AI-assisted sessions{% if w30 and w30.sessions > 0 %}; last 30 days: {{ w30.active_days }}/{{ w30.window_days }} active days, peak {{ w30.peak_day_sessions }}/day, longest streak {{ w30.longest_streak_days }}d{% endif %}){% if top_capabilities %}. Breadth: {{ top_capabilities | join(', ') }}{% endif %}._
 {% endif %}
 
-{% set top_n = 6 %}
+{% set top_n = top_n | default(6) %}
 {% for g in groups[:top_n] %}
 **{{ g.name }}**{% if g.headline %} — {{ g.headline }}{% endif %} · _{{ g.first_activity[:7] | date }} – {{ g.last_activity[:7] | date }}_{% if g.tech_stack %} · {{ g.tech_stack[:6] | join(', ') }}{% endif %}
 

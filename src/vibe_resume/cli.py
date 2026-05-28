@@ -228,6 +228,10 @@ def enrich(
     default=None,
     help="Reviewer persona (reads persona-scoped enrich cache; filename includes suffix). Accepts single key, comma-separated list, or 'all'.",
 )
+@click.option(
+    "--top-n", "top_n", type=int, default=None,
+    help="Number of projects rendered in full detail (rest collapse to a one-liner). Default 6 or config.render.detailed_projects.",
+)
 @click.pass_context
 def render(
     ctx: click.Context,
@@ -236,6 +240,7 @@ def render(
     locale: str | None,
     all_locales: bool,
     persona: str | None,
+    top_n: int | None,
 ) -> None:
     """Render resume draft to selected format and snapshot a version."""
     from vibe_resume.core.personas import PERSONAS, list_persona_keys
@@ -270,7 +275,7 @@ def render(
             if p_key:
                 console.print(f"\n[bold magenta]── persona: {p_key} ──[/bold magenta]")
             for f in formats:
-                run_render(cfg, fmt=f, tailor=tailor, locale=locale_key, persona=p_key)
+                run_render(cfg, fmt=f, tailor=tailor, locale=locale_key, persona=p_key, top_n=top_n)
 
     if all_locales:
         # If the user didn't pass --format, fan out over the configured list

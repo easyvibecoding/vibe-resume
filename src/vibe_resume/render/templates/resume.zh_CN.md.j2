@@ -54,7 +54,7 @@ _{{ e.start | date }} – {{ e.end | date }}_
 {% set w30 = window_stats.get('last_30d') %}
 _汇总自 {{ ai_overview | map(attribute='tool') | join(' / ') }},共 {{ groups|length }} 个项目、{{ total_sessions }} 次 AI 协作会话({{ timespan_start | date }} ~ {{ timespan_end | date }}){% if w30 and w30.sessions > 0 %};近 30 天活跃 {{ w30.active_days }}/{{ w30.window_days }} 天,最长连续 {{ w30.longest_streak_days }} 天{% endif %}{% if top_capabilities %};{{ T.capabilities }}:{{ top_capabilities | join('、') }}{% endif %}。_
 
-{% set top_n = 6 %}
+{% set top_n = top_n | default(6) %}
 {% for g in groups[:top_n] %}
 ### {{ loop.index }}. {{ g.name }}{% if g.headline %} — _{{ g.headline }}_{% endif %}
 

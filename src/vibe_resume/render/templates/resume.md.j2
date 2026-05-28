@@ -57,7 +57,7 @@ _Claude Code prunes session transcripts older than 30 days by default; this bloc
 ## AI-assisted project work
 _Ranked by significance (sessions × capability breadth × duration)._
 
-{% set top_n = 8 %}
+{% set top_n = top_n | default(8) %}
 {% for g in groups[:top_n] %}
 ### {{ loop.index }}. {{ g.name }}{% if g.headline %} — _{{ g.headline }}_{% endif %}
 

@@ -149,7 +149,7 @@ def _top_capabilities(groups: list, limit: int = 6) -> list[str]:
     ][:limit]
 
 
-def _render_md(cfg: dict[str, Any], tailor: str | None, locale: str | None = None, persona: str | None = None) -> tuple[str, dict]:
+def _render_md(cfg: dict[str, Any], tailor: str | None, locale: str | None = None, persona: str | None = None, top_n: int | None = None) -> tuple[str, dict]:
     tpl_cfg = cfg.get("render", {}).get("templates_dir")
     bundled = Path(__file__).parent / "templates"
     if tpl_cfg:
@@ -219,6 +219,8 @@ def _render_md(cfg: dict[str, Any], tailor: str | None, locale: str | None = Non
     observed = load_observed_summary() or {}
     window_stats = load_window_stats() or {}
 
+    resolved_top_n: int = top_n or cfg.get("render", {}).get("detailed_projects") or 6
+
     ctx = {
         "profile": profile_dict,
         "groups": raw_groups,
@@ -234,6 +236,7 @@ def _render_md(cfg: dict[str, Any], tailor: str | None, locale: str | None = Non
         "timespan_end": timespan_end,
         "locale": locale_meta,
         "T": locale_meta["headings"],
+        "top_n": resolved_top_n,
     }
     tpl_name = _pick_template(env, locale_meta["_key"])
     tpl = env.get_template(tpl_name)
@@ -421,11 +424,12 @@ def render_draft(
     tailor: str | None = None,
     locale: str | None = None,
     persona: str | None = None,
+    top_n: int | None = None,
 ) -> None:
     hist = _history_path(cfg)
     version = _next_version(hist)
 
-    md_text, ctx = _render_md(cfg, tailor, locale=locale, persona=persona)
+    md_text, ctx = _render_md(cfg, tailor, locale=locale, persona=persona, top_n=top_n)
     if not (ctx.get("profile", {}).get("summary") or "").strip():
         console.print(
             "[yellow]⚠ profile.summary is empty — Top fold check will score ≤6/10. "

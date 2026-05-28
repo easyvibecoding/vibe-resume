@@ -44,7 +44,7 @@
 {% set w30 = window_stats.get('last_30d') %}
 _{{ ai_overview | map(attribute='tool') | join(' / ') }} を活用し、{{ groups|length }} プロジェクト・累計 {{ total_sessions }} セッションのAI協働を実施（{{ timespan_start | date }} ～ {{ timespan_end | date }}）{% if w30 and w30.sessions > 0 %}。直近30日：{{ w30.active_days }}/{{ w30.window_days }} 日稼働、最長連続 {{ w30.longest_streak_days }} 日{% endif %}{% if top_capabilities %}。{{ T.capabilities }}：{{ top_capabilities | join('・') }}{% endif %}。_
 
-{% set top_n = 6 %}
+{% set top_n = top_n | default(6) %}
 {% for g in groups[:top_n] %}
 ### {{ loop.index }}. {{ g.name }}{% if g.headline %} — _{{ g.headline }}_{% endif %}
 
