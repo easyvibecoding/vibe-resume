@@ -4,6 +4,93 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] — 2026-05-28
+
+Issue-driven release closing 25 issues filed against 0.4.0 (one declined).
+No breaking changes — all additive or bug fixes.
+
+### Fixed (P0)
+
+- **review: persona+locale resolution (#2).** `review --persona X --locale Y`
+  without `--file/--version` now globs `resume_v*_<locale>[_<persona>].md`
+  and scores the highest matching version instead of silently scoring the
+  lexically-latest file (which previously overwrote N−1 results in a batch).
+- **review: DOB false positive (#3).** The "full DOB in header" red flag
+  required only a bare ISO date in the first 14 lines, so summary /
+  target-role / experience-start dates triggered a phantom −2 on every
+  en_US/en_GB render. Now requires an explicit DOB / Date of birth / Born /
+  生年月日 / 出生 label adjacent to the date. (The en_US template never
+  rendered `profile.dob` — the bug was entirely in the reviewer's scanner.)
+- **render: filename locale suffix (#4).** en_US renders dropped the locale
+  suffix (`resume_v006_tech_lead.md`) while other locales kept it, breaking
+  `resume_v*_en_US_*.md` globs. Every render now uses
+  `resume_v<NNN>_<locale>[_<persona>].md` uniformly.
+
+### Added
+
+- **`vibe-resume run` orchestrator (#10).** One command for multi-persona ×
+  multi-locale pipelines. Phase A: extract + aggregate (if cache stale) +
+  enrich emit across the matrix, then stops for session processing. Phase B
+  (`--continue`): ingest --all + render matrix + review matrix + trend.
+  No auto-dispatch — preserves the session-quota model.
+- **`vibe-resume jd-check` (#23).** Reports JD-keyword coverage across
+  enriched bullets without a full render+review round. `--threshold` filters
+  to under-covered keywords.
+- **`vibe-resume review-diff <vA> <vB>` (#26).** Per-check scorecard delta
+  between two résumé versions.
+- **`vibe-resume doctor` (#19).** Diagnoses CLI/plugin version drift,
+  profile/config presence, optional-dep (pandoc/claude) availability.
+- **Agentic Engineer persona (#22).** `--persona agentic` — 2026 AI-agent
+  narrative (agent loops, MCP, RAG triad, eval harness) with a Head-of-AI
+  reviewer lens and keyword-echo-weighted scoring.
+- **`enrich --tailor-keywords / --tailor-keywords-cap / --tailor-keywords-strict` (#7).**
+  Manual keyword overrides; override terms always lead the merged set.
+- **`enrich --ingest --all` (#9).** Walks every (persona, locale) under
+  `data/enrich_jobs/` and ingests each; comma-separated persona ingest too.
+- **`enrich --status` + `--ingest --all-ready` (#12).** Progress table across
+  job dirs; batch-ingest only the complete ones.
+- **`enrich --clean` (#20).** Clears stale `*.yaml` on re-emit; a warning
+  fires when old yaml survives a re-emit without `--clean`.
+- **`render --all-locales --persona X,Y,Z` matrix (#11).** Persona-list
+  expansion across all locales.
+- **`status --enriched / --pending / --all` (#25).** Cache-state views per
+  (persona, locale) and pending job progress.
+- **Profile-derived redaction (#24).** `derive_profile_redactors` auto-builds
+  name/email patterns from `profile.yaml` (incl. locale name variants) and
+  scrubs bullets at ingest, regardless of which invocation path ran.
+- **Manifest JD provenance (#8).** Emit records the JD's sha256 + mtime +
+  extracted keywords; ingest warns when the JD file changed since emit.
+- **Persona-specific review weights (#16).** `review --persona` now reweights
+  the 8-point scorecard (e.g. tech_lead weights metrics 1.5×, page-count
+  0.7×) and normalises back to the same scale, not just appends a lens note.
+- **Per-locale page-count targets + gradual scoring (#14).** ja_JP=1.0,
+  de_DE/fr_FR=2.5, others=2.0; 4-band scoring (10/8/5/2) replaces the
+  10→5 cliff.
+- **Trend grouped by (locale, persona) (#15).** Default grouping splits
+  apples-vs-oranges persona runs; `--group-by` + `--persona`/`--locale`
+  filters.
+- **render warns when `profile.summary` empty (#13)** — surfaces the −4
+  top-fold penalty before it lands.
+- **`uv tool install` support (#18).** Wheel now force-includes `cli.py` so
+  `uv tool install git+…` puts `vibe-resume` on PATH. (No `src/` restructure —
+  tracked separately if desired.)
+
+### Docs
+
+- SKILL.md documents the `--level` axis in the main Procedure + Quick
+  Reference (#6); `personas-compare` quick-ref notes the `--locale`
+  requirement since 0.4.0 (#5).
+- New `references/tailor-keyword-extraction.md` explains the two-pass
+  extractor + 12-keyword cap rationale (#21).
+
+### Closed without code
+
+- **#1** (list in awesome-codex-plugins) — declined; discovery is via
+  skills.sh + Claude Code / Codex marketplaces.
+- **#17** (plugin gitCommitSha drift) — upstream Claude Code behaviour, not
+  a vibe-resume bug; workaround documented; the work-tree drift we *can*
+  detect ships as `doctor` (#19).
+
 ## [0.4.0] — 2026-05-28
 
 ### Breaking changes
