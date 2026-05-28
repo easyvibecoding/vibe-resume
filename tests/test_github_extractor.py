@@ -60,3 +60,33 @@ def test_pr_to_activity_owned_vs_external(monkeypatch):
     external = by_repo["facebook/react"]
     assert external.extra["contribution"] == "external"
     assert external.extra["merged"] is False  # state closed, merged unknown → False
+
+
+def test_resolves_login_from_gh_api_when_unconfigured(monkeypatch):
+    """No author_logins in config → resolve via `gh api user`; that real
+    login then drives ownership (PR to own repo tagged owned)."""
+    def fake_gh(args, timeout=30):
+        if args[:2] == ["api", "user"]:
+            return "alice"
+        if args[:2] == ["search", "prs"]:
+            return [_pr(1, "alice", "myapp")]
+        return None
+    monkeypatch.setattr(gh, "_gh_json", fake_gh)
+    acts = gh.extract(_cfg(author_logins=[]))
+    assert len(acts) == 1
+    assert acts[0].extra["contribution"] == "owned"
+
+
+def test_unresolvable_login_tags_everything_external(monkeypatch):
+    """gh api user fails but search works → fall back to @me, owned_set empty,
+    so every PR is conservatively tagged external (ownership unverifiable)."""
+    def fake_gh(args, timeout=30):
+        if args[:2] == ["api", "user"]:
+            return None
+        if args[:2] == ["search", "prs"]:
+            return [_pr(1, "alice", "myapp")]
+        return None
+    monkeypatch.setattr(gh, "_gh_json", fake_gh)
+    acts = gh.extract(_cfg(author_logins=[]))
+    assert len(acts) == 1
+    assert acts[0].extra["contribution"] == "external"
