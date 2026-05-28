@@ -81,6 +81,9 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["core", "extractors", "render"]
 
+[tool.hatch.build.targets.wheel.force-include]
+"cli.py" = "cli.py"
+
 [tool.ruff]
 line-length = 100
 target-version = "py312"

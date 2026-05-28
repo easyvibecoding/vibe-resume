@@ -222,8 +222,14 @@ See [`AGENTS.md`](AGENTS.md) for the full matrix, Windows symlink commands, and 
 
 ## Quick start
 
+**Global install (PATH-friendly):**
 ```bash
-# 1. install
+uv tool install git+https://github.com/easyvibecoding/vibe-resume
+# → `vibe-resume` available on PATH everywhere (uvx also works: `uvx --from git+https://github.com/easyvibecoding/vibe-resume vibe-resume`)
+```
+
+```bash
+# 1. install (dev / local clone)
 uv venv && uv pip install -e ".[dev]"
 
 # 2. fill your profile

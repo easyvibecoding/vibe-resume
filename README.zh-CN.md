@@ -198,8 +198,14 @@ New-Item -ItemType SymbolicLink -Path $HOME\.claude\skills\ai-used-resume `
 
 ## 快速上手
 
+**全局安装(PATH):**
 ```bash
-# 1. 安装
+uv tool install git+https://github.com/easyvibecoding/vibe-resume
+# → `vibe-resume` 直接在 PATH 可用(或 uvx --from git+https://github.com/easyvibecoding/vibe-resume vibe-resume)
+```
+
+```bash
+# 1. 安装(开发 / 本地 clone)
 uv venv && uv pip install -e ".[dev]"
 
 # 2. 填入个人档

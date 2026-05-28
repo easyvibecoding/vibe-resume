@@ -198,8 +198,14 @@ New-Item -ItemType SymbolicLink -Path $HOME\.claude\skills\ai-used-resume `
 
 ## クイックスタート
 
+**グローバルインストール(PATH):**
 ```bash
-# 1. インストール
+uv tool install git+https://github.com/easyvibecoding/vibe-resume
+# → `vibe-resume` が PATH に追加されます(uvx --from git+https://github.com/easyvibecoding/vibe-resume vibe-resume も可)
+```
+
+```bash
+# 1. インストール(開発 / ローカル clone)
 uv venv && uv pip install -e ".[dev]"
 
 # 2. プロフィール入力
