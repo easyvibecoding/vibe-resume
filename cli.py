@@ -366,25 +366,88 @@ def personas_compare(ctx: click.Context, personas_arg: str | None, limit: int, l
                 out.print(f"    • {ach}")
 
 
-@cli.command()
-@click.pass_context
-def status(ctx: click.Context) -> None:
-    """Show cached activity counts by source."""
-    cache_dir = ROOT / "data" / "cache"
-    table = Table(title="Cached activities")
-    table.add_column("Source")
-    table.add_column("File")
-    table.add_column("Activities", justify="right")
-    import orjson
+def _status_enriched(cache_dir: Path) -> None:
+    import datetime as _dt
+    import re
 
-    if cache_dir.exists():
-        for f in sorted(cache_dir.glob("*.json")):
-            try:
-                n = len(orjson.loads(f.read_bytes()))
-            except (OSError, orjson.JSONDecodeError):
-                n = -1
-            table.add_row(f.stem, f.name, str(n))
-    console.print(table)
+    import orjson
+    from rich.table import Table as _T
+    rows = []
+    for f in sorted(cache_dir.glob("_project_groups.*.*.json")):
+        m = re.match(r"_project_groups\.(.+)\.([a-z]{2}_[A-Z]{2})\.json$", f.name)
+        if not m:
+            continue
+        persona, locale = m.group(1), m.group(2)
+        try:
+            groups = orjson.loads(f.read_bytes())
+        except Exception:
+            continue
+        total = len(groups)
+        starred = sum(1 for g in groups if g.get("achievements"))
+        mtime = _dt.datetime.fromtimestamp(f.stat().st_mtime).strftime("%Y-%m-%d")
+        rows.append((persona, locale, f"{total} ({starred} ★)", mtime))
+    if not rows:
+        console.print("[dim]no enriched caches yet[/dim]")
+        return
+    t = _T(title="Enriched caches")
+    t.add_column("Persona")
+    t.add_column("Locale")
+    t.add_column("Groups")
+    t.add_column("Last enriched")
+    for r in rows:
+        t.add_row(*r)
+    console.print(t)
+
+
+def _status_pending() -> None:
+    from rich.table import Table as _T
+
+    from core.enrich_jobs import list_jobs
+    jobs_root = ROOT / "data" / "enrich_jobs"
+    jobs = list_jobs(jobs_root)
+    pending = [j for j in jobs if not j["ready"]]
+    if not pending:
+        console.print("[dim]no pending enrich jobs[/dim]")
+        return
+    t = _T(title="Pending enrich jobs")
+    t.add_column("Persona")
+    t.add_column("Locale")
+    t.add_column("Progress")
+    for j in pending:
+        t.add_row(j["persona"], j["locale"], f"{j['done']}/{j['total']} yaml ready")
+    console.print(t)
+
+
+@cli.command()
+@click.option("--enriched", is_flag=True, default=False, help="Show enriched cache state per (persona, locale).")
+@click.option("--pending", is_flag=True, default=False, help="Show enrich_jobs manifests with pending entries.")
+@click.option("--all", "show_all", is_flag=True, default=False, help="Show raw activities + enriched + pending.")
+@click.pass_context
+def status(ctx: click.Context, enriched: bool, pending: bool, show_all: bool) -> None:
+    """Show cached activity counts; --enriched/--pending/--all for more views."""
+    cache_dir = ROOT / "data" / "cache"
+
+    show_raw = show_all or not (enriched or pending)
+    if show_raw:
+        table = Table(title="Cached activities")
+        table.add_column("Source")
+        table.add_column("File")
+        table.add_column("Activities", justify="right")
+        import orjson
+
+        if cache_dir.exists():
+            for f in sorted(cache_dir.glob("*.json")):
+                try:
+                    n = len(orjson.loads(f.read_bytes()))
+                except (OSError, orjson.JSONDecodeError):
+                    n = -1
+                table.add_row(f.stem, f.name, str(n))
+        console.print(table)
+
+    if enriched or show_all:
+        _status_enriched(cache_dir)
+    if pending or show_all:
+        _status_pending()
 
 
 @cli.command()

@@ -426,3 +426,19 @@ def test_cli_run_phase_b_continue_skips_emit(seeded_cache, monkeypatch, capsys):
     assert len(extract_called) == 0, "extract was called during --continue phase"
     # ingest should have run (ingested message)
     assert "ingested" in result.output or "ingest" in result.output.lower()
+
+
+# ---------------------------------------------------------------------------
+# Fix #25 — status --enriched / --pending / --all
+# ---------------------------------------------------------------------------
+
+
+def test_status_enriched_flag_runs():
+    import subprocess
+    from pathlib import Path
+    r = subprocess.run(
+        ["uv", "run", "python", "cli.py", "status", "--enriched"],
+        capture_output=True, text=True, timeout=30,
+        cwd=Path(__file__).resolve().parent.parent,
+    )
+    assert r.returncode == 0, r.stderr
