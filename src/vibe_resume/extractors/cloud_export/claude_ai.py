@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from vibe_resume.core.schema import Activity, ActivityType, Source
+from vibe_resume.extractors.base import sample_spread
 
 NAME = "claude_ai"
 
@@ -46,6 +47,10 @@ def extract(cfg: dict[str, Any]) -> list[Activity]:
     import_dir = Path(cfg["extractors"]["cloud_claude_ai"]["import_dir"])
     if not import_dir.exists():
         return []
+    sess = cfg.get("sessions", {})
+    sample_n = int(sess.get("sample_prompts", 12))
+    per_chars = int(sess.get("per_prompt_chars", 300))
+    keep_assistant = bool(sess.get("keep_assistant", True))
     activities: list[Activity] = []
     for conv_file in _locate(import_dir, "conversations.json"):
         try:
@@ -66,14 +71,20 @@ def extract(cfg: dict[str, Any]) -> list[Activity]:
             end = _parse_ts(conv.get("updated_at")) or start
             if not start:
                 continue
-            snippets = []
+            human_chunks: list[str] = []
+            asst_chunks: list[str] = []
             for m in msgs:
+                t = (m.get("text") or "")[:per_chars]
+                if not t:
+                    continue
                 if m.get("sender") == "human":
-                    t = m.get("text") or ""
-                    if t:
-                        snippets.append(t[:200])
-                    if len(snippets) >= 3:
-                        break
+                    human_chunks.append(t)
+                elif m.get("sender") == "assistant":
+                    asst_chunks.append(t)
+            summary = " | ".join(sample_spread(human_chunks, sample_n))[:4000]
+            extra: dict[str, Any] = {}
+            if keep_assistant and asst_chunks:
+                extra["assistant"] = " | ".join(sample_spread(asst_chunks, sample_n))[:4000]
             activities.append(
                 Activity(
                     source=Source.CLAUDE_AI,
@@ -84,8 +95,9 @@ def extract(cfg: dict[str, Any]) -> list[Activity]:
                     activity_type=ActivityType.CHAT,
                     user_prompts_count=user_n,
                     tool_calls_count=asst_n,
-                    summary=" | ".join(snippets)[:500],
+                    summary=summary,
                     raw_ref=f"{conv_file}#{conv.get('uuid','')}",
+                    extra=extra,
                 )
             )
     return activities

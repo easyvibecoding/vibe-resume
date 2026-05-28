@@ -785,3 +785,27 @@ def test_codex_samples_more_and_captures_function_args(tmp_path):
     assert "codex prompt 0" in a.summary
     assert "codex prompt 19" in a.summary
     assert "pytest -q" in a.extra["tool_args"]
+
+
+# ──────────────────── claude.ai export keeps assistant ───────────────────────
+
+
+def test_claude_ai_keeps_assistant_responses(tmp_path):
+    import vibe_resume.extractors.cloud_export.claude_ai as cai
+
+    conv = {"uuid": "u1", "name": "chat", "created_at": "2026-01-01T00:00:00Z",
+            "updated_at": "2026-01-01T01:00:00Z",
+            "chat_messages": [
+                {"sender": "human", "text": "how do I debounce in react"},
+                {"sender": "assistant", "text": "use useEffect with a timer"},
+                {"sender": "human", "text": "and cleanup?"},
+                {"sender": "assistant", "text": "return a clearTimeout"},
+            ]}
+    (tmp_path / "conversations.json").write_text(json.dumps([conv]))
+    cfg = {"extractors": {"cloud_claude_ai": {"import_dir": str(tmp_path)}},
+           "sessions": {"sample_prompts": 12, "keep_assistant": True}}
+    acts = cai.extract(cfg)
+    assert len(acts) == 1
+    blob = acts[0].summary + " " + (acts[0].extra.get("assistant", "") if acts[0].extra else "")
+    assert "debounce" in blob
+    assert "clearTimeout" in blob   # assistant response retained
