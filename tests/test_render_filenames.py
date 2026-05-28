@@ -120,3 +120,14 @@ def test_render_no_warning_when_summary_present(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(renderer, "snapshot", lambda *a, **k: None)
     renderer.render_draft({}, fmt="md", locale="en_US")
     assert "summary is empty" not in capsys.readouterr().out
+
+
+def test_default_template_dir_is_package_relative(monkeypatch, tmp_path):
+    """Default templates must resolve inside the package, not the user CWD (#27)."""
+    monkeypatch.delenv("VIBE_RESUME_ROOT", raising=False)
+    monkeypatch.chdir(tmp_path)  # a CWD with no render/templates
+    from pathlib import Path as _P
+
+    from render import renderer
+    bundled = _P(renderer.__file__).parent / "templates"
+    assert bundled.exists() and (bundled / "resume.en_US.md.j2").exists()
