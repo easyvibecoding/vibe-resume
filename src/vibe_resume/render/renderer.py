@@ -151,12 +151,21 @@ def _top_capabilities(groups: list, limit: int = 6) -> list[str]:
 
 def _render_md(cfg: dict[str, Any], tailor: str | None, locale: str | None = None, persona: str | None = None) -> tuple[str, dict]:
     tpl_cfg = cfg.get("render", {}).get("templates_dir")
+    bundled = Path(__file__).parent / "templates"
     if tpl_cfg:
-        tpl_dir = Path(tpl_cfg)
-        if not tpl_dir.is_absolute():
-            tpl_dir = user_root() / tpl_dir   # user override relative to their CWD
+        override = Path(tpl_cfg)
+        if not override.is_absolute():
+            override = user_root() / override
+        if (override / "resume.md.j2").exists():
+            tpl_dir = override
+        else:
+            console.print(
+                f"[yellow]⚠ render.templates_dir '{tpl_cfg}' has no templates — "
+                f"using bundled templates[/yellow]"
+            )
+            tpl_dir = bundled
     else:
-        tpl_dir = Path(__file__).parent / "templates"   # bundled templates, package-relative
+        tpl_dir = bundled
     env = Environment(
         loader=FileSystemLoader(str(tpl_dir)),
         autoescape=select_autoescape(disabled_extensions=("md", "j2")),

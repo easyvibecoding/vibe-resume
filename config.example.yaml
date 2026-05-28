@@ -148,7 +148,7 @@ stats:
 
 render:
   default_format: "md"
-  templates_dir: "./render/templates"
+  # templates_dir: optional override; templates ship inside the package
   output_dir: "./data/resume_history"
   draft_dir: "./data/drafts"
   # keep last N versions before auto-prune (0 = keep all)
