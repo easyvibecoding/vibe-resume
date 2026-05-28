@@ -140,6 +140,11 @@ Invoke this skill whenever the user wants to **turn their AI-tool usage history 
    uv run vibe-resume render --locale zh_TW      # reads _project_groups.default.zh_TW.json
    ```
 
+   Pass `--tailor <JD.txt>` to bias bullets toward JD keywords (up to 12 extracted via
+   tech-priority dict + capitalised fallback — see
+   [references/tailor-keyword-extraction.md](references/tailor-keyword-extraction.md)
+   for the strategy and the 12-keyword cap rationale).
+
    Stacks with `--persona`/`--company` per `references/strategic-resume.md` §Axis matrix.
 
    See `tests/fixtures/enrich_jobs_sample/` for a reference of what the

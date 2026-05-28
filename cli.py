@@ -85,7 +85,9 @@ def aggregate(ctx: click.Context) -> None:
 @click.option(
     "--tailor",
     default=None,
-    help="Path to JD .txt; extracted keywords are injected into the enrich prompt so achievements bias toward them",
+    help="Path to JD .txt; up to 12 keywords (tech-priority dict + capitalised fallback) "
+         "are injected into the enrich prompt so achievements bias toward them. "
+         "See references/tailor-keyword-extraction.md for the strategy.",
 )
 @click.option(
     "--persona",
