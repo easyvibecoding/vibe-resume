@@ -4,6 +4,35 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] — 2026-05-28
+
+### Changed (packaging — #18 root cause)
+
+- **Moved to a `src/vibe_resume/` single-package layout.** 0.5.x shipped
+  `core` / `render` / `extractors` / `cli` as four **top-level** packages in
+  the wheel — generic names that collide with other packages in any shared
+  venv. The 0.5.0 `force-include cli.py` hack (#18) only made `uv tool
+  install`'s *isolated* venv tolerate the pollution; it didn't fix the
+  structure. Now everything lives under one `vibe_resume` top-level package,
+  so a shared-venv `pip install vibe-resume` no longer squats on those names.
+  This also makes the #27-class bug (top-level `cli.py` + `Path(__file__)`)
+  structurally impossible.
+
+  **Pure refactor — no behaviour change.** All 595 tests pass unchanged.
+
+  **What this means for invocation:**
+  - `uv run vibe-resume <cmd>` — **unchanged** (entry point still works)
+  - `python -m vibe_resume <cmd>` — **new** module form
+  - `python cli.py <cmd>` — **removed** (cli.py is no longer top-level);
+    use one of the two forms above
+  - Entry point is now `vibe_resume.cli:cli`; the `force-include` packaging
+    hack is gone.
+
+  Bundled templates + the 70 company-profile YAMLs moved with the package and
+  still resolve package-relative; `core/paths.py::user_root()` (the 0.5.1 #27
+  fix) still keeps user data (`data/`, `profile.yaml`, `config.yaml`) anchored
+  to the working directory.
+
 ## [0.5.1] — 2026-05-28
 
 ### Fixed (P0 regression)
