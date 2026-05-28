@@ -248,7 +248,7 @@ uv run vibe-resume trend
 ## Strategic résumé: `--company <key> --level <key>`
 
 `enrich` and `review` accept two extra axes — a named target employer
-(70 bundled profiles in `core/profiles/*.yaml`) and a seniority bracket
+(70 bundled profiles in `src/vibe_resume/core/profiles/*.yaml`) and a seniority bracket
 (6 career-level archetypes) — stacked on top of `--locale` /
 `--persona` / `--tailor`. Block injection order is
 `tailor → persona → level → company`. Every apply auto-checks

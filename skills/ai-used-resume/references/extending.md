@@ -16,8 +16,8 @@ All extractors return `list[core.schema.Activity]`. Required fields per item:
 
 Registration:
 
-1. Implement the extractor under `extractors/{local,cloud_export,api}/<name>.py` following `extractors/base.py`'s contract.
-2. Register the module name in `core/runner.py::LOCAL_EXTRACTORS`, `CLOUD_EXTRACTORS`, or `AIGC_EXTRACTORS` (whichever bucket fits).
+1. Implement the extractor under `src/vibe_resume/extractors/{local,cloud_export,api}/<name>.py` following `src/vibe_resume/extractors/base.py`'s contract.
+2. Register the module name in `src/vibe_resume/core/runner.py::LOCAL_EXTRACTORS`, `CLOUD_EXTRACTORS`, or `AIGC_EXTRACTORS` (whichever bucket fits).
 3. Add its config path to `config.example.yaml::extractors.<name>.path`.
 4. Add a unit test under `tests/test_extractors*.py` that exercises the happy path against a fixture.
 
@@ -25,10 +25,10 @@ Registration:
 
 See root `CLAUDE.md § Locale resolution chain` for the canonical registration steps. TL;DR:
 
-1. Add the locale to `render/i18n.py::LOCALES`.
-2. Create `render/templates/resume.<locale>.md.j2`.
+1. Add the locale to `src/vibe_resume/render/i18n.py::LOCALES`.
+2. Create `src/vibe_resume/render/templates/resume.<locale>.md.j2`.
 3. If the review pitfalls apply (e.g. CJK contact-line wrap, photo-expected culture), port the template tweak from an existing same-family locale.
 
 ## Persona
 
-Persona prompts live under `core/personas/`. Add a key to the registry plus a prompt module; the `--persona` CLI flag auto-picks up new entries.
+Persona prompts live under `src/vibe_resume/core/personas/`. Add a key to the registry plus a prompt module; the `--persona` CLI flag auto-picks up new entries.

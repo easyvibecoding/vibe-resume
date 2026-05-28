@@ -1,6 +1,6 @@
 # Strategic résumé — `--company <key> --level <key>`
 
-Tailor `enrich` and `review` against a named target employer and a seniority bracket, stacked on top of `--locale`, `--persona`, and `--tailor`. 70 bundled company profiles (`core/profiles/*.yaml`) + 6 career-level archetypes are available out of the box.
+Tailor `enrich` and `review` against a named target employer and a seniority bracket, stacked on top of `--locale`, `--persona`, and `--tailor`. 70 bundled company profiles (`src/vibe_resume/core/profiles/*.yaml`) + 6 career-level archetypes are available out of the box.
 
 ## `--company <key>`
 
@@ -36,7 +36,7 @@ The most-specific lens lands closest to the YAML emission point and wins tie-bre
 
 ## Adding a new employer
 
-Drop-in: write `core/profiles/<key>.yaml` with the seven required fields plus `last_verified_at: "YYYY-MM-DD"`. The loader validates schema + tier + filename match at import time.
+Drop-in: write `src/vibe_resume/core/profiles/<key>.yaml` with the seven required fields plus `last_verified_at: "YYYY-MM-DD"`. The loader validates schema + tier + filename match at import time.
 
 ## Typical flow
 

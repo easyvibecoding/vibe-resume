@@ -16,7 +16,7 @@ Implemented in `core.review.parse_jd_keywords` (`limit=12` by default).
 
 ### Pass 1 — Prioritised tech/framework dictionary
 
-A curated list (`_JD_TECH_PRIORITY` in `core/review.py`, ~150 entries:
+A curated list (`_JD_TECH_PRIORITY` in `src/vibe_resume/core/review.py`, ~150 entries:
 React, FastAPI, LangChain, pgvector, AWS, GitHub Actions, …) is scanned
 for **case-sensitive exact-word matches**. Hits are ordered by first
 appearance in the JD. This pass runs to exhaustion or until 12 picks.
