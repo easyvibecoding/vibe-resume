@@ -1308,18 +1308,18 @@ def run_cmd(
 @click.pass_context
 def doctor(ctx: click.Context) -> None:
     """Diagnose setup: CLI version, plugin version drift, profile/config presence."""
-    import tomllib
+    from importlib.metadata import PackageNotFoundError
+    from importlib.metadata import version as _pkg_version
 
     console.print("[bold]vibe-resume doctor[/bold]\n")
 
-    # CLI version (from pyproject)
+    # CLI version (from installed package metadata — works in wheel installs)
     try:
-        pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text())
-        cli_version = pyproject["project"]["version"]
+        cli_version = _pkg_version("vibe-resume")
         console.print(f"[green]✓[/green] CLI version: {cli_version}")
-    except Exception as e:
+    except PackageNotFoundError:
         cli_version = None
-        console.print(f"[yellow]⚠[/yellow] could not read CLI version: {e}")
+        console.print("[yellow]⚠[/yellow] vibe-resume not installed as a package (running from source?)")
 
     # Plugin manifest version (if present in this tree)
     plugin_manifest = ROOT / ".claude-plugin" / "plugin.json"
