@@ -150,6 +150,15 @@ def _is_meaningful(raw_key: str, g: ProjectGroup, min_sessions: int) -> bool:
     leaf = key_lc.split("/")[-1].lstrip(".")
     if leaf in NOISE_LEAFS:
         return False
+    # A single high-value external (open-source) merged PR is signal, not noise:
+    # exempt it from the session-count floor (other noise rules still apply).
+    if any(
+        a.source == Source.GITHUB
+        and (a.extra or {}).get("contribution") == "external"
+        and (a.extra or {}).get("merged")
+        for a in g.activities
+    ):
+        return True
     if HASH_ID_RE.match(leaf) and g.total_sessions < MIN_SESSIONS_HASH_ID:
         return False
     if g.total_sessions < min_sessions and g.capability_breadth <= 1:
