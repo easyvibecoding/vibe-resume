@@ -14,7 +14,7 @@ from rich.console import Console
 from vibe_resume.core.classifier import capability_breadth, tally_categories
 from vibe_resume.core.paths import user_root
 from vibe_resume.core.privacy import PrivacyFilter
-from vibe_resume.core.schema import Activity, ProjectGroup
+from vibe_resume.core.schema import Activity, ProjectGroup, Source
 from vibe_resume.core.tech_canonical import canonical_list
 from vibe_resume.extractors.base import load_activities
 
@@ -252,6 +252,27 @@ def _metrics_for_project(
     return []
 
 
+def _reconcile_github_projects(acts: list[Activity]) -> None:
+    """Rewrite GitHub activities' `project` to a local git-repo path when the
+    repo basename matches one git_repos already scanned, so commits + PRs +
+    review land in one project group. Conservative: only GitHub activities,
+    only on exact basename hit against a present local repo."""
+    local_by_base: dict[str, str] = {}
+    for a in acts:
+        if a.source == Source.GIT and a.project:
+            base = a.project.rstrip("/").split("/")[-1].lower()
+            local_by_base.setdefault(base, a.project)
+    if not local_by_base:
+        return
+    for a in acts:
+        if a.source != Source.GITHUB:
+            continue
+        nwo = (a.extra or {}).get("repo") or a.project or ""
+        repo_base = nwo.split("/")[-1].lower()
+        if repo_base in local_by_base:
+            a.project = local_by_base[repo_base]
+
+
 def aggregate_from_cache(cfg: dict[str, Any], cache_dir: Path) -> list[ProjectGroup]:
     pf = PrivacyFilter(cfg)
     all_acts: list[Activity] = []
@@ -262,6 +283,8 @@ def aggregate_from_cache(cfg: dict[str, Any], cache_dir: Path) -> list[ProjectGr
             pa = pf.apply(a)
             if pa is not None:
                 all_acts.append(pa)
+
+    _reconcile_github_projects(all_acts)
 
     prior_enrich = _load_prior_enrichment()
     user_metrics = _load_user_metrics()
