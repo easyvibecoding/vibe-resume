@@ -103,14 +103,14 @@ def emit_jobs(
 
     selected = groups if limit is None else groups[:limit]
 
-    existing_statuses: dict[str, str] = {}
+    existing_statuses: dict[str, str] = {}   # keyed by output_path (unique, unlike name)
     manifest_path = jobs_dir / "manifest.json"
     if manifest_path.exists():
         try:
             old = EnrichJobManifest.model_validate_json(manifest_path.read_text())
             for e in old.groups:
                 if (jobs_dir / e.output_path).exists():
-                    existing_statuses[e.name] = e.status
+                    existing_statuses[e.output_path] = e.status
         except Exception:
             _console.print(
                 "[dim]existing manifest unreadable — re-emitting fresh "
@@ -137,7 +137,7 @@ def emit_jobs(
         entries.append(EnrichJobEntry(
             id=idx, name=g.name,
             prompt_path=prompt_name, output_path=output_name,
-            status=existing_statuses.get(g.name, "pending"),
+            status=existing_statuses.get(output_name, "pending"),
         ))
 
     manifest = EnrichJobManifest(
@@ -177,7 +177,6 @@ def ingest_jobs(manifest_path: Path) -> tuple[list[ProjectGroup], list[str]]:
     jobs_dir = manifest_path.parent
 
     raw = _load_raw_groups()
-    by_name = {g.name: g for g in raw}
     warnings: list[str] = []
 
     if manifest.tailor:
@@ -194,12 +193,26 @@ def ingest_jobs(manifest_path: Path) -> tuple[list[ProjectGroup], list[str]]:
     enriched: list[ProjectGroup] = []
 
     for entry in manifest.groups:
-        g = by_name.get(entry.name)
-        if g is None:
+        # entry.id is the 1-based enumerate index emit_jobs assigned over the
+        # raw group list — match by that, NOT by name, so duplicate-named
+        # groups don't collide (#33).
+        try:
+            idx = int(entry.id) - 1
+        except ValueError:
+            warnings.append(f"entry {entry.id!r}: non-numeric id — skipped")
+            continue
+        if not (0 <= idx < len(raw)):
             warnings.append(
-                f"manifest entry {entry.id} {entry.name!r} has no matching raw group — skipped"
+                f"entry {entry.id} ({entry.name}): index out of range "
+                f"(raw groups changed since emit?) — skipped"
             )
             continue
+        g = raw[idx]
+        if g.name != entry.name:
+            warnings.append(
+                f"entry {entry.id}: name mismatch (manifest={entry.name!r}, "
+                f"raw[{idx}]={g.name!r}) — aggregate re-run since emit? Using raw[{idx}]."
+            )
 
         yaml_path = jobs_dir / entry.output_path
         parsed: dict | None = None
