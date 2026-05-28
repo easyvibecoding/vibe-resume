@@ -57,6 +57,7 @@ class Source(str, Enum):
     HEYGEN = "heygen"
     DESCRIPT = "descript"
     GIT = "git"
+    GITHUB = "github"
     DEVIN = "devin"
     OTHER = "other"
 

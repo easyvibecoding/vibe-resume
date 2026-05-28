@@ -82,10 +82,15 @@ class PrivacyFilter:
         act.keywords = [self.redact(k) for k in act.keywords]
         act.files_touched = [self.redact(f) for f in act.files_touched]
         if act.extra:
-            act.extra = {
-                k: (self.redact(v) if isinstance(v, str) else v) for k, v in act.extra.items()
-            }
+            act.extra = {k: self._redact_value(v) for k, v in act.extra.items()}
         return act
+
+    def _redact_value(self, v: Any) -> Any:
+        if isinstance(v, str):
+            return self.redact(v)
+        if isinstance(v, list):
+            return [self.redact(x) if isinstance(x, str) else x for x in v]
+        return v
 
 
 def derive_profile_redactors(profile: dict, base_patterns: list[str] | None = None) -> list[str]:

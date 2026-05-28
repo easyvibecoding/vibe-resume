@@ -174,3 +174,23 @@ def test_apply_with_abstract_tech_hides_stack_names() -> None:
     assert "postgres" not in out.summary.lower()
     assert "Python async web framework" in out.summary
     assert "relational DB" in out.summary
+
+
+def test_redacts_str_list_in_extra():
+    from vibe_resume.core.schema import Source
+
+    pf = PrivacyFilter({"privacy": {"redact_patterns": ["sk-[A-Za-z0-9]{20,}"]}})
+    act = Activity(
+        source=Source.GITHUB,
+        session_id="o/r#1",
+        timestamp_start="2026-01-01T00:00:00+00:00",
+        extra={
+            "own_comments": ["looks good sk-ABCDEFGHIJKLMNOPQRSTU here", "second"],
+            "number": 1,
+        },
+    )
+    out = pf.apply(act)
+    assert out is not None
+    assert out.extra["own_comments"][0] == "looks good [REDACTED] here"
+    assert out.extra["own_comments"][1] == "second"
+    assert out.extra["number"] == 1  # non-str/list untouched
