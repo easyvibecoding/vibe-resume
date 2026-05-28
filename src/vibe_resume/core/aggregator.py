@@ -94,6 +94,7 @@ def _infer_tech(act: Activity) -> list[str]:
 
 
 HASH_ID_RE = re.compile(r"^[0-9a-f]{20,}$")
+_ID_NAME_RE = re.compile(r"^[a-z0-9_]+:[0-9a-fA-F]{6,}$")
 NOISE_SUBSTRINGS = {
     "new chat",
     "cursor:misc",
@@ -124,6 +125,22 @@ def _humanize_name(raw: str, path: str | None, activities: list[Activity]) -> st
     if len(leaf) > NAME_MAX_LEN:
         return leaf[:NAME_TRUNCATED_LEN].rstrip() + "…"
     return leaf
+
+
+def _humanize_group_name(name: str, path: str | None) -> str:
+    """Post-process: replace source-prefixed hex IDs with a human-readable label.
+
+    Handles names like ``gemini:a1b2c3d4e5`` that slip through ``_humanize_name``
+    because they are shorter than HASH_ID_RE's 20-char floor.
+    """
+    if path:
+        base = Path(path).name
+        if base:
+            return base
+    if _ID_NAME_RE.match(name or ""):
+        prefix = name.split(":", 1)[0]
+        return f"{prefix} session {name.split(':', 1)[1][:6]}"
+    return name
 
 
 def _is_meaningful(raw_key: str, g: ProjectGroup, min_sessions: int) -> bool:
@@ -273,7 +290,7 @@ def aggregate_from_cache(cfg: dict[str, Any], cache_dir: Path) -> list[ProjectGr
         cat_counts = tally_categories(acts)
         breadth = capability_breadth(cat_counts)
         headline = _make_headline(cat_counts)
-        display_name = _humanize_name(key, path_val, acts)
+        display_name = _humanize_group_name(_humanize_name(key, path_val, acts), path_val)
         canonical_tech = canonical_list(sorted(tech))
 
         prior = prior_enrich.get(display_name, {})
