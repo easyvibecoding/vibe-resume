@@ -4,6 +4,29 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] — 2026-05-28
+
+### Fixed (P0 regression)
+
+- **`ROOT` resolved to the install dir, not the user's working tree (#27).**
+  0.5.0's wheel packaging (#18) put the package in `site-packages`, so the
+  `vibe-resume` console script computed `ROOT = Path(__file__).parent` →
+  `site-packages`, breaking every `ROOT / "data/..."` path. `doctor` and
+  `review-diff` failed out of the box; `review`/`trend`/`run` were affected
+  whenever invoked via the installed script from a normal CWD.
+
+  **Root-cause fix (not a patch):** `ROOT` conflated two path domains —
+  *user data* (`data/`, `profile.yaml`, `config.yaml`, which belong in the
+  CWD like git) and *package resources* (bundled templates, company-profile
+  YAML, the version string, which ship inside the install). New
+  `core/paths.py::user_root()` is the single CWD-based source of truth
+  (`VIBE_RESUME_ROOT` still overrides), replacing 7 duplicated
+  `Path(__file__)` expressions. Bundled templates now resolve
+  package-relative; `doctor` reads the version via `importlib.metadata`.
+  A console-script-equivalent smoke test (runs the CLI from a foreign CWD)
+  guards against recurrence — the one configuration 0.5.0's CI never
+  exercised.
+
 ## [0.5.0] — 2026-05-28
 
 Issue-driven release closing 25 issues filed against 0.4.0 (one declined).
