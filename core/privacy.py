@@ -86,3 +86,41 @@ class PrivacyFilter:
                 k: (self.redact(v) if isinstance(v, str) else v) for k, v in act.extra.items()
             }
         return act
+
+
+def derive_profile_redactors(profile: dict, base_patterns: list[str] | None = None) -> list[str]:
+    """Build redact patterns from profile name/email so the user's identity
+    never leaks into enriched bullets, regardless of which invocation path runs.
+
+    Combines explicit config.privacy.redact_patterns (base_patterns) with
+    auto-derived ones from profile.name / profile.email and their locale variants.
+    """
+    patterns: list[str] = list(base_patterns or [])
+
+    def _add_name(val: str) -> None:
+        val = (val or "").strip()
+        if len(val) >= 2:
+            patterns.append(re.escape(val))
+            for token in val.split():
+                if len(token) >= 2:
+                    patterns.append(re.escape(token))
+
+    _add_name(profile.get("name", ""))
+    # locale-specific name overrides: name_zh_TW, name_ja_JP, etc.
+    for k, v in profile.items():
+        if k.startswith("name_") and isinstance(v, str):
+            _add_name(v)
+
+    email = (profile.get("email") or "").strip()
+    if email:
+        patterns.append(re.escape(email))
+        patterns.append(re.escape(email.split("@")[0]))
+
+    # de-dup preserving order
+    seen: set[str] = set()
+    out: list[str] = []
+    for p in patterns:
+        if p not in seen:
+            seen.add(p)
+            out.append(p)
+    return out

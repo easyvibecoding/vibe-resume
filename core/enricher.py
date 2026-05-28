@@ -89,11 +89,20 @@ vocabulary) over generic phrasing when the data supports it.
 
 console = Console()
 
-ENRICH_JOBS_DIR = (
-    Path(os.environ.get("VIBE_RESUME_ROOT") or Path(__file__).parent.parent)
-    / "data"
-    / "enrich_jobs"
-)
+_ROOT = Path(os.environ.get("VIBE_RESUME_ROOT") or Path(__file__).parent.parent)
+
+ENRICH_JOBS_DIR = _ROOT / "data" / "enrich_jobs"
+
+
+def _load_profile_dict() -> dict:
+    import yaml as _yaml
+    p = _ROOT / "profile.yaml"
+    if not p.exists():
+        return {}
+    try:
+        return _yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+    except _yaml.YAMLError:
+        return {}
 
 # Two shapes of bullet writing — pick by locale style.
 PROMPT_TEMPLATE_XYZ = """You are drafting resume bullets for a software engineer, following 2026 hiring focus points:
@@ -548,6 +557,23 @@ def _do_ingest(persona: str | None, locale_key: str) -> None:
     enriched, warnings = ingest_jobs(manifest)
     for w in warnings:
         console.print(f"  [yellow]{w}[/yellow]")
+
+    import re as _re
+
+    from core.privacy import derive_profile_redactors
+    profile = _load_profile_dict()
+    pats = derive_profile_redactors(profile)
+    if pats:
+        compiled = [_re.compile(p) for p in pats]
+        def _scrub(s: str) -> str:
+            for rx in compiled:
+                s = rx.sub("[REDACTED]", s)
+            return s
+        for g in enriched:
+            if g.summary:
+                g.summary = _scrub(g.summary)
+            g.achievements = [_scrub(a) for a in g.achievements]
+        console.print(f"[dim]ℹ scrubbed {len(pats)} profile-derived name/email patterns from bullets[/dim]")
 
     out_path = groups_path_for(persona, locale_key)
     out_path.write_bytes(orjson.dumps(
