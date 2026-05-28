@@ -57,7 +57,7 @@ If the user is asking about generating, rendering, tailoring, reviewing, or
 trending their résumé — open [`skills/ai-used-resume/SKILL.md`](skills/ai-used-resume/SKILL.md)
 and follow its workflow. The CLI binary is `vibe-resume` (installed via
 `uv pip install -e ".[dev]"`); the same commands also work as
-`uv run python cli.py <command>`.
+`uv run python -m vibe_resume <command>`.
 
 ## For the human reading this file
 

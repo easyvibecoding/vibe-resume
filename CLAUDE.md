@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 uv venv && uv pip install -e ".[dev]"   # one-time setup (installs `vibe-resume` entry point)
 
 uv run vibe-resume <subcommand>         # canonical invocation (post-install)
-uv run python cli.py <subcommand>       # equivalent pre-install path used in tests/docs
+uv run python -m vibe_resume <subcommand>  # equivalent module invocation
 
 uv run pytest tests/                    # full suite (currently 50 tests)
 uv run pytest tests/test_review.py      # single file
