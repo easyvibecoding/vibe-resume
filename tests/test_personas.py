@@ -148,6 +148,19 @@ def test_groups_path_for_is_persona_scoped(tmp_path, monkeypatch) -> None:
     assert p.name == "_project_groups.tech_lead.en_US.json"
 
 
+def test_agentic_persona_registered():
+    from core.personas import get_persona
+    p = get_persona("agentic")
+    assert p is not None
+    assert p.label == "Agentic Engineer"
+    assert p.review_weights and p.review_weights.get("Keyword echo (JD)") == 1.4
+
+
+def test_agentic_in_persona_keys():
+    from core.personas import list_persona_keys
+    assert "agentic" in list_persona_keys()
+
+
 def test_load_groups_falls_back_to_canonical_when_persona_cache_missing(
     tmp_path, monkeypatch
 ) -> None:

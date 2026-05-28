@@ -54,6 +54,12 @@ ACADEMIC_WEIGHTS: dict[str, float] = {
     "Numbers per bullet": 0.8,
     "Keyword echo (JD)": 0.8,
 }
+AGENTIC_WEIGHTS: dict[str, float] = {
+    "Keyword echo (JD)": 1.4,
+    "Numbers per bullet": 1.3,
+    "Top fold": 1.2,
+    "Page count": 0.8,
+}
 
 PERSONAS: dict[str, Persona] = {
     "tech_lead": Persona(
@@ -150,6 +156,30 @@ PERSONAS: dict[str, Persona] = {
             "matter less than evaluation rigour and contribution-to-field framing."
         ),
         review_weights=ACADEMIC_WEIGHTS,
+    ),
+    "agentic": Persona(
+        key="agentic",
+        label="Agentic Engineer",
+        lens="Head of AI / ML Platform Lead — scans for named frameworks + production eval evidence",
+        enrich_bias=(
+            "Frame the candidate as a Senior Agentic Engineer. ONLY when the raw activity "
+            "supports it: use agent terminology (agent loop, tool use, MCP server, RAG pipeline, "
+            "embedding retrieval, LLM-as-Judge, evaluation harness, guardrails); name specific "
+            "frameworks actually present in the activity (LangChain, LangGraph, LlamaIndex, MCP, "
+            "CrewAI, AutoGen, Anthropic Agent SDK, OpenAI Agents SDK, Vercel AI SDK); surface eval "
+            "metrics when present (faithfulness %, answer/context relevance, latency, cost-per-task, "
+            "tool success rate); name vector DBs when used (Weaviate, Pinecone, Milvus, Qdrant, "
+            "pgvector). Lead bullet names the agent system by capability boundary, not framework. "
+            "Never invent a framework, metric, or eval the activity doesn't show."
+        ),
+        review_tips=(
+            "Reviewer is a Head of AI / ML Platform Lead. They want: named framework + production "
+            "evidence (not demo), evaluation rigor (LLM-as-Judge, RAG triad, drift detection), "
+            "cost/latency awareness (model routing, caching), multi-agent orchestration, MCP/tool "
+            "use/structured outputs. Bullets without an eval metric, named framework, or production "
+            "signal get skipped."
+        ),
+        review_weights=AGENTIC_WEIGHTS,
     ),
 }
 
