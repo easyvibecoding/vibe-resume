@@ -400,6 +400,12 @@ def enrich_groups(
     *,
     mode: EnrichMode = "prompt",
     ingest: bool = False,
+    tailor_keywords_override: str | None = None,
+    tailor_keywords_cap: int = 12,
+    tailor_keywords_strict: bool = False,
+    clean: bool = False,
+    status: bool = False,
+    all_ready: bool = False,
 ) -> None:
     """Run the enrich stage in one of three modes.
 
@@ -412,6 +418,14 @@ def enrich_groups(
     """
     persona_keys = _resolve_persona_list(persona)
     locale_key = locale or cfg.get("render", {}).get("locale") or "en_US"
+
+    if status:
+        _show_status()
+        return
+
+    if ingest and all_ready:
+        _ingest_all_ready()
+        return
 
     if ingest:
         for p_key in persona_keys:
@@ -434,7 +448,13 @@ def enrich_groups(
         if len(persona_keys) > 1:
             console.print(f"\n[bold cyan]── persona: {p_key} ──[/bold cyan]")
         if mode == "prompt":
-            _do_emit(cfg, p_key, locale_key, tailor, company, level, limit)
+            _do_emit(
+                cfg, p_key, locale_key, tailor, company, level, limit,
+                tailor_keywords_override=tailor_keywords_override,
+                tailor_keywords_cap=tailor_keywords_cap,
+                tailor_keywords_strict=tailor_keywords_strict,
+                clean=clean,
+            )
         elif mode == "subprocess":
             _enrich_with_subprocess(
                 cfg, cache_dir, limit, locale_key, tailor,
@@ -444,9 +464,14 @@ def enrich_groups(
             _enrich_rule_based_only(cache_dir, p_key, locale_key, limit)
 
 
-def _do_emit(cfg, persona, locale_key, tailor, company, level, limit) -> None:
+def _do_emit(cfg, persona, locale_key, tailor, company, level, limit,
+             *, tailor_keywords_override=None, tailor_keywords_cap=12,
+             tailor_keywords_strict=False, clean=False) -> None:
+    import hashlib
+    from datetime import UTC, datetime
+
     from core.aggregator import load_groups as _load
-    from core.enrich_jobs import emit_jobs
+    from core.enrich_jobs import EnrichTailorInfo, emit_jobs
     from core.review import parse_jd_keywords
 
     groups = _load()
@@ -454,16 +479,34 @@ def _do_emit(cfg, persona, locale_key, tailor, company, level, limit) -> None:
         console.print("[yellow]no groups to enrich — run aggregate first[/yellow]")
         return
 
-    tailor_keywords = None
-    if tailor:
+    auto_kw: list[str] = []
+    if tailor and not tailor_keywords_strict:
         p = Path(tailor)
-        tailor_keywords = parse_jd_keywords(p) if p.exists() else None
+        auto_kw = parse_jd_keywords(p, limit=tailor_keywords_cap) if p.exists() else []
+    override_kw = [k.strip() for k in (tailor_keywords_override or "").split(",") if k.strip()]
+    merged = override_kw + [k for k in auto_kw if k not in override_kw]
+    tailor_keywords = merged[:tailor_keywords_cap] if merged else None
+
+    tailor_info = None
+    if tailor and tailor_keywords:
+        p = Path(tailor)
+        if p.exists():
+            tailor_info = EnrichTailorInfo(
+                path=str(p),
+                sha256=hashlib.sha256(p.read_bytes()).hexdigest(),
+                mtime=datetime.fromtimestamp(p.stat().st_mtime, tz=UTC),
+                extracted_keywords=list(auto_kw),
+                override_keywords=override_kw if override_kw else None,
+                strict=tailor_keywords_strict,
+            )
 
     jobs_dir = emit_jobs(
         groups, ENRICH_JOBS_DIR,
         persona=persona, locale=locale_key,
         tailor_keywords=tailor_keywords,
         company=company, level=level, limit=limit,
+        tailor_info=tailor_info,
+        clean=clean,
     )
     persona_arg = f" --persona {persona}" if persona else ""
     n = len(groups[:limit]) if limit else len(groups)
@@ -473,6 +516,14 @@ def _do_emit(cfg, persona, locale_key, tailor, company, level, limit) -> None:
         f"*.prompt.md → write *.yaml (see SKILL.md §4a), then run "
         f"`uv run vibe-resume enrich --ingest --locale {locale_key}{persona_arg}`"
     )
+    existing_yaml_count = len(list(jobs_dir.glob("*.yaml")))
+    if existing_yaml_count and not clean:
+        console.print(
+            f"[yellow]⚠ {existing_yaml_count} *.yaml from a previous round still present.[/yellow]\n"
+            f"  If you run `enrich --ingest` now, old bullets will be re-merged.\n"
+            f"  Options: process the new *.prompt.md files (overwrites *.yaml),\n"
+            f"           or rerun with `--clean` to clear yaml during emit."
+        )
 
 
 def _do_ingest(persona: str | None, locale_key: str) -> None:
@@ -499,6 +550,41 @@ def _do_ingest(persona: str | None, locale_key: str) -> None:
         option=orjson.OPT_INDENT_2,
     ))
     console.print(f"[green]✓[/green] ingested → {out_path.name} ({len(enriched)} groups)")
+
+
+def _show_status() -> None:
+    from rich.table import Table
+
+    from core.enrich_jobs import list_jobs
+
+    jobs = list_jobs(ENRICH_JOBS_DIR)
+    if not jobs:
+        console.print("[dim]no jobs in data/enrich_jobs/[/dim]")
+        return
+
+    t = Table(title="Enrich jobs")
+    t.add_column("Persona")
+    t.add_column("Locale")
+    t.add_column("Progress")
+    for j in jobs:
+        prog_status = "✓ ready" if j["ready"] else (
+            "pending" if j["done"] == 0 else "in prog"
+        )
+        t.add_row(j["persona"], j["locale"], f"{j['done']}/{j['total']}  {prog_status}")
+    console.print(t)
+
+
+def _ingest_all_ready() -> None:
+    from core.enrich_jobs import list_jobs
+
+    jobs = list_jobs(ENRICH_JOBS_DIR)
+    ready = [j for j in jobs if j["ready"]]
+    if not ready:
+        console.print("[yellow]no ready batches to ingest[/yellow]")
+        return
+    for j in ready:
+        persona = None if j["persona"] == "default" else j["persona"]
+        _do_ingest(persona, j["locale"])
 
 
 def _enrich_rule_based_only(cache_dir, persona, locale_key, limit) -> None:

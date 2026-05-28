@@ -32,12 +32,23 @@ class EnrichJobEntry(BaseModel):
     status: Literal["pending", "done"]
 
 
+class EnrichTailorInfo(BaseModel):
+    """Metadata about the JD file used during emit, for ingest-time staleness check."""
+    path: str
+    sha256: str
+    mtime: AwareDatetime
+    extracted_keywords: list[str]
+    override_keywords: list[str] | None = None  # set by --tailor-keywords (#7)
+    strict: bool = False                         # set by --tailor-keywords-strict (#7)
+
+
 class EnrichJobManifest(BaseModel):
     version: int = 1
     created_at: AwareDatetime
     locale: str
     persona: str | None = None
     tailor_keywords: list[str] | None = None
+    tailor: EnrichTailorInfo | None = None        # None when --tailor not used
     company: str | None = None
     level: str | None = None
     groups: list[EnrichJobEntry]
@@ -62,6 +73,8 @@ def emit_jobs(
     company: str | None,
     level: str | None,
     limit: int | None = None,
+    tailor_info: EnrichTailorInfo | None = None,
+    clean: bool = False,
 ) -> Path:
     """Write manifest.json + N *.prompt.md files for the session to process.
 
@@ -83,6 +96,10 @@ def emit_jobs(
 
     jobs_dir = out_root / (persona or "default") / locale
     jobs_dir.mkdir(parents=True, exist_ok=True)
+
+    if clean:
+        for old_yaml in jobs_dir.glob("*.yaml"):
+            old_yaml.unlink()
 
     selected = groups if limit is None else groups[:limit]
 
@@ -128,6 +145,7 @@ def emit_jobs(
         locale=locale,
         persona=persona,
         tailor_keywords=tailor_keywords,
+        tailor=tailor_info,
         company=company,
         level=level,
         groups=entries,
@@ -151,6 +169,8 @@ def ingest_jobs(manifest_path: Path) -> tuple[list[ProjectGroup], list[str]]:
     aborts — they become warnings and the group falls back to its rule-based
     summary so the caller can still write a coherent enriched cache.
     """
+    import hashlib
+
     from core.enricher import _apply_parsed_output, _fallback_summary
 
     manifest = EnrichJobManifest.model_validate_json(manifest_path.read_text())
@@ -159,6 +179,18 @@ def ingest_jobs(manifest_path: Path) -> tuple[list[ProjectGroup], list[str]]:
     raw = _load_raw_groups()
     by_name = {g.name: g for g in raw}
     warnings: list[str] = []
+
+    if manifest.tailor:
+        p = Path(manifest.tailor.path)
+        if p.exists():
+            current_sha = hashlib.sha256(p.read_bytes()).hexdigest()
+            if current_sha != manifest.tailor.sha256:
+                warnings.append(
+                    f"JD file {p} content changed since emit "
+                    f"(sha mismatch). Cached prompts use old keywords; "
+                    f"re-emit before ingest to refresh."
+                )
+
     enriched: list[ProjectGroup] = []
 
     for entry in manifest.groups:
@@ -192,3 +224,35 @@ def ingest_jobs(manifest_path: Path) -> tuple[list[ProjectGroup], list[str]]:
         enriched.append(g)
 
     return enriched, warnings
+
+
+def list_jobs(jobs_root: Path) -> list[dict]:
+    """Return [{persona, locale, total, done, ready, manifest_path}, ...].
+
+    Walks jobs_root/<persona>/<locale>/manifest.json and reports per-batch
+    progress so --status can surface a human-readable table.
+    """
+    out = []
+    if not jobs_root.exists():
+        return out
+    for persona_dir in sorted(jobs_root.iterdir()):
+        if not persona_dir.is_dir():
+            continue
+        for locale_dir in sorted(persona_dir.iterdir()):
+            mf = locale_dir / "manifest.json"
+            if not mf.exists():
+                continue
+            try:
+                m = EnrichJobManifest.model_validate_json(mf.read_text())
+            except Exception:
+                continue
+            done = sum(1 for e in m.groups if (locale_dir / e.output_path).exists())
+            out.append({
+                "persona": persona_dir.name,
+                "locale": locale_dir.name,
+                "total": len(m.groups),
+                "done": done,
+                "ready": done == len(m.groups) and len(m.groups) > 0,
+                "manifest_path": mf,
+            })
+    return out

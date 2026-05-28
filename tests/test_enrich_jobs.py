@@ -269,3 +269,116 @@ def test_sample_fixture_manifest_parses():
     assert m.groups[0].status == "done"
     assert (fixture.parent / m.groups[0].prompt_path).exists()
     assert (fixture.parent / m.groups[0].output_path).exists()
+
+
+# ---------------------------------------------------------------------------
+# Fix #8 — manifest records JD sha+mtime; ingest warns on drift
+# ---------------------------------------------------------------------------
+
+from core.enrich_jobs import EnrichTailorInfo  # noqa: E402
+
+
+def test_manifest_schema_accepts_tailor_info():
+    """EnrichTailorInfo round-trips through EnrichJobManifest.model_dump_json."""
+    m = EnrichJobManifest(
+        created_at=datetime(2026, 5, 28, 12, 0, tzinfo=UTC),
+        locale="en_US",
+        tailor=EnrichTailorInfo(
+            path="data/imports/jd.txt",
+            sha256="a" * 64,
+            mtime=datetime(2026, 5, 28, 10, 0, tzinfo=UTC),
+            extracted_keywords=["FastAPI", "RAG"],
+        ),
+        groups=[],
+    )
+    assert m.tailor is not None
+    assert m.tailor.sha256.startswith("a")
+    # round-trip
+    restored = EnrichJobManifest.model_validate_json(m.model_dump_json())
+    assert restored.tailor is not None
+    assert restored.tailor.extracted_keywords == ["FastAPI", "RAG"]
+    assert restored.tailor.strict is False
+
+
+def test_ingest_warns_on_jd_sha_mismatch(tmp_path: Path, monkeypatch):
+    """ingest_jobs emits a warning when the JD file content changed since emit."""
+    import hashlib
+
+    jd = tmp_path / "jd.txt"
+    jd.write_text("original JD content")
+    orig_sha = hashlib.sha256(jd.read_bytes()).hexdigest()
+
+    jobs_dir = tmp_path / "jobs"
+    jobs_dir.mkdir()
+    manifest = EnrichJobManifest(
+        created_at=datetime(2026, 5, 28, 12, 0, tzinfo=UTC),
+        locale="en_US",
+        tailor=EnrichTailorInfo(
+            path=str(jd),
+            sha256=orig_sha,
+            mtime=datetime(2026, 5, 28, 10, 0, tzinfo=UTC),
+            extracted_keywords=["X"],
+        ),
+        groups=[],
+    )
+    (jobs_dir / "manifest.json").write_text(manifest.model_dump_json())
+
+    monkeypatch.setattr("core.enrich_jobs._load_raw_groups", lambda: [])
+
+    # JD unchanged — no sha-mismatch warning
+    _, w1 = ingest_jobs(jobs_dir / "manifest.json")
+    assert not any("sha mismatch" in s for s in w1)
+
+    # Edit JD — should trigger the warning
+    jd.write_text("EDITED JD content")
+    _, w2 = ingest_jobs(jobs_dir / "manifest.json")
+    assert any("sha mismatch" in s for s in w2)
+
+
+def test_ingest_no_tailor_no_warning(tmp_path: Path, monkeypatch):
+    """When manifest.tailor is None (no --tailor flag), no sha warning is produced."""
+    jobs_dir = tmp_path / "jobs"
+    jobs_dir.mkdir()
+    manifest = EnrichJobManifest(
+        created_at=datetime(2026, 5, 28, 12, 0, tzinfo=UTC),
+        locale="en_US",
+        tailor=None,
+        groups=[],
+    )
+    (jobs_dir / "manifest.json").write_text(manifest.model_dump_json())
+    monkeypatch.setattr("core.enrich_jobs._load_raw_groups", lambda: [])
+
+    _, w = ingest_jobs(jobs_dir / "manifest.json")
+    assert not any("sha mismatch" in s for s in w)
+
+
+# ---------------------------------------------------------------------------
+# Fix #20 — --clean flag + re-emit yaml warning
+# ---------------------------------------------------------------------------
+
+
+def test_emit_clean_flag_clears_old_yaml(tmp_path: Path):
+    """--clean deletes pre-existing *.yaml files before writing fresh prompts."""
+    groups = [_fake_group("proj-foo")]
+    out = emit_jobs(groups, tmp_path, persona=None, locale="en_US",
+                    tailor_keywords=None, company=None, level=None)
+    (out / "001_proj-foo.yaml").write_text("old\n")
+
+    emit_jobs(groups, tmp_path, persona=None, locale="en_US",
+              tailor_keywords=None, company=None, level=None, clean=True)
+
+    assert not (out / "001_proj-foo.yaml").exists()
+
+
+def test_emit_no_clean_preserves_old_yaml(tmp_path: Path):
+    """Without --clean, existing *.yaml survive a re-emit."""
+    groups = [_fake_group("proj-foo")]
+    out = emit_jobs(groups, tmp_path, persona=None, locale="en_US",
+                    tailor_keywords=None, company=None, level=None)
+    (out / "001_proj-foo.yaml").write_text("kept\n")
+
+    emit_jobs(groups, tmp_path, persona=None, locale="en_US",
+              tailor_keywords=None, company=None, level=None)
+
+    assert (out / "001_proj-foo.yaml").exists()
+    assert (out / "001_proj-foo.yaml").read_text() == "kept\n"
