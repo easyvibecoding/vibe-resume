@@ -4,6 +4,37 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.3] — 2026-05-28
+
+### Fixed
+
+- **#33: duplicate-named project groups collided on `enrich --ingest`.**
+  Ingest matched each manifest entry's YAML back to a raw group **by name**,
+  so two same-named groups (e.g. a git-only + a codex-only variant of one
+  project) resolved to the same object — one group's enriched
+  `summary`/`achievements` was silently overwritten (ended up `[]`). Ingest
+  now matches by the manifest entry's **index** (`id`), which `emit_jobs`
+  assigns over the raw group list — a stable, collision-free key. Added
+  name-mismatch + index-out-of-range warnings to surface the "aggregate
+  re-run since emit" divergent-set case instead of silently misattaching.
+  `emit_jobs` status carry-forward is now keyed by `output_path` (unique)
+  rather than name.
+
+### Added / changed (render polish — #36)
+
+- **Configurable detailed-project count.** `render --top-n N` /
+  `config.render.detailed_projects` replaces the hardcoded `top_n = 6` in
+  every locale template (was a hand-edit to produce a detailed résumé).
+- **Composite project ranking.** Ordering now scores
+  `sessions + achievements×5 + breadth×2` (descending) instead of favouring
+  `capability_breadth`, so a focused high-session project is no longer
+  buried under broad-but-shallow work.
+- **ID-only CLI group names humanized.** Groups surfacing as `gemini:<hex>`
+  now derive a readable name (path basename, or `<source> session <short>`)
+  instead of leaking the session id as the project title.
+- **Empty education/cert `year` no longer renders `()` / `（）`** — paren
+  output is guarded across all locale templates (ASCII + full-width).
+
 ## [0.6.2] — 2026-05-28
 
 ### Fixed
