@@ -5,13 +5,14 @@ a commit in that directory's own git repo. `list-versions` walks the log.
 """
 from __future__ import annotations
 
-import os
 import subprocess
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-ROOT = Path(os.environ.get("VIBE_RESUME_ROOT") or Path(__file__).parent.parent)
+from core.paths import user_root
+
+ROOT = user_root()
 
 
 def _history_dir(cfg: dict[str, Any]) -> Path:

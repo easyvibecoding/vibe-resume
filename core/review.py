@@ -13,15 +13,15 @@ so a user can fix them before showing the resume to a real reviewer.
 from __future__ import annotations
 
 import json
-import os
 import re
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
+from core.paths import user_root
 from render.i18n import get_locale, resolve_locale
 
-ROOT = Path(os.environ.get("VIBE_RESUME_ROOT") or Path(__file__).parent.parent)
+ROOT = user_root()
 
 # -- heuristics --------------------------------------------------------------
 

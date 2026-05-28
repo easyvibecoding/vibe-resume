@@ -1,7 +1,6 @@
 """Render resume to Markdown / DOCX / PDF and snapshot via git."""
 from __future__ import annotations
 
-import os
 import shutil
 import subprocess
 from collections import Counter
@@ -13,13 +12,14 @@ from jinja2 import Environment, FileSystemLoader, TemplateNotFound, select_autoe
 from rich.console import Console
 
 from core.aggregator import load_groups, load_observed_summary, load_window_stats
+from core.paths import user_root
 from core.schema import load_profile
 from core.tech_canonical import category_label, group_by_category, source_display
 from core.versioning import snapshot
 from render.i18n import format_date, format_date_range, get_locale, localized, resolve_locale
 
 console = Console()
-ROOT = Path(os.environ.get("VIBE_RESUME_ROOT") or Path(__file__).parent.parent)
+ROOT = user_root()
 
 
 def _history_path(cfg: dict[str, Any]) -> Path:

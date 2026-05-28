@@ -6,7 +6,6 @@ If `claude` is missing, fall back to a naive rule-based summary.
 """
 from __future__ import annotations
 
-import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -19,6 +18,7 @@ from rich.console import Console
 from core.aggregator import groups_path_for, load_groups
 from core.company_profiles import CompanyProfile
 from core.levels import LevelArchetype
+from core.paths import user_root
 from core.personas import Persona
 from core.schema import ProjectGroup
 from render.i18n import get_locale
@@ -89,7 +89,7 @@ vocabulary) over generic phrasing when the data supports it.
 
 console = Console()
 
-_ROOT = Path(os.environ.get("VIBE_RESUME_ROOT") or Path(__file__).parent.parent)
+_ROOT = user_root()
 
 ENRICH_JOBS_DIR = _ROOT / "data" / "enrich_jobs"
 

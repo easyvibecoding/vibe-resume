@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import math
-import os
 import re
 from collections import defaultdict
 from pathlib import Path
@@ -13,6 +12,7 @@ import yaml
 from rich.console import Console
 
 from core.classifier import capability_breadth, tally_categories
+from core.paths import user_root
 from core.privacy import PrivacyFilter
 from core.schema import Activity, ProjectGroup
 from core.tech_canonical import canonical_list
@@ -20,7 +20,7 @@ from extractors.base import load_activities
 
 console = Console()
 
-ROOT = Path(os.environ.get("VIBE_RESUME_ROOT") or Path(__file__).parent.parent)
+ROOT = user_root()
 GROUPS_PATH = ROOT / "data" / "cache" / "_project_groups.json"
 OBSERVED_SUMMARY_PATH = ROOT / "data" / "cache" / "_observed_summary.json"
 WINDOW_STATS_PATH = ROOT / "data" / "cache" / "_window_stats.json"
