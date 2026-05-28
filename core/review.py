@@ -565,18 +565,19 @@ def resolve_resume_path(
     *,
     version: int | None = None,
     file: Path | str | None = None,
+    persona: str | None = None,
+    locale: str | None = None,
 ) -> Path:
     """Pick the rendered résumé markdown to review.
 
-    Exactly one of `version` or `file` may be set; both absent means "latest".
-    Raises `ValueError` if both are set and `FileNotFoundError` if nothing on
-    disk satisfies the request. Mutual-exclusion framing + domain errors keep
-    CLI-side `click.UsageError` mapping a one-line wrapper concern.
+    Resolution priority (mutually exclusive after the first match):
+      1. file: explicit path
+      2. version: glob resume_v<NNN>*.md
+      3. persona and/or locale: glob resume_v*_<locale>[_<persona>].md, pick highest version
+      4. otherwise: latest rendered résumé
 
-    Version resolution globs ``resume_v<NNN>*.md`` and returns the lexically
-    first match, so a bare ``resume_v042.md`` wins over persona/locale-suffixed
-    siblings. "Latest" mode returns the last entry of the sorted glob, which
-    in practice is the highest version number.
+    Raises `ValueError` if both version and file are set, and
+    `FileNotFoundError` if nothing on disk satisfies the request.
     """
     if version is not None and file is not None:
         raise ValueError("pass either `version` or `file`, not both")
@@ -589,6 +590,22 @@ def resolve_resume_path(
                 f"no resume file for v{version:03d} in {hist_dir}"
             )
         return matches[0]
+
+    if persona or locale:
+        # Build glob: resume_v*_<locale>[_<persona>].md or resume_v*_*<persona>.md etc.
+        if persona and locale:
+            pattern = f"resume_v*_{locale}_{persona}.md"
+        elif locale:
+            pattern = f"resume_v*_{locale}*.md"
+        else:  # persona only
+            pattern = f"resume_v*_{persona}.md"
+        matches = sorted(hist_dir.glob(pattern))
+        if not matches:
+            raise FileNotFoundError(
+                f"no resume file matching (persona={persona}, locale={locale}) in {hist_dir}"
+            )
+        return matches[-1]  # highest version
+
     versioned = sorted(hist_dir.glob("resume_v*.md"))
     if not versioned:
         raise FileNotFoundError(

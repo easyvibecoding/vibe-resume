@@ -368,10 +368,18 @@ def review(
 
     hist_dir = ROOT / (ctx.obj["config"].get("render", {}).get("output_dir") or "data/resume_history")
     try:
-        md_path = resolve_resume_path(hist_dir, version=version, file=file_)
+        md_path = resolve_resume_path(
+            hist_dir, version=version, file=file_,
+            persona=persona, locale=locale,
+        )
     except (ValueError, FileNotFoundError) as e:
         # Map domain errors to click's user-facing error type.
         raise click.UsageError(str(e)) from e
+
+    if (persona or locale) and not (version or file_):
+        console.print(
+            f"[dim]→ scoring {md_path.name} (matched persona={persona or '*'}, locale={locale or '*'})[/dim]"
+        )
 
     _warn_if_company_stale(company)
     jd_keywords = parse_jd_keywords(Path(jd)) if jd else None
