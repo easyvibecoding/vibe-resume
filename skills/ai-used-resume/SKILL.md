@@ -59,6 +59,7 @@ Invoke this skill whenever the user wants to **turn their AI-tool usage history 
 | JD-tailored run | `uv run vibe-resume enrich --tailor data/imports/jd.txt --locale en_US -n 1 && uv run vibe-resume render -f md --locale en_US --tailor data/imports/jd.txt` |
 | Persona-biased enrich | `uv run vibe-resume enrich --persona tech_lead --locale en_US` (keys: `tech_lead` / `hr` / `executive` / `startup_founder` / `academic`) |
 | Multi-persona enrich in one run | `uv run vibe-resume enrich --persona tech_lead,hr,executive --locale en_US` or `--persona all` — each persona writes its own `_project_groups.<persona>.json` |
+| Level-tuned enrich | `uv run vibe-resume enrich --level senior --locale en_US` (keys: `new_grad` / `junior` / `mid` / `senior` / `staff_plus` / `research_scientist`) |
 | Persona render | `uv run vibe-resume render --persona tech_lead --locale en_US` reads the persona-scoped cache and emits `resume_v<NNN>_<locale>_<persona>.md` |
 | Compare persona output | `uv run vibe-resume personas-compare --locale en_US -n 3` — side-by-side bullets per persona for the top-N groups (quality iteration loop). `--locale` required since 0.4.0. |
 | Score latest | `uv run vibe-resume review` |
@@ -124,6 +125,9 @@ Invoke this skill whenever the user wants to **turn their AI-tool usage history 
    # → merges *.yaml into _project_groups.<persona>.<L>.json
    ```
 
+   Add `--level <key>` to bias bullet ambition for the seniority bracket
+   (e.g. `enrich --level senior --locale en_US`).
+
    Multi-locale runs are independent (per-locale subdir + per-locale cache):
 
    ```bash
@@ -135,6 +139,8 @@ Invoke this skill whenever the user wants to **turn their AI-tool usage history 
    uv run vibe-resume render --locale en_US      # reads _project_groups.default.en_US.json
    uv run vibe-resume render --locale zh_TW      # reads _project_groups.default.zh_TW.json
    ```
+
+   Stacks with `--persona`/`--company` per `references/strategic-resume.md` §Axis matrix.
 
    See `tests/fixtures/enrich_jobs_sample/` for a reference of what the
    manifest + prompt + yaml triple looks like.
