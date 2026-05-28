@@ -408,7 +408,7 @@ def render_draft(
 
     md_text, ctx = _render_md(cfg, tailor, locale=locale, persona=persona)
     locale_key = ctx["locale"]["_key"]
-    loc_suffix = "" if locale_key == "en_US" else f"_{locale_key}"
+    loc_suffix = f"_{locale_key}"
     pers_suffix = f"_{persona}" if persona else ""
     suffix = f"{loc_suffix}{pers_suffix}"
     md_path = hist / f"resume_v{version:03d}{suffix}.md"

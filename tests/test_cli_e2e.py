@@ -209,8 +209,8 @@ def test_render_en_us_produces_markdown(vibe_env: Path) -> None:
     result = _run_cli("render", "-f", "md", "--locale", "en_US", cwd=vibe_env)
     assert result.returncode == 0, f"stderr:\n{result.stderr}"
 
-    # en_US is the default — file name has no locale suffix
-    rendered = sorted((vibe_env / "data" / "resume_history").glob("resume_v*.md"))
+    # Since 0.4.1 en_US also carries the locale suffix: resume_v001_en_US.md
+    rendered = sorted((vibe_env / "data" / "resume_history").glob("resume_v*_en_US.md"))
     assert rendered, f"no resume_v*.md produced; stdout:\n{result.stdout}"
     content = rendered[-1].read_text(encoding="utf-8")
     assert "Test User" in content
