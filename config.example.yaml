@@ -72,6 +72,17 @@ extractors:
     # commits authored by these emails count. Leave empty to auto-fill from
     # `git config --global user.email`.
     author_emails: []
+  github:
+    enabled: false           # network + needs `gh` CLI logged in + account-bound; opt in
+    author_logins: []        # empty → gh's currently-authenticated user (@me)
+    owned_owners: []         # owners/orgs to treat as "yours" (else PRs count as external/OSS)
+    repos_allow: []          # empty → all repos; non-empty → only these owner/repo
+    repos_block: []          # owner/repo to exclude
+    max_age_days: 1095       # ~3 years
+    max_items: 300           # cap PRs+issues (guards search-API rate limit)
+    include_issues: true
+    fetch_comments: true     # your own review/issue-thread comments
+    fetch_files: false       # per-PR changed-file paths (extra API calls)
   cloud_chatgpt:
     enabled: true
     import_dir: "./data/imports/chatgpt"

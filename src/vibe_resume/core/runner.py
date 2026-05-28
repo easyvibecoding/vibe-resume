@@ -38,6 +38,7 @@ LOCAL_EXTRACTORS = [
     "zed_ai",
     "claude_desktop",
     "git_repos",
+    "github",
 ]
 
 CLOUD_EXTRACTORS = [

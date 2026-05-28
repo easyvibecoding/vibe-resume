@@ -155,3 +155,20 @@ def test_repos_allow_whitelist(monkeypatch):
 def test_gh_missing_returns_empty(monkeypatch):
     monkeypatch.setattr(gh, "_gh_json", lambda args, timeout=30: None)
     assert gh.extract(_cfg()) == []
+
+
+def test_github_registered_and_in_config_example():
+    from pathlib import Path
+
+    import yaml
+
+    from vibe_resume.core.runner import LOCAL_EXTRACTORS
+
+    assert "github" in LOCAL_EXTRACTORS
+
+    root = Path(__file__).resolve().parent.parent
+    cfg = yaml.safe_load((root / "config.example.yaml").read_text())
+    gh_cfg = cfg["extractors"]["github"]
+    assert gh_cfg["enabled"] is False          # default off (network + gh + account-bound)
+    assert gh_cfg["fetch_files"] is False
+    assert "author_logins" in gh_cfg
