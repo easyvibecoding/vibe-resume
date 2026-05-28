@@ -60,7 +60,7 @@ Invoke this skill whenever the user wants to **turn their AI-tool usage history 
 | Persona-biased enrich | `uv run vibe-resume enrich --persona tech_lead --locale en_US` (keys: `tech_lead` / `hr` / `executive` / `startup_founder` / `academic`) |
 | Multi-persona enrich in one run | `uv run vibe-resume enrich --persona tech_lead,hr,executive --locale en_US` or `--persona all` — each persona writes its own `_project_groups.<persona>.json` |
 | Persona render | `uv run vibe-resume render --persona tech_lead --locale en_US` reads the persona-scoped cache and emits `resume_v<NNN>_<locale>_<persona>.md` |
-| Compare persona output | `uv run vibe-resume personas-compare -n 3` — side-by-side bullets per persona for the top-N groups (quality iteration loop) |
+| Compare persona output | `uv run vibe-resume personas-compare --locale en_US -n 3` — side-by-side bullets per persona for the top-N groups (quality iteration loop). `--locale` required since 0.4.0. |
 | Score latest | `uv run vibe-resume review` |
 | Score with JD echo | `uv run vibe-resume review --jd data/imports/jd.txt` |
 | Score with persona lens | `uv run vibe-resume review --persona hr` — appends persona-specific review tips |
@@ -181,6 +181,8 @@ locale leaks, `--all-locales` format quirk, first-run extraction
 slowness, CJK contact-line wrapping, the `claude -p` optional fallback,
 and the privacy rules around `profile.yaml` / `data/imports/` — lives
 in [references/troubleshooting.md](references/troubleshooting.md).
+
+- `personas-compare` requires `--locale` (the enriched cache split per-locale in 0.4.0); see CHANGELOG.
 
 ## Verification
 
