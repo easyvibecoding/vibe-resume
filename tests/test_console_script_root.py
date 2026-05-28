@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -26,7 +27,7 @@ def test_doctor_reports_cwd_profile_not_repo(tmp_path):
     _seed_config(tmp_path)
     env = {k: v for k, v in os.environ.items() if k != "VIBE_RESUME_ROOT"}
     r = subprocess.run(
-        ["uv", "run", "python", "-m", "vibe_resume", "doctor"],
+        [sys.executable, "-m", "vibe_resume", "doctor"],
         capture_output=True, text=True, timeout=60, cwd=tmp_path, env=env,
     )
     assert r.returncode == 0, r.stderr
@@ -51,7 +52,7 @@ def test_review_diff_uses_cwd_data_dir(tmp_path):
 
     env = {k: v for k, v in os.environ.items() if k != "VIBE_RESUME_ROOT"}
     r = subprocess.run(
-        ["uv", "run", "python", "-m", "vibe_resume", "review-diff", "1", "2"],
+        [sys.executable, "-m", "vibe_resume", "review-diff", "1", "2"],
         capture_output=True, text=True, timeout=60, cwd=tmp_path, env=env,
     )
     # Should resolve files from tmp_path/data/resume_history, not error out
