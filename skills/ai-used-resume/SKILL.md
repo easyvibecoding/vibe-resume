@@ -272,4 +272,5 @@ rule.
 - `uv run vibe-resume list-versions` — résumé version history from internal git
 - `uv run vibe-resume diff v001 v002` — diff two versions
 - `uv run vibe-resume completion zsh --install` — shell completion so `--locale <tab>` expands
+- `uv run vibe-resume doctor` — diagnose CLI/plugin version drift, profile/config presence, optional-dep availability
 - `scripts/backup_claude_projects.sh` (macOS/Linux) / `scripts/backup_claude_projects.ps1` (Windows) — back up `~/.claude/projects` before Claude Code's 30-day cleanup

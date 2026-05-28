@@ -1241,5 +1241,73 @@ def run_cmd(
     )
 
 
+@cli.command()
+@click.pass_context
+def doctor(ctx: click.Context) -> None:
+    """Diagnose setup: CLI version, plugin version drift, profile/config presence."""
+    import tomllib
+
+    console.print("[bold]vibe-resume doctor[/bold]\n")
+
+    # CLI version (from pyproject)
+    try:
+        pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text())
+        cli_version = pyproject["project"]["version"]
+        console.print(f"[green]✓[/green] CLI version: {cli_version}")
+    except Exception as e:
+        cli_version = None
+        console.print(f"[yellow]⚠[/yellow] could not read CLI version: {e}")
+
+    # Plugin manifest version (if present in this tree)
+    plugin_manifest = ROOT / ".claude-plugin" / "plugin.json"
+    if plugin_manifest.exists():
+        import json
+        try:
+            pv = json.loads(plugin_manifest.read_text()).get("version")
+            if cli_version and pv and pv != cli_version:
+                console.print(
+                    f"[yellow]⚠[/yellow] plugin.json version {pv} != CLI version {cli_version} — "
+                    f"if you have both a plugin install and a work tree, align them "
+                    f"(`git pull && uv sync` in the work tree)."
+                )
+            else:
+                console.print(f"[green]✓[/green] plugin version: {pv} (in sync)")
+        except Exception as e:
+            console.print(f"[yellow]⚠[/yellow] plugin.json unreadable: {e}")
+    else:
+        console.print("[dim]·[/dim] no .claude-plugin/plugin.json in this tree (not a plugin checkout)")
+
+    # profile.yaml / config.yaml presence
+    for fname in ("profile.yaml", "config.yaml"):
+        p = ROOT / fname
+        if p.exists():
+            console.print(f"[green]✓[/green] {fname} present")
+        else:
+            console.print(
+                f"[yellow]⚠[/yellow] {fname} missing — run setup or copy from "
+                f"{fname.replace('.yaml', '.example.yaml')}"
+            )
+
+    # data/imports/ non-sample files (privacy reminder)
+    imports = ROOT / "data" / "imports"
+    if imports.exists():
+        extra = [f.name for f in imports.glob("*") if f.name != "sample_jd.txt" and f.is_file()]
+        if extra:
+            console.print(
+                f"[dim]·[/dim] data/imports/ has {len(extra)} non-sample file(s): "
+                f"{', '.join(extra[:3])}"
+                f"{' …' if len(extra) > 3 else ''} — gitignored (only sample_jd.txt is committed), safe."
+            )
+
+    # pandoc / claude availability (optional deps)
+    import shutil
+    console.print(
+        f"[dim]·[/dim] pandoc: {'found' if shutil.which('pandoc') else 'not found (PDF rendering disabled)'}"
+    )
+    console.print(
+        f"[dim]·[/dim] claude CLI: {'found' if shutil.which('claude') else 'not found (--mode subprocess unavailable; default prompt mode unaffected)'}"
+    )
+
+
 if __name__ == "__main__":
     cli()
