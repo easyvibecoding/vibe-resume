@@ -4,6 +4,26 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1] — 2026-05-28
+
+### Fixed (test infrastructure)
+
+- **#27 regression guard never actually executed (#29).** The two
+  console-script guards added in 0.5.1 invoked `uv run python -m vibe_resume`
+  with `cwd=tmp_path`. `uv` walks up from the cwd for a `pyproject.toml`,
+  finds none in a pytest temp dir, and falls back to an ad-hoc interpreter
+  with no `vibe_resume` installed → `No module named vibe_resume` before any
+  `ROOT`-resolution code runs. The guard proved nothing and was red/flaky
+  depending on inherited shell env. Switched to `sys.executable -m
+  vibe_resume`: the pytest interpreter has `vibe_resume`, `python -m`
+  resolves it from `sys.path`, and `cwd=tmp_path` still exercises the
+  CWD-based `ROOT` logic — which is the whole point. Confirmed the guard now
+  *fails* if `user_root()` is reverted to install-dir resolution, so the #27
+  regression finally has a guard with teeth.
+
+  Product behaviour unchanged — this is a test-only fix; 0.6.0's shipped code
+  was already correct.
+
 ## [0.6.0] — 2026-05-28
 
 ### Changed (packaging — #18 root cause)
