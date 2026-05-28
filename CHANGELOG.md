@@ -4,6 +4,34 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] — 2026-05-29
+
+### Added
+
+- **GitHub PR/issue extractor** (`extractors/local/github.py`, #34): pulls the
+  author's PRs/issues + own review-thread comments via `gh` CLI (no token
+  handling). Detects owned vs external (open-source) contributions; external
+  merged PRs are exempt from the noise filter and framed as "contributed to".
+  New `github:` config block (disabled by default).
+- `sessions:` config block (`sample_prompts`, `per_prompt_chars`,
+  `capture_tool_args`, `keep_assistant`) shared by conversation extractors.
+- `enrich.input_activities` / `enrich.input_char_budget` config to widen the
+  LLM input window (was hard-coded 12 activities / 200 chars).
+
+### Changed
+
+- git extractor now captures commit **bodies** (`%b`) and touched **file
+  paths**, not just subjects (#35).
+- claude_code / codex extractors spread-sample prompts across the session
+  timeline (deduped) instead of keeping only the first ~8, and can keep a
+  sample of tool-call arguments (#35).
+- claude.ai export retains assistant responses (#35).
+
+### Fixed
+
+- `PrivacyFilter` now redacts string elements inside `list` values in
+  `extra` (review comments / tool args), closing a redaction gap.
+
 ## [0.6.3] — 2026-05-28
 
 ### Fixed
