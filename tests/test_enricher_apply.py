@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from core.enricher import (
+from vibe_resume.core.enricher import (
     ACHIEVEMENT_MAX_LEN,
     ACHIEVEMENTS_MAX_COUNT,
     SUMMARY_MAX_LEN,
@@ -18,7 +18,7 @@ from core.enricher import (
     TECH_HARD_MAX_LEN,
     _apply_parsed_output,
 )
-from core.schema import ProjectGroup, Source
+from vibe_resume.core.schema import ProjectGroup, Source
 
 
 def _blank_group() -> ProjectGroup:

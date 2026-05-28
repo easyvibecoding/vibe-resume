@@ -9,7 +9,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 def test_doctor_runs_and_reports_cli_version():
     r = subprocess.run(
-        ["uv", "run", "python", "cli.py", "doctor"],
+        ["uv", "run", "python", "-m", "vibe_resume", "doctor"],
         capture_output=True, text=True, timeout=30, cwd=REPO_ROOT,
     )
     assert r.returncode == 0, r.stderr
@@ -19,7 +19,7 @@ def test_doctor_runs_and_reports_cli_version():
 
 def test_doctor_in_help():
     r = subprocess.run(
-        ["uv", "run", "python", "cli.py", "--help"],
+        ["uv", "run", "python", "-m", "vibe_resume", "--help"],
         capture_output=True, text=True, timeout=30, cwd=REPO_ROOT,
     )
     assert "doctor" in r.stdout

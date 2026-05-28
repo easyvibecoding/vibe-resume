@@ -10,8 +10,8 @@ from pathlib import Path
 import orjson
 import pytest
 
-from core import aggregator
-from core.aggregator import _metrics_for_project
+from vibe_resume.core import aggregator
+from vibe_resume.core.aggregator import _metrics_for_project
 
 
 def _write_groups(path: Path, groups: list[dict]) -> None:

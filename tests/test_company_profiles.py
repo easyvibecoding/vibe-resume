@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from core.company_profiles import (
+from vibe_resume.core.company_profiles import (
     COMPANY_PROFILES,
     KNOWN_TIERS,
     STALE_DEFAULT_DAYS,
@@ -30,7 +30,7 @@ from core.company_profiles import (
     stale_profiles,
     update_last_verified_at,
 )
-from core.levels import (
+from vibe_resume.core.levels import (
     LEVELS,
     LevelArchetype,
     get_level,
@@ -319,7 +319,7 @@ def _make_demo_group():
     """Copy of the persona-test factory so this file stays self-contained."""
     from datetime import UTC, datetime
 
-    from core.schema import ProjectGroup, Source
+    from vibe_resume.core.schema import ProjectGroup, Source
 
     now = datetime(2026, 3, 1, tzinfo=UTC)
     return ProjectGroup(
@@ -342,9 +342,9 @@ def test_build_prompt_injects_company_block_last():
     The block ordering is load-bearing: the model re-reads the most-recent
     guidance when emitting YAML, and company is the most specific lens.
     """
-    from core.company_profiles import COMPANY_PROFILES
-    from core.enricher import _build_prompt
-    from render.i18n import get_locale
+    from vibe_resume.core.company_profiles import COMPANY_PROFILES
+    from vibe_resume.core.enricher import _build_prompt
+    from vibe_resume.render.i18n import get_locale
 
     c = COMPANY_PROFILES["openai"]
     prompt = _build_prompt(
@@ -360,17 +360,17 @@ def test_build_prompt_injects_company_block_last():
 
 
 def test_build_prompt_company_block_omitted_when_none():
-    from core.enricher import _build_prompt
-    from render.i18n import get_locale
+    from vibe_resume.core.enricher import _build_prompt
+    from vibe_resume.render.i18n import get_locale
 
     prompt = _build_prompt(_make_demo_group(), get_locale("en_US"))
     assert "Target employer" not in prompt
 
 
 def test_build_prompt_level_block_contains_lead_signal():
-    from core.enricher import _build_prompt
-    from core.levels import LEVELS
-    from render.i18n import get_locale
+    from vibe_resume.core.enricher import _build_prompt
+    from vibe_resume.core.levels import LEVELS
+    from vibe_resume.render.i18n import get_locale
 
     lvl = LEVELS["senior"]
     prompt = _build_prompt(
@@ -386,11 +386,11 @@ def test_build_prompt_block_order_tailor_persona_level_company():
     """Given all four biases, the order from top-to-bottom must be
     tailor → persona → level → company, so the most-specific guidance
     lands nearest the model's YAML emission."""
-    from core.company_profiles import COMPANY_PROFILES
-    from core.enricher import _build_prompt
-    from core.levels import LEVELS
-    from core.personas import PERSONAS
-    from render.i18n import get_locale
+    from vibe_resume.core.company_profiles import COMPANY_PROFILES
+    from vibe_resume.core.enricher import _build_prompt
+    from vibe_resume.core.levels import LEVELS
+    from vibe_resume.core.personas import PERSONAS
+    from vibe_resume.render.i18n import get_locale
 
     prompt = _build_prompt(
         _make_demo_group(),
@@ -411,7 +411,7 @@ def test_build_prompt_block_order_tailor_persona_level_company():
 
 
 def test_review_file_injects_company_and_level_tips(tmp_path: Path):
-    from core.review import review_file
+    from vibe_resume.core.review import review_file
 
     md = tmp_path / "resume_v001.md"
     md.write_text(
@@ -498,7 +498,7 @@ def test_update_preserves_other_yaml_content(tmp_path: Path):
 
 
 def test_company_keyword_coverage_zero_hits():
-    from core.review import _check_company_keyword_coverage
+    from vibe_resume.core.review import _check_company_keyword_coverage
 
     md = "# John Doe\n\n## Experience\n\n- Did nothing relevant here.\n"
     c = COMPANY_PROFILES["openai"]
@@ -510,7 +510,7 @@ def test_company_keyword_coverage_zero_hits():
 
 
 def test_company_keyword_coverage_full_hits():
-    from core.review import _check_company_keyword_coverage
+    from vibe_resume.core.review import _check_company_keyword_coverage
 
     c = COMPANY_PROFILES["openai"]
     # build a fake résumé that mentions every anchor
@@ -523,7 +523,7 @@ def test_company_keyword_coverage_full_hits():
 
 
 def test_company_keyword_coverage_partial():
-    from core.review import _check_company_keyword_coverage
+    from vibe_resume.core.review import _check_company_keyword_coverage
 
     c = COMPANY_PROFILES["openai"]
     # include only the first two anchors
@@ -555,14 +555,14 @@ def test_company_keyword_coverage_partial():
     ],
 )
 def test_parse_verdict(report: str, expected: str):
-    from cli import _parse_verdict
+    from vibe_resume.cli import _parse_verdict
 
     assert _parse_verdict(report) == expected
 
 
 def test_review_adds_company_coverage_score_when_company_supplied():
-    from core.company_profiles import COMPANY_PROFILES
-    from core.review import review
+    from vibe_resume.core.company_profiles import COMPANY_PROFILES
+    from vibe_resume.core.review import review
 
     c = COMPANY_PROFILES["rakuten"]
     # Résumé explicitly echoing several Rakuten anchors (職務経歴書 etc.)

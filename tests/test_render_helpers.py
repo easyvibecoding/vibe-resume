@@ -8,8 +8,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from core.schema import ProjectGroup, Source
-from render.renderer import (
+from vibe_resume.core.schema import ProjectGroup, Source
+from vibe_resume.render.renderer import (
     HEADLINE_MAP,
     _build_ai_overview,
     _compute_timespan,

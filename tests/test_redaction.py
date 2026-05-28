@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import re
 
-from core.privacy import derive_profile_redactors
+from vibe_resume.core.privacy import derive_profile_redactors
 
 
 def test_derive_includes_full_name_and_tokens():

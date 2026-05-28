@@ -5,7 +5,7 @@ import orjson
 
 
 def test_groups_path_for_includes_locale(tmp_path, monkeypatch):
-    from core import aggregator
+    from vibe_resume.core import aggregator
     monkeypatch.setattr(aggregator, "GROUPS_PATH", tmp_path / "_project_groups.json")
 
     assert aggregator.groups_path_for(None, None).name == "_project_groups.json"
@@ -26,7 +26,7 @@ def _seed_raw(tmp_path, name="raw"):
 
 
 def test_load_groups_prefers_exact_persona_locale(tmp_path, monkeypatch):
-    from core import aggregator
+    from vibe_resume.core import aggregator
     monkeypatch.setattr(aggregator, "GROUPS_PATH", tmp_path / "_project_groups.json")
 
     raw = _seed_raw(tmp_path)
@@ -39,7 +39,7 @@ def test_load_groups_prefers_exact_persona_locale(tmp_path, monkeypatch):
 
 
 def test_load_groups_falls_back_to_default_persona_same_locale(tmp_path, monkeypatch):
-    from core import aggregator
+    from vibe_resume.core import aggregator
     monkeypatch.setattr(aggregator, "GROUPS_PATH", tmp_path / "_project_groups.json")
 
     raw = _seed_raw(tmp_path)
@@ -52,7 +52,7 @@ def test_load_groups_falls_back_to_default_persona_same_locale(tmp_path, monkeyp
 
 
 def test_load_groups_final_fallback_is_raw_aggregator(tmp_path, monkeypatch):
-    from core import aggregator
+    from vibe_resume.core import aggregator
     monkeypatch.setattr(aggregator, "GROUPS_PATH", tmp_path / "_project_groups.json")
 
     raw = _seed_raw(tmp_path, name="raw-only")
@@ -63,13 +63,13 @@ def test_load_groups_final_fallback_is_raw_aggregator(tmp_path, monkeypatch):
 
 
 def test_load_groups_empty_when_nothing_exists(tmp_path, monkeypatch):
-    from core import aggregator
+    from vibe_resume.core import aggregator
     monkeypatch.setattr(aggregator, "GROUPS_PATH", tmp_path / "_project_groups.json")
     assert aggregator.load_groups(persona="x", locale="en_US") == []
 
 
 def test_render_picks_up_per_locale_cache(tmp_path, monkeypatch):
-    from core import aggregator
+    from vibe_resume.core import aggregator
     monkeypatch.setattr(aggregator, "GROUPS_PATH", tmp_path / "_project_groups.json")
 
     en = [{"name": "from-en-cache", "path": None,

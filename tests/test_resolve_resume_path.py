@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from core.review import resolve_resume_path
+from vibe_resume.core.review import resolve_resume_path
 
 
 def _touch(dir_: Path, name: str) -> Path:

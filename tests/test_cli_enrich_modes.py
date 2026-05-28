@@ -8,7 +8,7 @@ import pytest
 @pytest.fixture
 def seeded_cache(tmp_path, monkeypatch):
     """Seed raw aggregator output so enrich has something to chew on."""
-    from core import aggregator
+    from vibe_resume.core import aggregator
     monkeypatch.setattr(aggregator, "GROUPS_PATH", tmp_path / "_project_groups.json")
     raw = [{"name": "proj-foo", "path": None,
             "first_activity": "2026-01-01T00:00:00+00:00",
@@ -22,7 +22,7 @@ def seeded_cache(tmp_path, monkeypatch):
 
 def test_default_mode_is_prompt_and_writes_manifest(seeded_cache, monkeypatch, capsys):
     """Calling enrich without --mode/--ingest defaults to emit a manifest."""
-    from core import enricher
+    from vibe_resume.core import enricher
     monkeypatch.setattr(enricher, "ENRICH_JOBS_DIR", seeded_cache / "enrich_jobs")
 
     enricher.enrich_groups(cfg={}, cache_dir=seeded_cache, locale="en_US")
@@ -32,7 +32,7 @@ def test_default_mode_is_prompt_and_writes_manifest(seeded_cache, monkeypatch, c
 
 
 def test_subprocess_mode_emits_red_quota_warning(seeded_cache, monkeypatch, capsys):
-    from core import enricher
+    from vibe_resume.core import enricher
     monkeypatch.setattr(enricher, "_call_claude", lambda *a, **kw: None)
     enricher.enrich_groups(cfg={}, cache_dir=seeded_cache, locale="en_US", mode="subprocess")
     import re
@@ -44,7 +44,7 @@ def test_cli_enrich_help_lists_mode_and_ingest():
     """Smoke: --mode and --ingest flags are wired up."""
     import subprocess
     r = subprocess.run(
-        ["uv", "run", "python", "cli.py", "enrich", "--help"],
+        ["uv", "run", "python", "-m", "vibe_resume", "enrich", "--help"],
         capture_output=True, text=True, timeout=30,
     )
     assert r.returncode == 0, r.stderr
@@ -55,7 +55,7 @@ def test_cli_enrich_help_lists_mode_and_ingest():
 def test_personas_compare_requires_locale():
     import subprocess
     r = subprocess.run(
-        ["uv", "run", "python", "cli.py", "personas-compare"],
+        ["uv", "run", "python", "-m", "vibe_resume", "personas-compare"],
         capture_output=True, text=True, timeout=30,
     )
     assert r.returncode != 0
@@ -72,7 +72,7 @@ def test_cli_enrich_help_lists_tailor_overrides():
     """All three --tailor-keywords* flags must appear in --help output."""
     import subprocess
     r = subprocess.run(
-        ["uv", "run", "python", "cli.py", "enrich", "--help"],
+        ["uv", "run", "python", "-m", "vibe_resume", "enrich", "--help"],
         capture_output=True, text=True, timeout=30,
     )
     assert r.returncode == 0, r.stderr
@@ -85,7 +85,7 @@ def test_cli_enrich_help_lists_clean_and_status():
     """--clean, --status and --all-ready flags must appear in --help output."""
     import subprocess
     r = subprocess.run(
-        ["uv", "run", "python", "cli.py", "enrich", "--help"],
+        ["uv", "run", "python", "-m", "vibe_resume", "enrich", "--help"],
         capture_output=True, text=True, timeout=30,
     )
     assert r.returncode == 0, r.stderr
@@ -96,7 +96,7 @@ def test_cli_enrich_help_lists_clean_and_status():
 
 def test_tailor_keywords_strict_skips_auto_extraction(seeded_cache, monkeypatch):
     """--tailor-keywords-strict with no --tailor should yield None tailor_keywords."""
-    from core import enricher
+    from vibe_resume.core import enricher
 
     monkeypatch.setattr(enricher, "ENRICH_JOBS_DIR", seeded_cache / "enrich_jobs")
 
@@ -115,7 +115,7 @@ def test_tailor_keywords_strict_skips_auto_extraction(seeded_cache, monkeypatch)
 
 def test_tailor_keywords_override_injected_without_tailor_file(seeded_cache, monkeypatch):
     """Override keywords alone (no --tailor file) should appear in tailor_keywords."""
-    from core import enricher
+    from vibe_resume.core import enricher
 
     monkeypatch.setattr(enricher, "ENRICH_JOBS_DIR", seeded_cache / "enrich_jobs")
 
@@ -140,7 +140,7 @@ def test_tailor_keywords_override_injected_without_tailor_file(seeded_cache, mon
 
 def test_status_shows_no_jobs_when_empty(seeded_cache, monkeypatch, capsys):
     """enrich_groups(status=True) with no jobs dir prints 'no jobs'."""
-    from core import enricher
+    from vibe_resume.core import enricher
 
     monkeypatch.setattr(enricher, "ENRICH_JOBS_DIR", seeded_cache / "enrich_jobs_empty")
 
@@ -153,7 +153,7 @@ def test_status_shows_progress_after_emit(seeded_cache, monkeypatch, capsys):
     """After emit + writing the yaml, --status should report 1/1 ready."""
     import json
 
-    from core import enricher
+    from vibe_resume.core import enricher
 
     monkeypatch.setattr(enricher, "ENRICH_JOBS_DIR", seeded_cache / "enrich_jobs")
 
@@ -176,7 +176,7 @@ def test_all_ready_ingests_completed_batch(seeded_cache, monkeypatch, capsys):
     """--ingest --all-ready triggers _do_ingest for every ready batch."""
     import json
 
-    from core import enricher
+    from vibe_resume.core import enricher
 
     enrich_jobs_dir = seeded_cache / "enrich_jobs"
     monkeypatch.setattr(enricher, "ENRICH_JOBS_DIR", enrich_jobs_dir)
@@ -193,7 +193,7 @@ def test_all_ready_ingests_completed_batch(seeded_cache, monkeypatch, capsys):
 
     # Patch _load_raw_groups to return the seeded group
     from tests.test_enrich_jobs import _fake_group
-    monkeypatch.setattr("core.enrich_jobs._load_raw_groups", lambda: [_fake_group("proj-foo")])
+    monkeypatch.setattr("vibe_resume.core.enrich_jobs._load_raw_groups", lambda: [_fake_group("proj-foo")])
 
     enricher.enrich_groups(cfg={}, cache_dir=seeded_cache, ingest=True, all_ready=True)
     out = capsys.readouterr().out
@@ -211,8 +211,8 @@ def test_ingest_multi_persona_runs_each(tmp_path, monkeypatch, capsys):
 
     import orjson
 
-    from core import aggregator, enricher
     from tests.test_enrich_jobs import _fake_group
+    from vibe_resume.core import aggregator, enricher
 
     # Seed GROUPS_PATH so emit_jobs / _load_raw_groups work in tmp_path
     monkeypatch.setattr(aggregator, "GROUPS_PATH", tmp_path / "_project_groups.json")
@@ -249,7 +249,7 @@ def test_ingest_multi_persona_runs_each(tmp_path, monkeypatch, capsys):
             (jobs_dir / entry["output_path"]).write_text(yaml_body)
 
     # Patch _load_raw_groups
-    monkeypatch.setattr("core.enrich_jobs._load_raw_groups", lambda: [_fake_group("p1")])
+    monkeypatch.setattr("vibe_resume.core.enrich_jobs._load_raw_groups", lambda: [_fake_group("p1")])
 
     # Ingest both in one call via comma-separated persona
     enricher.enrich_groups(
@@ -257,7 +257,7 @@ def test_ingest_multi_persona_runs_each(tmp_path, monkeypatch, capsys):
     )
     out = capsys.readouterr().out
     # Both ingest cache files must exist
-    from core.aggregator import groups_path_for
+    from vibe_resume.core.aggregator import groups_path_for
 
     assert groups_path_for("tech_lead", "en_US").exists() or \
         (tmp_path / "_project_groups.tech_lead.en_US.json").exists() or \
@@ -269,8 +269,8 @@ def test_ingest_all_scans_full_jobs_dir(seeded_cache, monkeypatch, capsys):
     """--ingest --all walks every (persona, locale) under ENRICH_JOBS_DIR and ingests each."""
     import json
 
-    from core import enricher
     from tests.test_enrich_jobs import _fake_group
+    from vibe_resume.core import enricher
 
     enrich_jobs_dir = seeded_cache / "enrich_jobs"
     monkeypatch.setattr(enricher, "ENRICH_JOBS_DIR", enrich_jobs_dir)
@@ -290,7 +290,7 @@ def test_ingest_all_scans_full_jobs_dir(seeded_cache, monkeypatch, capsys):
 
     # Patch _load_raw_groups so ingest can find the group
     monkeypatch.setattr(
-        "core.enrich_jobs._load_raw_groups", lambda: [_fake_group("proj-foo")]
+        "vibe_resume.core.enrich_jobs._load_raw_groups", lambda: [_fake_group("proj-foo")]
     )
 
     # Now --ingest --all should walk and ingest everything
@@ -306,7 +306,7 @@ def test_cli_enrich_help_lists_ingest_all_flag():
     import subprocess
 
     r = subprocess.run(
-        ["uv", "run", "python", "cli.py", "enrich", "--help"],
+        ["uv", "run", "python", "-m", "vibe_resume", "enrich", "--help"],
         capture_output=True,
         text=True,
         timeout=30,
@@ -325,7 +325,7 @@ def test_cli_run_help_lists_required_flags():
     import subprocess
 
     r = subprocess.run(
-        ["uv", "run", "python", "cli.py", "run", "--help"],
+        ["uv", "run", "python", "-m", "vibe_resume", "run", "--help"],
         capture_output=True,
         text=True,
         timeout=30,
@@ -338,7 +338,7 @@ def test_cli_run_help_lists_required_flags():
 
 def test_cli_run_phase_a_stops_after_emit(seeded_cache, monkeypatch, capsys):
     """Phase A: `run` without --continue stops after emit, prints 'Phase A done'."""
-    from core import aggregator, enricher
+    from vibe_resume.core import aggregator, enricher
 
     monkeypatch.setattr(aggregator, "GROUPS_PATH", seeded_cache / "_project_groups.json")
     monkeypatch.setattr(enricher, "ENRICH_JOBS_DIR", seeded_cache / "enrich_jobs")
@@ -346,8 +346,8 @@ def test_cli_run_phase_a_stops_after_emit(seeded_cache, monkeypatch, capsys):
     from click.testing import CliRunner
 
     # Patch run_extractors and run_aggregator to no-ops (cache exists in seeded_cache)
-    import core.runner as runner_mod
-    from cli import cli
+    import vibe_resume.core.runner as runner_mod
+    from vibe_resume.cli import cli
 
     monkeypatch.setattr(runner_mod, "run_extractors", lambda cfg, **kw: None)
     monkeypatch.setattr(runner_mod, "run_aggregator", lambda cfg: None)
@@ -372,9 +372,9 @@ def test_cli_run_phase_b_continue_skips_emit(seeded_cache, monkeypatch, capsys):
 
     from click.testing import CliRunner
 
-    from cli import cli
-    from core import aggregator, enricher
     from tests.test_enrich_jobs import _fake_group
+    from vibe_resume.cli import cli
+    from vibe_resume.core import aggregator, enricher
 
     monkeypatch.setattr(aggregator, "GROUPS_PATH", seeded_cache / "_project_groups.json")
     enrich_jobs_dir = seeded_cache / "enrich_jobs"
@@ -393,19 +393,19 @@ def test_cli_run_phase_b_continue_skips_emit(seeded_cache, monkeypatch, capsys):
         )
 
     monkeypatch.setattr(
-        "core.enrich_jobs._load_raw_groups", lambda: [_fake_group("proj-foo")]
+        "vibe_resume.core.enrich_jobs._load_raw_groups", lambda: [_fake_group("proj-foo")]
     )
 
     # Track whether extract was called
     extract_called = []
-    import core.runner as runner_mod
+    import vibe_resume.core.runner as runner_mod
 
     monkeypatch.setattr(
         runner_mod, "run_extractors", lambda cfg, **kw: extract_called.append(1)
     )
 
     # Patch render to no-op (groups cache may not exist yet for render)
-    from render import renderer
+    from vibe_resume.render import renderer
 
     monkeypatch.setattr(renderer, "_history_path", lambda cfg: seeded_cache)
 
@@ -437,7 +437,7 @@ def test_status_enriched_flag_runs():
     import subprocess
     from pathlib import Path
     r = subprocess.run(
-        ["uv", "run", "python", "cli.py", "status", "--enriched"],
+        ["uv", "run", "python", "-m", "vibe_resume", "status", "--enriched"],
         capture_output=True, text=True, timeout=30,
         cwd=Path(__file__).resolve().parent.parent,
     )
@@ -453,7 +453,7 @@ def test_jd_check_help():
     import subprocess
     from pathlib import Path
     r = subprocess.run(
-        ["uv", "run", "python", "cli.py", "jd-check", "--help"],
+        ["uv", "run", "python", "-m", "vibe_resume", "jd-check", "--help"],
         capture_output=True, text=True, timeout=30,
         cwd=Path(__file__).resolve().parent.parent,
     )
@@ -471,7 +471,7 @@ def test_review_diff_help():
     import subprocess
     from pathlib import Path
     r = subprocess.run(
-        ["uv", "run", "python", "cli.py", "review-diff", "--help"],
+        ["uv", "run", "python", "-m", "vibe_resume", "review-diff", "--help"],
         capture_output=True, text=True, timeout=30,
         cwd=Path(__file__).resolve().parent.parent,
     )

@@ -5,15 +5,15 @@ from datetime import datetime
 
 import pytest
 
-from core.enricher import (
+from vibe_resume.core.enricher import (
     PROMPT_TEMPLATE_NOUN_PHRASE,
     PROMPT_TEMPLATE_XYZ,
     _build_prompt,
     _fallback_summary,
     _pick_template,
 )
-from core.schema import ProjectGroup, Source
-from render.i18n import get_locale
+from vibe_resume.core.schema import ProjectGroup, Source
+from vibe_resume.render.i18n import get_locale
 
 
 def _sample_group() -> ProjectGroup:

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 
-from core.review import ReviewReport, review
+from vibe_resume.core.review import ReviewReport, review
 
 
 def _score(report: ReviewReport, name: str):

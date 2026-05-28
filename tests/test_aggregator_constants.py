@@ -7,7 +7,7 @@ loudly if that happens, not to pin specific numbers.
 """
 from __future__ import annotations
 
-from core import aggregator
+from vibe_resume.core import aggregator
 
 
 def test_tunable_constants_are_present_and_sane() -> None:

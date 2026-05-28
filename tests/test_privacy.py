@@ -10,8 +10,8 @@ from datetime import UTC, datetime
 
 import pytest
 
-from core.privacy import PrivacyFilter
-from core.schema import Activity, ActivityType, Source
+from vibe_resume.core.privacy import PrivacyFilter
+from vibe_resume.core.schema import Activity, ActivityType, Source
 
 
 def _activity(

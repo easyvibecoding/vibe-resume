@@ -10,7 +10,7 @@ import pytest
 @pytest.fixture
 def fake_render(tmp_path, monkeypatch):
     """Render two single-page markdowns at en_US and zh_TW for the same persona."""
-    from render import renderer
+    from vibe_resume.render import renderer
     monkeypatch.setattr(renderer, "_history_path", lambda cfg: tmp_path)
     # Patch _render_md so we don't depend on profile/groups disk state
     def _fake_md(cfg, tailor, locale=None, persona=None):
@@ -26,14 +26,14 @@ def fake_render(tmp_path, monkeypatch):
 
 def test_en_US_filename_includes_locale_suffix(fake_render):
     """en_US render must include locale in filename (was dropped in 0.4.0)."""
-    from render.renderer import render_draft
+    from vibe_resume.render.renderer import render_draft
     render_draft({}, fmt="md", locale="en_US", persona="tech_lead")
     files = sorted(fake_render.glob("resume_v*_en_US_tech_lead.md"))
     assert len(files) == 1, f"expected resume_v001_en_US_tech_lead.md; got {list(fake_render.iterdir())}"
 
 
 def test_locales_other_than_en_US_still_include_suffix(fake_render):
-    from render.renderer import render_draft
+    from vibe_resume.render.renderer import render_draft
     render_draft({}, fmt="md", locale="zh_TW", persona="tech_lead")
     files = sorted(fake_render.glob("resume_v*_zh_TW_tech_lead.md"))
     assert len(files) == 1
@@ -41,7 +41,7 @@ def test_locales_other_than_en_US_still_include_suffix(fake_render):
 
 def test_no_locale_no_persona_still_works(fake_render):
     """Backward compat: locale=None falls back to en_US, no persona → only locale suffix."""
-    from render.renderer import render_draft
+    from vibe_resume.render.renderer import render_draft
     render_draft({}, fmt="md")
     files = sorted(fake_render.glob("resume_v*_en_US.md"))
     assert len(files) == 1
@@ -49,7 +49,7 @@ def test_no_locale_no_persona_still_works(fake_render):
 
 def test_render_all_locales_with_persona_list_expands_matrix(tmp_path, monkeypatch):
     """--all-locales × --persona X,Y → renders one file per (locale, persona)."""
-    from render import renderer
+    from vibe_resume.render import renderer
 
     monkeypatch.setattr(renderer, "_history_path", lambda cfg: tmp_path)
 
@@ -69,7 +69,7 @@ def test_render_all_locales_with_persona_list_expands_matrix(tmp_path, monkeypat
 
     from click.testing import CliRunner
 
-    from cli import cli
+    from vibe_resume.cli import cli
 
     runner = CliRunner()
     result = runner.invoke(
@@ -88,12 +88,12 @@ def test_render_all_locales_with_persona_list_expands_matrix(tmp_path, monkeypat
     assert any("zh_TW" in n for n in names), f"zh_TW missing from {names}"
     assert any("ja_JP" in n for n in names), f"ja_JP missing from {names}"
     # 10 locales × 2 personas = 20 files
-    from render.i18n import LOCALES
+    from vibe_resume.render.i18n import LOCALES
     assert len(files) == len(LOCALES) * 2, f"expected {len(LOCALES) * 2}, got {len(files)}: {names}"
 
 
 def test_render_warns_on_empty_profile_summary(tmp_path, monkeypatch, capsys):
-    from render import renderer
+    from vibe_resume.render import renderer
     monkeypatch.setattr(renderer, "_history_path", lambda cfg: tmp_path)
     def _fake_md(cfg, tailor, locale=None, persona=None):
         return ("# fake\n", {
@@ -108,7 +108,7 @@ def test_render_warns_on_empty_profile_summary(tmp_path, monkeypatch, capsys):
 
 
 def test_render_no_warning_when_summary_present(tmp_path, monkeypatch, capsys):
-    from render import renderer
+    from vibe_resume.render import renderer
     monkeypatch.setattr(renderer, "_history_path", lambda cfg: tmp_path)
     def _fake_md(cfg, tailor, locale=None, persona=None):
         return ("# fake\n", {
@@ -128,6 +128,6 @@ def test_default_template_dir_is_package_relative(monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)  # a CWD with no render/templates
     from pathlib import Path as _P
 
-    from render import renderer
+    from vibe_resume.render import renderer
     bundled = _P(renderer.__file__).parent / "templates"
     assert bundled.exists() and (bundled / "resume.en_US.md.j2").exists()

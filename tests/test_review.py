@@ -5,13 +5,13 @@ from pathlib import Path
 
 import pytest
 
-from core.review import (
+from vibe_resume.core.review import (
     _check_numbers_per_bullet,
     _check_red_flags,
     _check_top_fold,
     review,
 )
-from render.i18n import get_locale
+from vibe_resume.render.i18n import get_locale
 
 GOOD_HEAD = """\
 # Alex Chen
@@ -129,7 +129,7 @@ class TestRedFlags:
 
 class TestJdKeywords:
     def test_stopwords_excluded(self, tmp_path):
-        from core.review import parse_jd_keywords
+        from vibe_resume.core.review import parse_jd_keywords
 
         jd = tmp_path / "jd.txt"
         jd.write_text(
@@ -142,7 +142,7 @@ class TestJdKeywords:
             assert bad not in kws, f"stopword {bad!r} leaked into {kws}"
 
     def test_tech_priority_ordered_by_first_appearance(self, tmp_path):
-        from core.review import parse_jd_keywords
+        from vibe_resume.core.review import parse_jd_keywords
 
         jd = tmp_path / "jd.txt"
         # Docker appears first in prose, then FastAPI, then React
@@ -152,7 +152,7 @@ class TestJdKeywords:
         assert kws.index("Docker") < kws.index("FastAPI") < kws.index("React")
 
     def test_respects_limit(self, tmp_path):
-        from core.review import parse_jd_keywords
+        from vibe_resume.core.review import parse_jd_keywords
 
         jd = tmp_path / "jd.txt"
         jd.write_text("React FastAPI PostgreSQL Docker Kubernetes Redis AWS Stripe pgvector RAG\n")
@@ -178,7 +178,7 @@ class TestFindPreviousReview:
         )
 
     def test_returns_most_recent_previous_same_locale(self, tmp_path):
-        from core.review import find_previous_review
+        from vibe_resume.core.review import find_previous_review
 
         # v005 zh_TW, v007 zh_TW — finding prior for v010_zh_TW should return v007
         self._write_review(tmp_path / "resume_v005_zh_TW_review.json", 5, "zh_TW", total=40)
@@ -190,7 +190,7 @@ class TestFindPreviousReview:
         assert prev.total == 55  # v009 is the most recent earlier version
 
     def test_ignores_other_locales(self, tmp_path):
-        from core.review import find_previous_review
+        from vibe_resume.core.review import find_previous_review
 
         self._write_review(tmp_path / "resume_v005_zh_TW_review.json", 5, "zh_TW", total=40)
         self._write_review(tmp_path / "resume_v007_review.json", 7, "en_US", total=60)
@@ -201,7 +201,7 @@ class TestFindPreviousReview:
         assert prev.locale == "en_US"
 
     def test_returns_none_when_nothing_prior(self, tmp_path):
-        from core.review import find_previous_review
+        from vibe_resume.core.review import find_previous_review
 
         # only a *later* version exists
         self._write_review(tmp_path / "resume_v020_zh_TW_review.json", 20, "zh_TW")
@@ -211,7 +211,7 @@ class TestFindPreviousReview:
 
 class TestReviewReportGrade:
     def test_grade_boundaries(self):
-        from core.review import ReviewReport, Score
+        from vibe_resume.core.review import ReviewReport, Score
 
         def mk(total: int, max_total: int = 60) -> ReviewReport:
             return ReviewReport(source="x", locale="en_US", total=total, max_total=max_total, scores=[])

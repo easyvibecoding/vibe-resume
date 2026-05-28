@@ -14,7 +14,7 @@ from pathlib import Path
 import orjson
 import pytest
 
-from core.schema import (
+from vibe_resume.core.schema import (
     Activity,
     ActivityType,
     ProjectGroup,

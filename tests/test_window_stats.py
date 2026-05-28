@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from core.stats import _longest_active_day_streak
+from vibe_resume.core.stats import _longest_active_day_streak
 
 
 def test_empty_input_returns_zero() -> None:
@@ -64,7 +64,7 @@ def test_streak_boundary_cases(dates: list[str], expected: int) -> None:
 def test_window_stats_no_longer_emits_by_category() -> None:
     """The always-empty `by_category` field was dropped in 2026-04. Guard
     against regressions that silently reintroduce the dead field."""
-    from core.stats import WindowStats
+    from vibe_resume.core.stats import WindowStats
 
     fields = {f for f in WindowStats.__dataclass_fields__}
     assert "by_category" not in fields, (

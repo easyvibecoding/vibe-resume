@@ -3,8 +3,8 @@ from __future__ import annotations
 
 
 def test_review_weights_change_total_across_personas():
-    from core.personas import get_persona
-    from core.review import review
+    from vibe_resume.core.personas import get_persona
+    from vibe_resume.core.review import review
     md = (
         "# Daisy\nBackend Engineer\n\n"
         "## Summary\nBuilt platforms across the stack.\n\n"
@@ -24,7 +24,7 @@ def test_review_weights_change_total_across_personas():
 
 
 def test_review_without_persona_is_uniform():
-    from core.review import review
+    from vibe_resume.core.review import review
     md = "# Test\nEngineer\n\n## Summary\nX.\n\n## Experience\n- One bullet here\n"
     r = review(md, locale_key="en_US")
     raw = sum(s.score for s in r.scores if s.max > 0)

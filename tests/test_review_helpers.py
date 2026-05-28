@@ -8,7 +8,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from core.review import (
+from vibe_resume.core.review import (
     ReviewReport,
     Score,
     find_previous_review,

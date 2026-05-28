@@ -10,13 +10,13 @@ from datetime import UTC, datetime
 
 import pytest
 
-from core.classifier import (
+from vibe_resume.core.classifier import (
     Category,
     capability_breadth,
     classify,
     tally_categories,
 )
-from core.schema import Activity, ActivityType, Source
+from vibe_resume.core.schema import Activity, ActivityType, Source
 
 
 def _act(

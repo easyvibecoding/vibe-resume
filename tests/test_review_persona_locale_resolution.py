@@ -18,7 +18,7 @@ def hist_with_persona_files(tmp_path):
 
 
 def test_resolve_persona_locale_picks_correct_file(hist_with_persona_files):
-    from core.review import resolve_resume_path
+    from vibe_resume.core.review import resolve_resume_path
     p = resolve_resume_path(hist_with_persona_files, persona="tech_lead", locale="zh_TW")
     assert p.name == "resume_v003_zh_TW_tech_lead.md"
 
@@ -26,19 +26,19 @@ def test_resolve_persona_locale_picks_correct_file(hist_with_persona_files):
 def test_resolve_persona_locale_picks_latest_when_multiple_match(hist_with_persona_files):
     """If multiple versions match (persona, locale), pick the highest version."""
     (hist_with_persona_files / "resume_v007_zh_TW_tech_lead.md").write_text("# v7\n")
-    from core.review import resolve_resume_path
+    from vibe_resume.core.review import resolve_resume_path
     p = resolve_resume_path(hist_with_persona_files, persona="tech_lead", locale="zh_TW")
     assert p.name == "resume_v007_zh_TW_tech_lead.md"
 
 
 def test_resolve_persona_locale_errors_when_no_match(hist_with_persona_files):
-    from core.review import resolve_resume_path
+    from vibe_resume.core.review import resolve_resume_path
     with pytest.raises(FileNotFoundError, match="academic"):
         resolve_resume_path(hist_with_persona_files, persona="academic", locale="zh_TW")
 
 
 def test_resolve_locale_only_picks_latest_of_that_locale(hist_with_persona_files):
-    from core.review import resolve_resume_path
+    from vibe_resume.core.review import resolve_resume_path
     p = resolve_resume_path(hist_with_persona_files, locale="zh_TW")
     # latest zh_TW file (any persona)
     assert "zh_TW" in p.name

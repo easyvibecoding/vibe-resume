@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from render.i18n import format_date, format_date_range, localized, resolve_locale
+from vibe_resume.render.i18n import format_date, format_date_range, localized, resolve_locale
 
 
 class TestFormatDate:

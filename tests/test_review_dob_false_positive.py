@@ -4,7 +4,7 @@ from __future__ import annotations
 
 def test_dob_does_not_match_summary_iso_date():
     """A date like '2024-01-15' in a summary line must NOT trigger DOB red flag."""
-    from core.review import review
+    from vibe_resume.core.review import review
     md = (
         "# Daisy\n"
         "Backend Engineer\n"
@@ -22,7 +22,7 @@ def test_dob_does_not_match_summary_iso_date():
 
 def test_dob_with_explicit_label_still_flagged():
     """An actual DOB row WITH a label MUST still trigger the red flag."""
-    from core.review import review
+    from vibe_resume.core.review import review
     md = (
         "# Daisy\n"
         "Backend Engineer\n"
@@ -37,7 +37,7 @@ def test_dob_with_explicit_label_still_flagged():
 
 
 def test_dob_with_date_of_birth_label_flagged():
-    from core.review import review
+    from vibe_resume.core.review import review
     md = (
         "# Daisy\n"
         "Date of birth: 1990-01-15\n"

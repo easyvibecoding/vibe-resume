@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import pytest
 
-from core.tech_canonical import (
+from vibe_resume.core.tech_canonical import (
     CATEGORIES,
     HARD_SKILLS,
     canonical_list,

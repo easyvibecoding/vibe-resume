@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from core.personas import PERSONAS, Persona, get_persona, list_persona_keys
+from vibe_resume.core.personas import PERSONAS, Persona, get_persona, list_persona_keys
 
 _EXPECTED_KEYS = {"tech_lead", "hr", "executive", "startup_founder", "academic"}
 
@@ -45,7 +45,7 @@ def test_list_persona_keys_matches_registry() -> None:
 def _make_demo_group():
     from datetime import UTC, datetime
 
-    from core.schema import ProjectGroup, Source
+    from vibe_resume.core.schema import ProjectGroup, Source
 
     now = datetime(2026, 3, 1, tzinfo=UTC)
     return ProjectGroup(
@@ -65,8 +65,8 @@ def _make_demo_group():
 def test_enrich_prompt_injects_persona_bias_block() -> None:
     """The bias block must land at the tail of the prompt so the model reads
     it right before emitting YAML (same rationale as the tailor block)."""
-    from core.enricher import _build_prompt
-    from render.i18n import get_locale
+    from vibe_resume.core.enricher import _build_prompt
+    from vibe_resume.render.i18n import get_locale
 
     prompt = _build_prompt(_make_demo_group(), get_locale("en_US"), persona=PERSONAS["tech_lead"])
     assert "Reviewer persona — Tech Lead" in prompt
@@ -79,8 +79,8 @@ def test_tailor_and_persona_blocks_coexist_with_persona_last() -> None:
     """Realistic multi-audience scenario: render a résumé tailored to a JD
     AND biased toward a Tech Lead reader. Both blocks must appear, and the
     persona block must come *after* tailor so it wins tie-breaks."""
-    from core.enricher import _build_prompt
-    from render.i18n import get_locale
+    from vibe_resume.core.enricher import _build_prompt
+    from vibe_resume.render.i18n import get_locale
 
     prompt = _build_prompt(
         _make_demo_group(),
@@ -99,7 +99,7 @@ def test_review_file_attaches_persona_tips(tmp_path) -> None:
     """Smoke test: review_file with --persona surfaces persona_tips in markdown."""
     from pathlib import Path
 
-    from core.review import review_file
+    from vibe_resume.core.review import review_file
 
     md = tmp_path / "resume_v001_en_US.md"
     md.write_text(
@@ -116,7 +116,7 @@ def test_review_file_attaches_persona_tips(tmp_path) -> None:
 
 
 def test_resolve_persona_list_accepts_single_csv_and_all() -> None:
-    from core.enricher import _resolve_persona_list
+    from vibe_resume.core.enricher import _resolve_persona_list
 
     assert _resolve_persona_list(None) == [None]
     assert _resolve_persona_list("") == [None]
@@ -125,7 +125,7 @@ def test_resolve_persona_list_accepts_single_csv_and_all() -> None:
     # Whitespace around commas is tolerated — common when copy-pasting.
     assert _resolve_persona_list(" tech_lead , hr ") == ["tech_lead", "hr"]
     # 'all' expands to every registered persona (order preserved from registry).
-    from core.personas import list_persona_keys
+    from vibe_resume.core.personas import list_persona_keys
 
     assert _resolve_persona_list("all") == list_persona_keys()
     # Unknown keys drop silently but don't poison the valid ones.
@@ -134,8 +134,8 @@ def test_resolve_persona_list_accepts_single_csv_and_all() -> None:
 
 def test_groups_path_for_is_persona_scoped(tmp_path, monkeypatch) -> None:
     """Persona-without-locale still returns raw GROUPS_PATH (back-compat seam)."""
-    monkeypatch.setattr("core.aggregator.GROUPS_PATH", tmp_path / "_project_groups.json")
-    from core.aggregator import GROUPS_PATH, groups_path_for
+    monkeypatch.setattr("vibe_resume.core.aggregator.GROUPS_PATH", tmp_path / "_project_groups.json")
+    from vibe_resume.core.aggregator import GROUPS_PATH, groups_path_for
 
     # No locale → always raw aggregator path (locale-free)
     assert groups_path_for(None) == GROUPS_PATH
@@ -149,7 +149,7 @@ def test_groups_path_for_is_persona_scoped(tmp_path, monkeypatch) -> None:
 
 
 def test_agentic_persona_registered():
-    from core.personas import get_persona
+    from vibe_resume.core.personas import get_persona
     p = get_persona("agentic")
     assert p is not None
     assert p.label == "Agentic Engineer"
@@ -157,7 +157,7 @@ def test_agentic_persona_registered():
 
 
 def test_agentic_in_persona_keys():
-    from core.personas import list_persona_keys
+    from vibe_resume.core.personas import list_persona_keys
     assert "agentic" in list_persona_keys()
 
 
@@ -168,7 +168,7 @@ def test_load_groups_falls_back_to_canonical_when_persona_cache_missing(
     a reasonable draft from the canonical file, not silently render empty."""
     import orjson
 
-    from core import aggregator
+    from vibe_resume.core import aggregator
 
     fake_canon = tmp_path / "_project_groups.json"
     fake_canon.write_bytes(

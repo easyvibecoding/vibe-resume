@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import pytest
 
-from render.i18n import (
+from vibe_resume.render.i18n import (
     LOCALES,
     format_date,
     format_date_range,

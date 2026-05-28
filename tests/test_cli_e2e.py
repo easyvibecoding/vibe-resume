@@ -137,7 +137,7 @@ def vibe_env(tmp_path: Path) -> Path:
     config = dict(FIXTURE_CONFIG)
     config["render"] = {
         **FIXTURE_CONFIG["render"],
-        "templates_dir": str(REPO_ROOT / "render" / "templates"),
+        "templates_dir": str(REPO_ROOT / "src" / "vibe_resume" / "render" / "templates"),
     }
     (tmp_path / "profile.yaml").write_text(yaml.dump(FIXTURE_PROFILE))
     (tmp_path / "config.yaml").write_text(yaml.dump(config))

@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 import pytest
 from pydantic import ValidationError
 
-from core.enrich_jobs import EnrichJobEntry, EnrichJobManifest
+from vibe_resume.core.enrich_jobs import EnrichJobEntry, EnrichJobManifest
 
 
 def test_manifest_requires_locale():
@@ -80,8 +80,8 @@ from pathlib import Path  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-from core.enrich_jobs import emit_jobs  # noqa: E402
-from core.schema import ProjectGroup, Source  # noqa: E402
+from vibe_resume.core.enrich_jobs import emit_jobs  # noqa: E402
+from vibe_resume.core.schema import ProjectGroup, Source  # noqa: E402
 
 
 def _fake_group(name: str = "proj-foo") -> ProjectGroup:
@@ -116,7 +116,7 @@ def test_emit_writes_manifest_and_prompt_per_group(tmp_path: Path):
     manifest_path = jobs_dir / "manifest.json"
     assert manifest_path.exists()
 
-    from core.enrich_jobs import EnrichJobManifest
+    from vibe_resume.core.enrich_jobs import EnrichJobManifest
     m = EnrichJobManifest.model_validate_json(manifest_path.read_text())
     assert m.locale == "en_US"
     assert m.persona is None
@@ -191,7 +191,7 @@ def test_emit_resets_to_pending_when_yaml_gone(tmp_path: Path):
 
 
 def test_slug_strips_trailing_dash_after_truncation():
-    from core.enrich_jobs import _slug
+    from vibe_resume.core.enrich_jobs import _slug
     # 59 chars of 'a' + dash-producing char → 60th char would be the dash
     name = "a" * 59 + " b"  # space becomes dash
     s = _slug(name)
@@ -202,7 +202,7 @@ def test_slug_strips_trailing_dash_after_truncation():
 # ---------------------------------------------------------------------------
 # ingest_jobs tests (T3)
 # ---------------------------------------------------------------------------
-from core.enrich_jobs import ingest_jobs  # noqa: E402
+from vibe_resume.core.enrich_jobs import ingest_jobs  # noqa: E402
 
 
 def test_ingest_applies_yaml_back_into_groups(tmp_path: Path, monkeypatch):
@@ -221,7 +221,7 @@ keywords_for_ats: ["RAG"]
 """
     (jobs_dir / "001_proj-foo.yaml").write_text(yaml_body)
 
-    monkeypatch.setattr("core.enrich_jobs._load_raw_groups", lambda: groups)
+    monkeypatch.setattr("vibe_resume.core.enrich_jobs._load_raw_groups", lambda: groups)
 
     enriched, warnings = ingest_jobs(jobs_dir / "manifest.json")
     assert warnings == []
@@ -237,7 +237,7 @@ def test_ingest_skips_missing_yaml_with_warning(tmp_path: Path, monkeypatch):
     (jobs_dir / "001_proj-foo.yaml").write_text(
         'summary: ok\nachievements: ["Built X"]\ntech_stack: []\n'
     )
-    monkeypatch.setattr("core.enrich_jobs._load_raw_groups", lambda: groups)
+    monkeypatch.setattr("vibe_resume.core.enrich_jobs._load_raw_groups", lambda: groups)
 
     enriched, warnings = ingest_jobs(jobs_dir / "manifest.json")
     assert len(enriched) == 2
@@ -250,7 +250,7 @@ def test_ingest_warns_on_invalid_yaml(tmp_path: Path, monkeypatch):
     jobs_dir = emit_jobs(groups, tmp_path, persona=None, locale="en_US",
                          tailor_keywords=None, company=None, level=None)
     (jobs_dir / "001_proj-foo.yaml").write_text("not: valid: yaml: at: all:\n  - x")
-    monkeypatch.setattr("core.enrich_jobs._load_raw_groups", lambda: groups)
+    monkeypatch.setattr("vibe_resume.core.enrich_jobs._load_raw_groups", lambda: groups)
 
     enriched, warnings = ingest_jobs(jobs_dir / "manifest.json")
     assert any("proj-foo" in w for w in warnings)
@@ -275,7 +275,7 @@ def test_sample_fixture_manifest_parses():
 # Fix #8 — manifest records JD sha+mtime; ingest warns on drift
 # ---------------------------------------------------------------------------
 
-from core.enrich_jobs import EnrichTailorInfo  # noqa: E402
+from vibe_resume.core.enrich_jobs import EnrichTailorInfo  # noqa: E402
 
 
 def test_manifest_schema_accepts_tailor_info():
@@ -323,7 +323,7 @@ def test_ingest_warns_on_jd_sha_mismatch(tmp_path: Path, monkeypatch):
     )
     (jobs_dir / "manifest.json").write_text(manifest.model_dump_json())
 
-    monkeypatch.setattr("core.enrich_jobs._load_raw_groups", lambda: [])
+    monkeypatch.setattr("vibe_resume.core.enrich_jobs._load_raw_groups", lambda: [])
 
     # JD unchanged — no sha-mismatch warning
     _, w1 = ingest_jobs(jobs_dir / "manifest.json")
@@ -346,7 +346,7 @@ def test_ingest_no_tailor_no_warning(tmp_path: Path, monkeypatch):
         groups=[],
     )
     (jobs_dir / "manifest.json").write_text(manifest.model_dump_json())
-    monkeypatch.setattr("core.enrich_jobs._load_raw_groups", lambda: [])
+    monkeypatch.setattr("vibe_resume.core.enrich_jobs._load_raw_groups", lambda: [])
 
     _, w = ingest_jobs(jobs_dir / "manifest.json")
     assert not any("sha mismatch" in s for s in w)

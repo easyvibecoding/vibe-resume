@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from core.schema import ActivityType, Source
+from vibe_resume.core.schema import ActivityType, Source
 
 # ─────────────────────────────── claude_code ──────────────────────────────────
 
@@ -76,7 +76,7 @@ def claude_projects(tmp_path: Path) -> Path:
 
 
 def test_claude_code_happy_path(claude_projects: Path) -> None:
-    from extractors.local import claude_code
+    from vibe_resume.extractors.local import claude_code
 
     acts = claude_code.extract({"extractors": {"claude_code": {"path": str(claude_projects)}}})
 
@@ -95,7 +95,7 @@ def test_claude_code_happy_path(claude_projects: Path) -> None:
 
 
 def test_claude_code_missing_path(tmp_path: Path) -> None:
-    from extractors.local import claude_code
+    from vibe_resume.extractors.local import claude_code
 
     acts = claude_code.extract(
         {"extractors": {"claude_code": {"path": str(tmp_path / "nope")}}}
@@ -183,7 +183,7 @@ def codex_sessions(tmp_path: Path) -> Path:
 
 
 def test_codex_happy_path(codex_sessions: Path) -> None:
-    from extractors.local import codex
+    from vibe_resume.extractors.local import codex
 
     acts = codex.extract({"extractors": {"codex": {"path": str(codex_sessions)}}})
 
@@ -208,7 +208,7 @@ def test_codex_happy_path(codex_sessions: Path) -> None:
 
 
 def test_codex_missing_path(tmp_path: Path) -> None:
-    from extractors.local import codex
+    from vibe_resume.extractors.local import codex
 
     acts = codex.extract(
         {"extractors": {"codex": {"path": str(tmp_path / "nope")}}}
@@ -220,7 +220,7 @@ def test_codex_archived_sessions_captured(tmp_path: Path) -> None:
     """Rollouts under archived_sessions/ must be extracted alongside the
     dated sessions/ tree — Codex moves user-archived sessions here.
     """
-    from extractors.local import codex
+    from vibe_resume.extractors.local import codex
 
     sessions = tmp_path / "sessions" / "2026" / "04" / "22"
     sessions.mkdir(parents=True)
@@ -276,7 +276,7 @@ def test_codex_archive_dedupes_on_session_uuid(tmp_path: Path) -> None:
     """If the same session UUID appears in both active and archived trees
     (can happen mid-archive), it should be counted exactly once.
     """
-    from extractors.local import codex
+    from vibe_resume.extractors.local import codex
 
     sessions = tmp_path / "sessions" / "2026" / "04" / "22"
     sessions.mkdir(parents=True)
@@ -315,7 +315,7 @@ def test_gemini_cli_chats_and_logs_merge(tmp_path: Path) -> None:
     """A project dir with both chats/session-*.json AND logs.json should
     surface one Activity per unique sessionId (chats wins on dedupe).
     """
-    from extractors.local import gemini_cli
+    from vibe_resume.extractors.local import gemini_cli
 
     hash_dir = tmp_path / "tmp" / "abc123def4567890"
     chats_dir = hash_dir / "chats"
@@ -369,7 +369,7 @@ def test_gemini_cli_chats_and_logs_merge(tmp_path: Path) -> None:
 
 
 def test_gemini_cli_missing_path(tmp_path: Path) -> None:
-    from extractors.local import gemini_cli
+    from vibe_resume.extractors.local import gemini_cli
 
     acts = gemini_cli.extract(
         {"extractors": {"gemini_cli": {"path": str(tmp_path / "nope")}}}
@@ -379,7 +379,7 @@ def test_gemini_cli_missing_path(tmp_path: Path) -> None:
 
 def test_gemini_cli_skips_bin_and_malformed(tmp_path: Path) -> None:
     """bin/ helper dir and malformed json must not break extraction."""
-    from extractors.local import gemini_cli
+    from vibe_resume.extractors.local import gemini_cli
 
     root = tmp_path / "tmp"
     (root / "bin").mkdir(parents=True)  # should be skipped
@@ -407,7 +407,7 @@ def test_gemini_cli_skips_bin_and_malformed(tmp_path: Path) -> None:
 
 
 def test_copilot_cli_happy_path(tmp_path: Path) -> None:
-    from extractors.local import copilot_cli
+    from vibe_resume.extractors.local import copilot_cli
 
     session_dir = tmp_path / "session-state" / "34ea38e6-a566-4d3a-9f22-6b6ebc9e3aae"
     session_dir.mkdir(parents=True)
@@ -478,7 +478,7 @@ def test_copilot_cli_happy_path(tmp_path: Path) -> None:
 
 
 def test_copilot_cli_missing_path(tmp_path: Path) -> None:
-    from extractors.local import copilot_cli
+    from vibe_resume.extractors.local import copilot_cli
 
     acts = copilot_cli.extract(
         {"extractors": {"copilot_cli": {"path": str(tmp_path / "nope")}}}
@@ -488,7 +488,7 @@ def test_copilot_cli_missing_path(tmp_path: Path) -> None:
 
 def test_copilot_cli_empty_session_dir_skipped(tmp_path: Path) -> None:
     """A session dir without events.jsonl must not break extraction."""
-    from extractors.local import copilot_cli
+    from vibe_resume.extractors.local import copilot_cli
 
     root = tmp_path / "session-state"
     # One valid session…
@@ -519,7 +519,7 @@ def test_copilot_cli_empty_session_dir_skipped(tmp_path: Path) -> None:
 
 def test_codex_malformed_lines_dropped(tmp_path: Path) -> None:
     """Non-JSON lines in the middle of a rollout must be skipped, not crash."""
-    from extractors.local import codex
+    from vibe_resume.extractors.local import codex
 
     root = tmp_path / "sessions" / "2026" / "04" / "22"
     root.mkdir(parents=True)
@@ -537,7 +537,7 @@ def test_codex_malformed_lines_dropped(tmp_path: Path) -> None:
 
 def test_claude_code_system_reminders_ignored(tmp_path: Path) -> None:
     """User bubbles containing <system-reminder> must not count as prompts."""
-    from extractors.local import claude_code
+    from vibe_resume.extractors.local import claude_code
 
     root = tmp_path / "projects"
     _write_jsonl(
@@ -576,7 +576,7 @@ def _make_cursor_db(path: Path, payload: dict) -> None:
 
 
 def test_cursor_happy_path(tmp_path: Path) -> None:
-    from extractors.local import cursor
+    from vibe_resume.extractors.local import cursor
 
     gs = tmp_path / "globalStorage" / "state.vscdb"
     _make_cursor_db(
@@ -603,14 +603,14 @@ def test_cursor_happy_path(tmp_path: Path) -> None:
 
 
 def test_cursor_missing_path(tmp_path: Path) -> None:
-    from extractors.local import cursor
+    from vibe_resume.extractors.local import cursor
 
     acts = cursor.extract({"extractors": {"cursor": {"path": str(tmp_path / "nope")}}})
     assert acts == []
 
 
 def test_cursor_empty_bubbles_yields_no_activity(tmp_path: Path) -> None:
-    from extractors.local import cursor
+    from vibe_resume.extractors.local import cursor
 
     _make_cursor_db(tmp_path / "globalStorage" / "state.vscdb", {"tabs": [{"tabId": "x", "bubbles": []}]})
     assert cursor.extract({"extractors": {"cursor": {"path": str(tmp_path)}}}) == []
@@ -628,7 +628,7 @@ _FAKE_LOG = (
 
 
 def test_git_repos_parses_numstat(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    from extractors.local import git_repos
+    from vibe_resume.extractors.local import git_repos
 
     # Make a fake repo layout so _find_repos has something to return.
     repo = tmp_path / "work" / "demo"
@@ -660,7 +660,7 @@ def test_git_repos_parses_numstat(monkeypatch: pytest.MonkeyPatch, tmp_path: Pat
 def test_git_repos_no_emails_returns_empty(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    from extractors.local import git_repos
+    from vibe_resume.extractors.local import git_repos
 
     def fake_run(*a, **_kw):
         return subprocess.CompletedProcess(a[0], 0, stdout="", stderr="")
@@ -675,7 +675,7 @@ def test_git_repos_no_emails_returns_empty(
 
 def test_git_repos_scan_timeout_breaks_rglob(tmp_path: Path) -> None:
     """_find_repos must bail out when the deadline passes, even if rglob has more to yield."""
-    from extractors.local import git_repos
+    from vibe_resume.extractors.local import git_repos
 
     # Deadline already elapsed → no rglob iterations performed.
     result = git_repos._find_repos([tmp_path], excludes=[], timeout_seconds=-1)

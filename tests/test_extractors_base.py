@@ -11,8 +11,8 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from pathlib import Path
 
-from core.schema import Activity, ActivityType, Source
-from extractors.base import iter_jsonl, load_activities, save_activities
+from vibe_resume.core.schema import Activity, ActivityType, Source
+from vibe_resume.extractors.base import iter_jsonl, load_activities, save_activities
 
 # ─────────────────────── iter_jsonl ───────────────────────────────────────
 
