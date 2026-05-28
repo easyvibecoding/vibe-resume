@@ -131,3 +131,64 @@ def test_default_template_dir_is_package_relative(monkeypatch, tmp_path):
     from vibe_resume.render import renderer
     bundled = _P(renderer.__file__).parent / "templates"
     assert bundled.exists() and (bundled / "resume.en_US.md.j2").exists()
+
+
+def test_render_draft_multi_format_single_version(tmp_path, monkeypatch):
+    """fmt='md,docx' must produce ONE version with both outputs, not two versions (#31)."""
+    from vibe_resume.render import renderer
+
+    monkeypatch.setattr(renderer, "_history_path", lambda cfg: tmp_path)
+    monkeypatch.setattr(renderer, "snapshot", lambda *a, **k: None)
+
+    def _fake_md(cfg, tailor, locale=None, persona=None):
+        return ("# fake\n", {
+            "locale": {"_key": "en_US"},
+            "_tpl_name": "f.j2",
+            "profile": {"summary": "x"},
+            "groups": [],
+        })
+
+    monkeypatch.setattr(renderer, "_render_md", _fake_md)
+    # Stubs must touch the output file so globs can find them
+    monkeypatch.setattr(renderer, "_render_docx", lambda md, ctx, path: path.touch())
+    monkeypatch.setattr(renderer, "_render_pdf", lambda md_path, out_path: out_path.touch() or True)
+
+    renderer.render_draft({}, fmt="md,docx", locale="en_US")
+
+    md_files = list(tmp_path.glob("resume_v*.md"))
+    docx_files = list(tmp_path.glob("resume_v*.docx"))
+    # Both formats must land under the same version number
+    assert len(md_files) == 1, f"expected 1 md file, got {md_files}"
+    assert len(docx_files) == 1, f"expected 1 docx file, got {docx_files}"
+    assert md_files[0].stem.split("_")[:2] == docx_files[0].stem.split("_")[:2], (
+        "md and docx must share the same version prefix"
+    )
+
+
+def test_render_draft_all_string_still_works(tmp_path, monkeypatch):
+    """fmt='all' (legacy string) must still produce md+docx+pdf on ONE version (#31)."""
+    from vibe_resume.render import renderer
+
+    monkeypatch.setattr(renderer, "_history_path", lambda cfg: tmp_path)
+    monkeypatch.setattr(renderer, "snapshot", lambda *a, **k: None)
+
+    def _fake_md(cfg, tailor, locale=None, persona=None):
+        return ("# fake\n", {
+            "locale": {"_key": "en_US"},
+            "_tpl_name": "f.j2",
+            "profile": {"summary": "x"},
+            "groups": [],
+        })
+
+    monkeypatch.setattr(renderer, "_render_md", _fake_md)
+    monkeypatch.setattr(renderer, "_render_docx", lambda md, ctx, path: path.touch())
+    monkeypatch.setattr(renderer, "_render_pdf", lambda md_path, out_path: out_path.touch() or True)
+
+    renderer.render_draft({}, fmt="all", locale="en_US")
+
+    md_files = list(tmp_path.glob("resume_v*.md"))
+    docx_files = list(tmp_path.glob("resume_v*.docx"))
+    pdf_files = list(tmp_path.glob("resume_v*.pdf"))
+    assert len(md_files) == 1
+    assert len(docx_files) == 1
+    assert len(pdf_files) == 1

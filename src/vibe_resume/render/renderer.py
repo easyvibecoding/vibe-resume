@@ -440,8 +440,12 @@ def render_draft(
     persona_tag = f", persona={persona}" if persona else ""
     console.print(f"[green]✓[/green] {md_path.name}  [dim](locale={locale_key}{persona_tag}, tpl={ctx['_tpl_name']})[/dim]")
 
+    fmt_set = {f.strip() for f in fmt.split(",")} if "," in fmt else {fmt}
+    _want_docx = "all" in fmt_set or "docx" in fmt_set
+    _want_pdf = "all" in fmt_set or "pdf" in fmt_set
+
     written = [md_path]
-    if fmt in ("docx", "all"):
+    if _want_docx:
         docx_path = hist / f"resume_v{version:03d}{suffix}.docx"
         if locale_key == "ja_JP":
             from vibe_resume.render.japan import render_rirekisho
@@ -453,7 +457,7 @@ def render_draft(
             _render_docx(md_text, ctx, docx_path)
         written.append(docx_path)
         console.print(f"[green]✓[/green] {docx_path.name}")
-    if fmt in ("pdf", "all"):
+    if _want_pdf:
         pdf_path = hist / f"resume_v{version:03d}{suffix}.pdf"
         if _render_pdf(md_path, pdf_path):
             written.append(pdf_path)

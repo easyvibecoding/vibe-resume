@@ -1235,8 +1235,7 @@ def run_cmd(
         console.print("\n[cyan]Phase B: render matrix[/cyan]")
         for loc in locale_keys:
             for p in persona_keys:
-                for fmt in fmt_list:
-                    run_render(cfg, fmt=fmt, tailor=tailor, locale=loc, persona=p)
+                run_render(cfg, fmt=",".join(fmt_list), tailor=tailor, locale=loc, persona=p)
 
         console.print("\n[cyan]Phase B: review matrix[/cyan]")
         from vibe_resume.core.review import (
