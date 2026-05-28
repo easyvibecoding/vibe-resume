@@ -4,7 +4,7 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.4.0] — 2026-05-27
+## [0.4.0] — 2026-05-28
 
 ### Breaking changes
 

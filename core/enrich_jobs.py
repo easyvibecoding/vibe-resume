@@ -17,8 +17,11 @@ from typing import Literal
 import orjson
 import yaml as _yaml
 from pydantic import AwareDatetime, BaseModel, Field
+from rich.console import Console
 
 from core.schema import ProjectGroup
+
+_console = Console()
 
 
 class EnrichJobEntry(BaseModel):
@@ -92,6 +95,10 @@ def emit_jobs(
                 if (jobs_dir / e.output_path).exists():
                     existing_statuses[e.name] = e.status
         except Exception:
+            _console.print(
+                "[dim]existing manifest unreadable — re-emitting fresh "
+                "(any prior `done` status will reset to `pending`)[/dim]"
+            )
             existing_statuses = {}
 
     entries: list[EnrichJobEntry] = []

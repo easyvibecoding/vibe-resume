@@ -177,8 +177,7 @@ def _render_md(cfg: dict[str, Any], tailor: str | None, locale: str | None = Non
 
     groups = load_groups(persona=persona, locale=locale_key)
     if groups and all(not (g.summary or g.achievements) for g in groups):
-        from rich.console import Console as _C
-        _C().print(
+        console.print(
             f"[yellow]⚠ no enriched cache for locale={locale_key}; "
             f"rendering from raw aggregator output. "
             f"Run `vibe-resume enrich --locale {locale_key}` then "
