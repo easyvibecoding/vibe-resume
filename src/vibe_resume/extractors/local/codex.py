@@ -31,9 +31,10 @@ from pathlib import Path
 from typing import Any
 
 from vibe_resume.core.schema import Activity, ActivityType, Source
-from vibe_resume.extractors.base import iter_jsonl
+from vibe_resume.extractors.base import iter_jsonl, sample_spread
 
 NAME = "codex"
+_SUMMARY_MAX = 4000
 
 
 def _parse_ts(s: str) -> datetime | None:
@@ -86,6 +87,10 @@ def _extract_file_paths(args: Any) -> list[str]:
 
 def extract(cfg: dict[str, Any]) -> list[Activity]:
     codex_cfg = cfg["extractors"]["codex"]
+    sess = cfg.get("sessions", {})
+    sample_n = int(sess.get("sample_prompts", 12))
+    per_chars = int(sess.get("per_prompt_chars", 300))
+    capture_args = bool(sess.get("capture_tool_args", False))
     bases: list[Path] = []
     for key in ("path", "archived_path"):
         raw = codex_cfg.get(key)
@@ -98,7 +103,7 @@ def extract(cfg: dict[str, Any]) -> list[Activity]:
     seen_session_ids: set[str] = set()
     for base in bases:
         for rollout_file in base.rglob("rollout-*.jsonl"):
-            act = _process_session(rollout_file)
+            act = _process_session(rollout_file, sample_n, per_chars, capture_args)
             if not act:
                 continue
             # If the same session rolled from active → archived the UUID is
@@ -112,7 +117,8 @@ def extract(cfg: dict[str, Any]) -> list[Activity]:
     return activities
 
 
-def _process_session(path: Path) -> Activity | None:
+def _process_session(path: Path, sample_n: int, per_chars: int,
+                     capture_args: bool) -> Activity | None:
     first_ts: datetime | None = None
     last_ts: datetime | None = None
     user_prompts = 0
@@ -124,6 +130,7 @@ def _process_session(path: Path) -> Activity | None:
     files_touched: set[str] = set()
     tool_names: dict[str, int] = {}
     user_text_chunks: list[str] = []
+    tool_args: list[str] = []
     any_entry = False
 
     for entry in iter_jsonl(path):
@@ -160,8 +167,7 @@ def _process_session(path: Path) -> Activity | None:
             # Skip synthetic system reminders injected into the stream.
             if txt and not txt.startswith("<") and "<system-reminder>" not in txt:
                 user_prompts += 1
-                if len(user_text_chunks) < 8:
-                    user_text_chunks.append(txt[:300])
+                user_text_chunks.append(txt[:per_chars])
         elif payload_type == "function_call":
             tool_calls += 1
             name = payload.get("name", "")
@@ -170,11 +176,15 @@ def _process_session(path: Path) -> Activity | None:
             for fp in _extract_file_paths(payload.get("arguments")):
                 if len(files_touched) < 50:
                     files_touched.add(fp)
+            if capture_args and len(tool_args) < sample_n:
+                raw_args = payload.get("arguments")
+                if isinstance(raw_args, str) and raw_args.strip():
+                    tool_args.append(raw_args[:per_chars])
 
     if not any_entry or not first_ts:
         return None
 
-    summary = " | ".join(user_text_chunks[:3])[:500]
+    summary = " | ".join(sample_spread(user_text_chunks, sample_n))[:_SUMMARY_MAX]
     keywords = sorted(tool_names, key=lambda k: -tool_names[k])[:10]
 
     extra: dict[str, Any] = {}
@@ -182,6 +192,8 @@ def _process_session(path: Path) -> Activity | None:
         extra["cli_version"] = cli_version
     if git_branch:
         extra["git_branch"] = git_branch
+    if capture_args and tool_args:
+        extra["tool_args"] = "\n".join(tool_args)
 
     return Activity(
         source=Source.CODEX,

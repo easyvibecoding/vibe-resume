@@ -757,3 +757,31 @@ def test_claude_code_samples_more_and_captures_tool_args(tmp_path):
     assert "prompt number 0" in a.summary
     assert "prompt number 19" in a.summary
     assert "rm -rf build" in a.extra["tool_args"]
+
+
+# ──────────────────────── codex spread-sampling ──────────────────────────────
+
+
+def test_codex_samples_more_and_captures_function_args(tmp_path):
+    import vibe_resume.extractors.local.codex as cx
+
+    rows = [{"type": "session_meta", "timestamp": "2026-01-01T00:00:00Z",
+             "payload": {"cwd": "/proj", "id": "sess1"}}]
+    for i in range(20):
+        rows.append({"type": "response_item", "timestamp": f"2026-01-01T00:{i:02d}:00Z",
+                     "payload": {"type": "message", "role": "user",
+                                 "content": f"codex prompt {i}"}})
+    rows.append({"type": "response_item", "timestamp": "2026-01-01T00:30:00Z",
+                 "payload": {"type": "function_call", "name": "shell",
+                             "arguments": '{"command": "pytest -q"}'}})
+    f = tmp_path / "rollout-2026-01-01-uuid.jsonl"
+    f.write_text("\n".join(json.dumps(r) for r in rows))
+    cfg = {"extractors": {"codex": {"path": str(tmp_path)}},
+           "sessions": {"sample_prompts": 5, "per_prompt_chars": 300,
+                        "capture_tool_args": True}}
+    acts = cx.extract(cfg)
+    assert len(acts) == 1
+    a = acts[0]
+    assert "codex prompt 0" in a.summary
+    assert "codex prompt 19" in a.summary
+    assert "pytest -q" in a.extra["tool_args"]
