@@ -459,20 +459,20 @@ def _check_page_estimate(md: str, locale_meta: dict[str, Any]) -> Score:
         eff += max(1.0, width / 95)
     pages = eff / 45.0
 
-    target_pages = {
-        "en_US": 2, "en_GB": 2, "en_EU": 2, "fr_FR": 2,
-        "zh_TW": 2, "zh_CN": 2, "zh_HK": 2, "en_SG": 2,
-        "de_DE": 3, "ja_JP": 3, "ko_KR": 3,
-    }.get(locale_meta.get("_key", "en_US"), 2)
-
-    notes = [f"~{pages:.1f} pages estimated (target ≤ {target_pages})"]
-    if pages <= target_pages:
-        return Score("Page count", 10, 10, notes)
-    if pages <= target_pages + 1:
-        notes.append("over target by ≤1 page — trim oldest experience or merge weak project bullets")
-        return Score("Page count", 5, 10, notes)
-    notes.append("well over target — drop the lowest-impact project block(s)")
-    return Score("Page count", 2, 10, notes)
+    target = _LOCALE_PAGE_TARGETS.get(locale_meta.get("_key"), DEFAULT_PAGE_TARGET)
+    pages_est = pages
+    if pages_est <= target:
+        pts = 10
+    elif pages_est <= target + 0.2:
+        pts = 8
+    elif pages_est <= target + 0.5:
+        pts = 5
+    else:
+        pts = 2
+    notes = [f"~{pages_est:.1f} pages estimated (locale target ≤ {target})"]
+    if pages_est > target:
+        notes.append(f"over target by {pages_est - target:.1f} pages")
+    return Score("Page count", pts, 10, notes)
 
 
 def _check_red_flags(md: str, locale_meta: dict[str, Any]) -> Score:
@@ -804,6 +804,15 @@ def load_reviews_by_locale(reviews_dir: Path) -> dict[str, list[tuple[int, Revie
         out[loc].sort(key=lambda x: x[0])
     return out
 
+
+_LOCALE_PAGE_TARGETS: dict[str, float] = {
+    "en_US": 2.0, "en_GB": 2.0, "en_EU": 2.0,
+    "zh_TW": 2.0, "zh_HK": 2.0, "zh_CN": 2.0,
+    "de_DE": 2.5, "fr_FR": 2.5,
+    "ja_JP": 1.0,
+    "ko_KR": 2.0,
+}
+DEFAULT_PAGE_TARGET = 2.0
 
 # ASCII sparkline chars from low to high — classic U+2581..U+2588 block set.
 _SPARK = "▁▂▃▄▅▆▇█"
