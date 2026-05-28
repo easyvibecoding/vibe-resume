@@ -27,3 +27,19 @@ def test_no_persona_suffix_maps_to_none(tmp_path):
     _seed(tmp_path, "resume_v001_en_US_review.json", 50, "en_US")
     grouped = load_reviews_by_locale_persona(tmp_path)
     assert ("en_US", None) in grouped
+
+
+def test_grouping_mixed_persona_and_none_is_sortable(tmp_path):
+    """Mixed persona-less + persona-tagged history must not crash sorted() (#32)."""
+    _seed(tmp_path, "resume_v001_en_US_review.json", 50, "en_US")           # persona=None
+    _seed(tmp_path, "resume_v002_en_US_agentic_review.json", 60, "en_US")   # persona=agentic
+
+    from vibe_resume.core.review import load_reviews_by_locale_persona
+    grouped = load_reviews_by_locale_persona(tmp_path)
+    # The crash was in cli.py's sorted(); verify the None-safe key works
+    ordered = sorted(grouped.items(), key=lambda kv: (kv[0][0], kv[0][1] or ""))
+    keys = [k for k, _ in ordered]
+    assert ("en_US", None) in keys
+    assert ("en_US", "agentic") in keys
+    # None sorts before "agentic" via "" coercion
+    assert keys.index(("en_US", None)) < keys.index(("en_US", "agentic"))

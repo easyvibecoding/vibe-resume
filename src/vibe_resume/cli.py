@@ -576,14 +576,16 @@ def trend(ctx: click.Context, locale: str | None, persona: str | None, group_by:
         table.add_column("Grade", justify="center")
         table.add_column("Trend", justify="left")
 
-        for (loc, pers), entries in sorted(filtered.items()):
+        for (loc, pers), entries in sorted(
+            filtered.items(), key=lambda kv: (kv[0][0], kv[0][1] or "")
+        ):
             percents = [(r.total / r.max_total * 100) if r.max_total else 0 for _, r in entries]
             first = f"{entries[0][1].total}/{entries[0][1].max_total}"
             latest_v, latest_r = entries[-1]
             latest = f"v{latest_v}: {latest_r.total}/{latest_r.max_total}"
             mean = sum(percents) / len(percents)
             spark = sparkline(percents)
-            table.add_row(loc, pers or "—", str(len(entries)), first, latest, f"{mean:.1f}%", latest_r.grade, spark)
+            table.add_row(loc, pers or "(default)", str(len(entries)), first, latest, f"{mean:.1f}%", latest_r.grade, spark)
 
         console.print(table)
         return
