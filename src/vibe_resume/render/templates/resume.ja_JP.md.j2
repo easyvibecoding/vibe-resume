@@ -72,13 +72,13 @@ _{{ ai_overview | map(attribute='tool') | join(' / ') }} を活用し、{{ group
 
 {% if profile.education %}
 ## {{ T.education }}
-{% for ed in profile.education if ed.degree or ed.school %}- {{ ed.school }}　{{ ed.degree }}（{{ ed.year }}年）
+{% for ed in profile.education if ed.degree or ed.school %}- {{ ed.school }}　{{ ed.degree }}{% if ed.year %}（{{ ed.year }}年）{% endif %}
 {% endfor %}
 {% endif %}
 
 {% if profile.certifications %}
 ## {{ T.certifications }}
-{% for c in profile.certifications %}- {{ c.name }}（{{ c.year }}年）
+{% for c in profile.certifications %}- {{ c.name }}{% if c.year %}（{{ c.year }}年）{% endif %}
 {% endfor %}
 {% endif %}
 

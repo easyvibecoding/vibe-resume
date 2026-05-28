@@ -77,13 +77,13 @@ _{{ ai_overview | map(attribute='tool') | join(' / ') }}을(를) 활용한 AI �
 
 {% if profile.education %}
 ## {{ T.education }}
-{% for ed in profile.education if ed.degree or ed.school %}- **{{ ed.degree }}**, {{ ed.school }} ({{ ed.year }})
+{% for ed in profile.education if ed.degree or ed.school %}- **{{ ed.degree }}**, {{ ed.school }}{% if ed.year %} ({{ ed.year }}){% endif %}
 {% endfor %}
 {% endif %}
 
 {% if profile.certifications %}
 ## {{ T.certifications }}
-{% for c in profile.certifications %}- {{ c.name }} ({{ c.year }})
+{% for c in profile.certifications %}- {{ c.name }}{% if c.year %} ({{ c.year }}){% endif %}
 {% endfor %}
 {% endif %}
 

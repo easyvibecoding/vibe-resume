@@ -97,13 +97,13 @@ _{{ e.start }} – {{ e.end }}_
 
 {% if profile.education %}
 ## Education
-{% for ed in profile.education if ed.degree or ed.school %}- **{{ ed.degree }}** — {{ ed.school }} ({{ ed.year }})
+{% for ed in profile.education if ed.degree or ed.school %}- **{{ ed.degree }}** — {{ ed.school }}{% if ed.year %} ({{ ed.year }}){% endif %}
 {% endfor %}
 {% endif %}
 
 {% if profile.certifications %}
 ## Certifications
-{% for c in profile.certifications %}- {{ c.name }} ({{ c.year }})
+{% for c in profile.certifications %}- {{ c.name }}{% if c.year %} ({{ c.year }}){% endif %}
 {% endfor %}
 {% endif %}
 
