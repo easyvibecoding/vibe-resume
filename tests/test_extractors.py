@@ -723,3 +723,37 @@ def test_sample_spread_returns_all_when_under_k():
 
 def test_sample_spread_empty():
     assert sample_spread([], 3) == []
+
+
+# ──────────────────────── claude_code spread-sampling ─────────────────────────
+
+
+def _write_session(tmp_path, rows):
+    proj = tmp_path / "proj"
+    proj.mkdir()
+    f = proj / "s.jsonl"
+    f.write_text("\n".join(json.dumps(r) for r in rows))
+    return proj
+
+
+def test_claude_code_samples_more_and_captures_tool_args(tmp_path):
+    import vibe_resume.extractors.local.claude_code as cc
+
+    rows = []
+    for i in range(20):
+        rows.append({"type": "user", "timestamp": f"2026-01-01T00:{i:02d}:00Z",
+                     "message": {"content": f"prompt number {i}"}})
+    rows.append({"type": "assistant", "timestamp": "2026-01-01T00:30:00Z",
+                 "message": {"content": [{"type": "tool_use", "name": "Bash",
+                                          "input": {"command": "rm -rf build"}}]}})
+    _write_session(tmp_path, rows)
+    cfg = {"extractors": {"claude_code": {"path": str(tmp_path)}},
+           "sessions": {"sample_prompts": 5, "per_prompt_chars": 300,
+                        "capture_tool_args": True}}
+    acts = cc.extract(cfg)
+    assert len(acts) == 1
+    a = acts[0]
+    # spread sampling keeps first + last prompt, not just the first few
+    assert "prompt number 0" in a.summary
+    assert "prompt number 19" in a.summary
+    assert "rm -rf build" in a.extra["tool_args"]

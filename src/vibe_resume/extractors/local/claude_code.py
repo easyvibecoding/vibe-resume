@@ -1,15 +1,17 @@
 """Extract from ~/.claude/projects/*/*.jsonl — one Activity per session."""
 from __future__ import annotations
 
+import json
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from vibe_resume.core.schema import Activity, ActivityType, Source
-from vibe_resume.extractors.base import iter_jsonl
+from vibe_resume.extractors.base import iter_jsonl, sample_spread
 
 NAME = "claude_code"
+_SUMMARY_MAX = 4000
 
 
 def _parse_ts(s: str) -> datetime | None:
@@ -25,6 +27,10 @@ def extract(cfg: dict[str, Any]) -> list[Activity]:
     base = Path(cfg["extractors"]["claude_code"]["path"])
     if not base.exists():
         return []
+    sess = cfg.get("sessions", {})
+    sample_n = int(sess.get("sample_prompts", 12))
+    per_chars = int(sess.get("per_prompt_chars", 300))
+    capture_args = bool(sess.get("capture_tool_args", False))
 
     activities: list[Activity] = []
     for project_dir in base.iterdir():
@@ -33,13 +39,15 @@ def extract(cfg: dict[str, Any]) -> list[Activity]:
         for jsonl_file in project_dir.glob("*.jsonl"):
             if "/subagents/" in str(jsonl_file):
                 continue
-            act = _process_session(jsonl_file, project_dir.name)
+            act = _process_session(jsonl_file, project_dir.name,
+                                   sample_n, per_chars, capture_args)
             if act:
                 activities.append(act)
     return activities
 
 
-def _process_session(path: Path, project_dirname: str) -> Activity | None:
+def _process_session(path: Path, project_dirname: str,
+                     sample_n: int, per_chars: int, capture_args: bool) -> Activity | None:
     first_ts: datetime | None = None
     last_ts: datetime | None = None
     user_prompt_count = 0
@@ -50,6 +58,7 @@ def _process_session(path: Path, project_dirname: str) -> Activity | None:
     files_touched: set[str] = set()
     tool_names: defaultdict[str, int] = defaultdict(int)
     user_text_chunks: list[str] = []
+    tool_args: list[str] = []
     any_entry = False
 
     for entry in iter_jsonl(path):
@@ -81,8 +90,7 @@ def _process_session(path: Path, project_dirname: str) -> Activity | None:
                 txt = ""
             if txt and not txt.startswith("<") and "<system-reminder>" not in txt:
                 user_prompt_count += 1
-                if len(user_text_chunks) < 8:
-                    user_text_chunks.append(txt[:300])
+                user_text_chunks.append(txt[:per_chars])
         elif etype == "assistant":
             msg = entry.get("message", {})
             for part in msg.get("content", []) or []:
@@ -96,12 +104,21 @@ def _process_session(path: Path, project_dirname: str) -> Activity | None:
                         v = inp.get(key)
                         if isinstance(v, str) and len(files_touched) < 50:
                             files_touched.add(v)
+                    if capture_args and len(tool_args) < sample_n:
+                        try:
+                            tool_args.append(json.dumps(inp)[:per_chars])
+                        except (TypeError, ValueError):
+                            pass
 
     if not any_entry or not first_ts:
         return None
 
-    summary_preview = " | ".join(user_text_chunks[:3])
+    sampled = sample_spread(user_text_chunks, sample_n)
+    summary_preview = " | ".join(sampled)[:_SUMMARY_MAX]
     keywords = sorted(tool_names, key=lambda k: -tool_names[k])[:10]
+    extra: dict[str, Any] = {"git_branch": git_branch, "tool_histogram": dict(tool_names)}
+    if capture_args and tool_args:
+        extra["tool_args"] = "\n".join(tool_args)
 
     return Activity(
         source=Source.CLAUDE_CODE,
@@ -112,10 +129,10 @@ def _process_session(path: Path, project_dirname: str) -> Activity | None:
         activity_type=ActivityType.CODING,
         tech_stack=[],
         keywords=keywords,
-        summary=summary_preview[:500],
+        summary=summary_preview,
         user_prompts_count=user_prompt_count,
         tool_calls_count=tool_call_count,
         files_touched=sorted(files_touched),
         raw_ref=str(path),
-        extra={"git_branch": git_branch, "tool_histogram": dict(tool_names)},
+        extra=extra,
     )
