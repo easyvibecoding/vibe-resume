@@ -464,14 +464,63 @@ def review(
 
 @cli.command()
 @click.option("--locale", default=None, help="Restrict trend to a single locale; omit to show all")
+@click.option("--persona", default=None, help="Restrict trend to a single persona; omit to show all")
+@click.option(
+    "--group-by",
+    default="locale,persona",
+    show_default=True,
+    help="Comma-separated grouping dimensions: 'locale', 'persona', or 'locale,persona'",
+)
 @click.pass_context
-def trend(ctx: click.Context, locale: str | None) -> None:
-    """Summarize review score history per locale with a sparkline."""
+def trend(ctx: click.Context, locale: str | None, persona: str | None, group_by: str) -> None:
+    """Summarize review score history per locale (and optionally persona) with a sparkline."""
     from rich.table import Table
 
-    from core.review import load_reviews_by_locale, sparkline
+    from core.review import load_reviews_by_locale, load_reviews_by_locale_persona, sparkline
 
     reviews_dir = ROOT / "data" / "reviews"
+    dims = {d.strip() for d in group_by.split(",")}
+    use_persona_dim = "persona" in dims
+
+    if use_persona_dim:
+        by_group = load_reviews_by_locale_persona(reviews_dir)
+        if not by_group:
+            console.print(f"[yellow]no reviews found in {reviews_dir}[/yellow]")
+            return
+
+        # apply locale / persona filters
+        filtered = {
+            (loc, pers): entries
+            for (loc, pers), entries in by_group.items()
+            if (locale is None or loc == locale)
+            and (persona is None or pers == persona)
+        }
+        if not filtered:
+            console.print(f"[yellow]no reviews matching locale={locale} persona={persona}[/yellow]")
+            return
+
+        table = Table(title="Review score trend")
+        table.add_column("Locale")
+        table.add_column("Persona")
+        table.add_column("Runs", justify="right")
+        table.add_column("First", justify="right")
+        table.add_column("Latest", justify="right")
+        table.add_column("Mean", justify="right")
+        table.add_column("Grade", justify="center")
+        table.add_column("Trend", justify="left")
+
+        for (loc, pers), entries in sorted(filtered.items()):
+            percents = [(r.total / r.max_total * 100) if r.max_total else 0 for _, r in entries]
+            first = f"{entries[0][1].total}/{entries[0][1].max_total}"
+            latest_v, latest_r = entries[-1]
+            latest = f"v{latest_v}: {latest_r.total}/{latest_r.max_total}"
+            mean = sum(percents) / len(percents)
+            spark = sparkline(percents)
+            table.add_row(loc, pers or "—", str(len(entries)), first, latest, f"{mean:.1f}%", latest_r.grade, spark)
+
+        console.print(table)
+        return
+
     by_locale = load_reviews_by_locale(reviews_dir)
     if not by_locale:
         console.print(f"[yellow]no reviews found in {reviews_dir}[/yellow]")

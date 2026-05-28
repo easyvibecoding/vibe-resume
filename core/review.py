@@ -805,6 +805,40 @@ def load_reviews_by_locale(reviews_dir: Path) -> dict[str, list[tuple[int, Revie
     return out
 
 
+def load_reviews_by_locale_persona(
+    reviews_dir: Path,
+) -> dict[tuple[str, str | None], list[tuple[int, ReviewReport]]]:
+    """Group reviews by (locale, persona) parsed from the review JSON filename.
+
+    resume_v007_en_US_tech_lead_review.json → (en_US, tech_lead)
+    resume_v007_en_US_hr_review.json        → (en_US, hr)
+    resume_v007_en_US_review.json           → (en_US, None)
+    resume_v007_review.json                 → (en_US, None)  # legacy en_US default
+    """
+    _fname_re = re.compile(
+        r"resume_v(\d+)(?:_([a-z]{2}_[A-Z]{2}))?(?:_(?!review)([a-z][a-z_]*))?_review\.json$"
+    )
+    grouped: dict[tuple[str, str | None], list[tuple[int, ReviewReport]]] = {}
+    if not reviews_dir.exists():
+        return grouped
+    for j in reviews_dir.glob("resume_v*_review.json"):
+        m = _fname_re.search(j.name)
+        if not m:
+            continue
+        version = int(m.group(1))
+        loc = m.group(2) or "en_US"
+        pers = m.group(3) or None
+        try:
+            data = json.loads(j.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        report = ReviewReport.from_dict(data)
+        grouped.setdefault((loc, pers), []).append((version, report))
+    for k in grouped:
+        grouped[k].sort(key=lambda t: t[0])
+    return grouped
+
+
 _LOCALE_PAGE_TARGETS: dict[str, float] = {
     "en_US": 2.0, "en_GB": 2.0, "en_EU": 2.0,
     "zh_TW": 2.0, "zh_HK": 2.0, "zh_CN": 2.0,
