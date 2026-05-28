@@ -177,17 +177,12 @@ def test_apply_with_abstract_tech_hides_stack_names() -> None:
 
 
 def test_redacts_str_list_in_extra():
-    from vibe_resume.core.schema import Source
-
     pf = PrivacyFilter({"privacy": {"redact_patterns": ["sk-[A-Za-z0-9]{20,}"]}})
-    act = Activity(
-        source=Source.GITHUB,
-        session_id="o/r#1",
-        timestamp_start="2026-01-01T00:00:00+00:00",
+    act = _activity(
         extra={
             "own_comments": ["looks good sk-ABCDEFGHIJKLMNOPQRSTU here", "second"],
             "number": 1,
-        },
+        }
     )
     out = pf.apply(act)
     assert out is not None
