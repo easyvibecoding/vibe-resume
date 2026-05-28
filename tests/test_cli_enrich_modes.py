@@ -313,3 +313,116 @@ def test_cli_enrich_help_lists_ingest_all_flag():
     )
     assert r.returncode == 0, r.stderr
     assert "--all" in r.stdout
+
+
+# ---------------------------------------------------------------------------
+# Fix #10 — `vibe-resume run` thin orchestrator (Phase A emit / Phase B ingest)
+# ---------------------------------------------------------------------------
+
+
+def test_cli_run_help_lists_required_flags():
+    """run --help must list --continue, --personas, --locales."""
+    import subprocess
+
+    r = subprocess.run(
+        ["uv", "run", "python", "cli.py", "run", "--help"],
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert r.returncode == 0, r.stderr
+    assert "--continue" in r.stdout
+    assert "--personas" in r.stdout
+    assert "--locales" in r.stdout
+
+
+def test_cli_run_phase_a_stops_after_emit(seeded_cache, monkeypatch, capsys):
+    """Phase A: `run` without --continue stops after emit, prints 'Phase A done'."""
+    from core import aggregator, enricher
+
+    monkeypatch.setattr(aggregator, "GROUPS_PATH", seeded_cache / "_project_groups.json")
+    monkeypatch.setattr(enricher, "ENRICH_JOBS_DIR", seeded_cache / "enrich_jobs")
+
+    from click.testing import CliRunner
+
+    # Patch run_extractors and run_aggregator to no-ops (cache exists in seeded_cache)
+    import core.runner as runner_mod
+    from cli import cli
+
+    monkeypatch.setattr(runner_mod, "run_extractors", lambda cfg, **kw: None)
+    monkeypatch.setattr(runner_mod, "run_aggregator", lambda cfg: None)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["run", "--locales", "en_US"],
+        obj={"config": {}},
+    )
+    assert result.exit_code == 0, result.output
+    # Phase A should print a "Phase A done" message and NOT call render/review
+    assert "Phase A" in result.output or "emit" in result.output.lower()
+    # render should NOT have been called - no resume files
+    resume_files = list(seeded_cache.glob("resume_v*.md"))
+    assert len(resume_files) == 0, f"render was called unexpectedly: {resume_files}"
+
+
+def test_cli_run_phase_b_continue_skips_emit(seeded_cache, monkeypatch, capsys):
+    """Phase B (--continue): skips extract+aggregate+emit; calls ingest+render."""
+    import json
+
+    from click.testing import CliRunner
+
+    from cli import cli
+    from core import aggregator, enricher
+    from tests.test_enrich_jobs import _fake_group
+
+    monkeypatch.setattr(aggregator, "GROUPS_PATH", seeded_cache / "_project_groups.json")
+    enrich_jobs_dir = seeded_cache / "enrich_jobs"
+    monkeypatch.setattr(enricher, "ENRICH_JOBS_DIR", enrich_jobs_dir)
+
+    # Pre-emit so ingest has something to find
+    enricher.enrich_groups(cfg={}, cache_dir=seeded_cache, locale="en_US")
+    capsys.readouterr()
+
+    # Write yaml so ingest succeeds
+    jobs_dir = enrich_jobs_dir / "default" / "en_US"
+    m = json.loads((jobs_dir / "manifest.json").read_text())
+    for entry in m["groups"]:
+        (jobs_dir / entry["output_path"]).write_text(
+            "summary: ok\nrole_label: Backend\nachievements: []\ntech_stack: []\n"
+        )
+
+    monkeypatch.setattr(
+        "core.enrich_jobs._load_raw_groups", lambda: [_fake_group("proj-foo")]
+    )
+
+    # Track whether extract was called
+    extract_called = []
+    import core.runner as runner_mod
+
+    monkeypatch.setattr(
+        runner_mod, "run_extractors", lambda cfg, **kw: extract_called.append(1)
+    )
+
+    # Patch render to no-op (groups cache may not exist yet for render)
+    from render import renderer
+
+    monkeypatch.setattr(renderer, "_history_path", lambda cfg: seeded_cache)
+
+    def _fake_md(cfg, tailor, locale=None, persona=None):
+        return ("# fake\n", {"locale": {"_key": locale or "en_US"}, "_tpl_name": "f.j2", "profile": {}, "groups": []})
+
+    monkeypatch.setattr(renderer, "_render_md", _fake_md)
+    monkeypatch.setattr(renderer, "snapshot", lambda cfg, files, msg: None)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["run", "--continue", "--locales", "en_US"],
+        obj={"config": {}},
+    )
+    assert result.exit_code == 0, result.output
+    # extract must NOT have been called
+    assert len(extract_called) == 0, "extract was called during --continue phase"
+    # ingest should have run (ingested message)
+    assert "ingested" in result.output or "ingest" in result.output.lower()

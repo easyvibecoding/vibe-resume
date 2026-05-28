@@ -1034,5 +1034,163 @@ def company_audit(stale_days: int | None, only_stale: bool) -> None:
         )
 
 
+@cli.command("run")
+@click.option("--personas", default=None,
+              help="Comma-separated persona keys, or 'all'. Default: default (no persona).")
+@click.option("--locales", default=None,
+              help="Comma-separated locale keys (e.g. en_US,zh_TW). Default: config.render.locale.")
+@click.option("--tailor", default=None, help="JD .txt path (forwarded to enrich + render).")
+@click.option("--level", default=None, help="Career level key (forwarded to enrich).")
+@click.option("--company", default=None, help="Target company key (forwarded to enrich).")
+@click.option("-n", "--limit", type=int, default=None, help="Enrich top-N groups.")
+@click.option("--formats", default=None,
+              help="Comma-separated render formats (md,docx,pdf). Default: config.render.all_locales_formats.")
+@click.option("--max-age-days", type=int, default=7, show_default=True,
+              help="If extract cache is older than this many days, run extract+aggregate first.")
+@click.option("--continue", "do_continue", is_flag=True, default=False,
+              help="Skip Phase A (extract+aggregate+emit); resume with ingest+render+review+trend on existing manifests.")
+@click.pass_context
+def run_cmd(
+    ctx: click.Context,
+    personas: str | None,
+    locales: str | None,
+    tailor: str | None,
+    level: str | None,
+    company: str | None,
+    limit: int | None,
+    formats: str | None,
+    max_age_days: int,
+    do_continue: bool,
+) -> None:
+    """Run the full pipeline (multi-persona × multi-locale) in one command.
+
+    \b
+    Phase A (default): extract + aggregate (if cache stale) + enrich emit per matrix cell.
+    User then processes the emitted *.prompt.md files in their Claude Code session.
+
+    \b
+    Phase B (--continue): ingest --all + render matrix + review matrix + trend.
+    No auto-dispatch; the Agent SDK quota pool is never touched.
+    """
+    import time
+
+    from core.personas import PERSONAS, list_persona_keys
+    from core.runner import run_aggregator, run_enricher, run_extractors, run_render
+    from render.i18n import LOCALES
+
+    cfg = ctx.obj["config"]
+
+    # ── Resolve persona matrix ────────────────────────────────────────────────
+    if personas and personas.strip().lower() == "all":
+        persona_keys: list[str | None] = list(list_persona_keys())
+    elif personas:
+        persona_keys = [p.strip() for p in personas.split(",") if p.strip() in PERSONAS]
+        if not persona_keys:
+            known = ", ".join(sorted(PERSONAS))
+            raise click.UsageError(f"no valid persona keys in {personas!r}. Known: {known}")
+    else:
+        persona_keys = [None]
+
+    # ── Resolve locale matrix ─────────────────────────────────────────────────
+    default_locale = cfg.get("render", {}).get("locale") or "en_US"
+    if locales:
+        locale_keys = [loc.strip() for loc in locales.split(",") if loc.strip() in LOCALES]
+        if not locale_keys:
+            raise click.UsageError(f"no valid locale keys in {locales!r}.")
+    else:
+        locale_keys = [default_locale]
+
+    # ── Resolve format list ───────────────────────────────────────────────────
+    fmt_list = (
+        [f.strip() for f in formats.split(",") if f.strip()]
+        if formats
+        else cfg.get("render", {}).get("all_locales_formats") or ["md"]
+    )
+
+    _warn_if_company_stale(company)
+
+    # ════════════════════════════════════════════════════════════════════════
+    # Phase B — ingest + render + review + trend
+    # ════════════════════════════════════════════════════════════════════════
+    if do_continue:
+        console.print("[cyan]Phase B: ingest --all[/cyan]")
+        run_enricher(cfg, ingest=True, ingest_all=True)
+
+        console.print("\n[cyan]Phase B: render matrix[/cyan]")
+        for loc in locale_keys:
+            for p in persona_keys:
+                for fmt in fmt_list:
+                    run_render(cfg, fmt=fmt, tailor=tailor, locale=loc, persona=p)
+
+        console.print("\n[cyan]Phase B: review matrix[/cyan]")
+        from core.review import (
+            parse_jd_keywords,
+            resolve_resume_path,
+            review_file,
+            write_report,
+        )
+
+        hist = ROOT / (cfg.get("render", {}).get("output_dir") or "data/resume_history")
+        out_dir = ROOT / "data" / "reviews"
+        jd_kw = parse_jd_keywords(Path(tailor)) if tailor else None
+        reviewed = 0
+        for loc in locale_keys:
+            for p in persona_keys:
+                try:
+                    md_path = resolve_resume_path(hist, persona=p, locale=loc)
+                except (ValueError, FileNotFoundError) as e:
+                    console.print(f"  [yellow]skip review ({p or 'default'}/{loc}): {e}[/yellow]")
+                    continue
+                report = review_file(
+                    md_path, locale_key=loc,
+                    persona=p, company=company, level=level,
+                    jd_keywords=jd_kw,
+                )
+                write_report(report, out_dir)
+                reviewed += 1
+
+        console.print(f"\n[green]✓ Phase B done.[/green] Reviewed {reviewed} file(s).")
+        console.print("[dim]run `vibe-resume trend` for the sparkline summary.[/dim]")
+        return
+
+    # ════════════════════════════════════════════════════════════════════════
+    # Phase A — extract + aggregate (if stale) + enrich emit per matrix cell
+    # ════════════════════════════════════════════════════════════════════════
+    cache_marker = ROOT / "data" / "cache" / "_project_groups.json"
+    if not cache_marker.exists() or (time.time() - cache_marker.stat().st_mtime) > max_age_days * 86400:
+        console.print("[cyan]Phase A: extract + aggregate (cache stale or absent)[/cyan]")
+        run_extractors(cfg)
+        run_aggregator(cfg)
+    else:
+        age_days = int((time.time() - cache_marker.stat().st_mtime) / 86400)
+        console.print(
+            f"[dim]skipping extract+aggregate (cache fresh, {age_days}d old)[/dim]"
+        )
+
+    n_cells = len(persona_keys) * len(locale_keys)
+    console.print(
+        f"\n[cyan]Phase A: emit[/cyan] {n_cells} manifest(s) "
+        f"({len(persona_keys)} persona(s) × {len(locale_keys)} locale(s))"
+    )
+    for p in persona_keys:
+        for loc in locale_keys:
+            run_enricher(
+                cfg,
+                locale=loc,
+                persona=p,
+                tailor=tailor,
+                level=level,
+                company=company,
+                limit=limit,
+            )
+
+    console.print(
+        f"\n[green]✓ Phase A done.[/green] Emitted {n_cells} manifest(s). "
+        "Process the *.prompt.md files in your Claude Code session, then run "
+        "[cyan]`vibe-resume run --continue`[/cyan] (with the same flags) to "
+        "ingest + render + review + trend."
+    )
+
+
 if __name__ == "__main__":
     cli()
