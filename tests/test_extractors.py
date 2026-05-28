@@ -17,6 +17,7 @@ from pathlib import Path
 import pytest
 
 from vibe_resume.core.schema import ActivityType, Source
+from vibe_resume.extractors.base import sample_spread
 
 # ─────────────────────────────── claude_code ──────────────────────────────────
 
@@ -707,3 +708,18 @@ def test_git_repos_scan_timeout_breaks_rglob(tmp_path: Path) -> None:
     # Deadline already elapsed → no rglob iterations performed.
     result = git_repos._find_repos([tmp_path], excludes=[], timeout_seconds=-1)
     assert result == []
+
+
+# ──────────────────────────────── sample_spread ───────────────────────────────
+
+
+def test_sample_spread_dedupes_and_picks_endpoints():
+    assert sample_spread(["a", "a", "b", "c", "d", "e"], 3) == ["a", "c", "e"]
+
+
+def test_sample_spread_returns_all_when_under_k():
+    assert sample_spread(["a", "b"], 5) == ["a", "b"]
+
+
+def test_sample_spread_empty():
+    assert sample_spread([], 3) == []

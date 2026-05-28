@@ -116,6 +116,13 @@ extractors:
     enabled: false
     api_key_env: "HEYGEN_API_KEY"
 
+# Shared knobs for conversation-style extractors (claude_code, codex, claude_ai).
+sessions:
+  sample_prompts: 12        # how many user prompts to keep per session (spread across timeline)
+  per_prompt_chars: 300     # char budget per kept prompt
+  capture_tool_args: false  # also keep a sample of tool-call arguments (redacted)
+  keep_assistant: true      # claude.ai export: keep assistant responses too
+
 privacy:
   # Strings matching these patterns are redacted from summaries and keywords.
   redact_patterns:

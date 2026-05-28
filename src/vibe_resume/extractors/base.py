@@ -40,6 +40,26 @@ def iter_jsonl(path: Path) -> Iterator[dict]:
         return
 
 
+def sample_spread(items: list[str], k: int) -> list[str]:
+    """Dedupe (keeping first occurrence) then return up to k items spread
+    evenly across the list, always including the first and last."""
+    seen: set[str] = set()
+    uniq: list[str] = []
+    for it in items:
+        if it and it not in seen:
+            seen.add(it)
+            uniq.append(it)
+    if k <= 0:
+        return []
+    if len(uniq) <= k:
+        return uniq
+    if k == 1:
+        return uniq[:1]
+    last = len(uniq) - 1
+    idxs = sorted({round(i * last / (k - 1)) for i in range(k)})
+    return [uniq[i] for i in idxs]
+
+
 def save_activities(activities: list[Activity], out_path: Path) -> None:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     data = [a.model_dump(mode="json") for a in activities]
