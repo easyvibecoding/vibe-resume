@@ -45,3 +45,48 @@ def test_no_locale_no_persona_still_works(fake_render):
     render_draft({}, fmt="md")
     files = sorted(fake_render.glob("resume_v*_en_US.md"))
     assert len(files) == 1
+
+
+def test_render_all_locales_with_persona_list_expands_matrix(tmp_path, monkeypatch):
+    """--all-locales × --persona X,Y → renders one file per (locale, persona)."""
+    from render import renderer
+
+    monkeypatch.setattr(renderer, "_history_path", lambda cfg: tmp_path)
+
+    def _fake_md(cfg, tailor, locale=None, persona=None):
+        return (
+            "# fake\n",
+            {
+                "locale": {"_key": locale or "en_US"},
+                "_tpl_name": "fake.j2",
+                "profile": {},
+                "groups": [],
+            },
+        )
+
+    monkeypatch.setattr(renderer, "_render_md", _fake_md)
+    monkeypatch.setattr(renderer, "snapshot", lambda cfg, files, msg: None)
+
+    from click.testing import CliRunner
+
+    from cli import cli
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["render", "--all-locales", "--format", "md", "--persona", "tech_lead,hr"],
+        obj={"config": {}},
+    )
+    assert result.exit_code == 0, result.output
+
+    files = sorted(tmp_path.glob("resume_v*.md"))
+    names = [f.name for f in files]
+    # Verify both personas appear
+    assert any("tech_lead" in n for n in names), f"tech_lead missing from {names}"
+    assert any("hr" in n for n in names), f"hr missing from {names}"
+    # Verify multiple locales appear
+    assert any("zh_TW" in n for n in names), f"zh_TW missing from {names}"
+    assert any("ja_JP" in n for n in names), f"ja_JP missing from {names}"
+    # 10 locales × 2 personas = 20 files
+    from render.i18n import LOCALES
+    assert len(files) == len(LOCALES) * 2, f"expected {len(LOCALES) * 2}, got {len(files)}: {names}"
