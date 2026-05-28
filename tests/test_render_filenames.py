@@ -208,3 +208,26 @@ def test_top_n_threaded_into_context(tmp_path, monkeypatch):
     monkeypatch.setattr(renderer, "_render_md", spy)
     renderer.render_draft({}, fmt="md", locale="en_US", top_n=12)
     assert captured["top_n"] == 12
+
+
+def test_composite_rank_prefers_deep_over_broad_shallow():
+    from datetime import UTC, datetime
+
+    from vibe_resume.core.schema import ProjectGroup, Source
+    from vibe_resume.render.renderer import _rank_score
+
+    def g(name, sessions, breadth, achievements):
+        return ProjectGroup(
+            name=name, path=None,
+            first_activity=datetime(2026, 1, 1, tzinfo=UTC),
+            last_activity=datetime(2026, 2, 1, tzinfo=UTC),
+            sources=[Source.CLAUDE_CODE], total_sessions=sessions,
+            tech_stack=["python"], category_counts={"backend": sessions},
+            capability_breadth=breadth,
+            achievements=achievements,
+        )
+
+    deep = g("deep", 90, 1, ["a", "b", "c", "d"])   # focused, many sessions, rich bullets
+    broad = g("broad", 10, 5, ["a"])                  # broad but shallow
+
+    assert _rank_score(deep) > _rank_score(broad)

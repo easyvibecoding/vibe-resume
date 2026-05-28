@@ -149,6 +149,14 @@ def _top_capabilities(groups: list, limit: int = 6) -> list[str]:
     ][:limit]
 
 
+def _rank_score(g) -> int:
+    # Sessions are the primary depth signal; achievements weight heavily
+    # (a project the enricher found worth 4 bullets outranks a shallow one);
+    # breadth is a secondary tiebreaker. Deliberately NOT breadth-dominant
+    # so a focused 90-session project isn't buried under broad-but-shallow work.
+    return g.total_sessions + len(g.achievements or []) * 5 + (g.capability_breadth or 0) * 2
+
+
 def _render_md(cfg: dict[str, Any], tailor: str | None, locale: str | None = None, persona: str | None = None, top_n: int | None = None) -> tuple[str, dict]:
     tpl_cfg = cfg.get("render", {}).get("templates_dir")
     bundled = Path(__file__).parent / "templates"
@@ -195,6 +203,7 @@ def _render_md(cfg: dict[str, Any], tailor: str | None, locale: str | None = Non
     env.filters["localized"] = lambda obj, key: localized(obj, key, locale_key)
 
     groups = load_groups(persona=persona, locale=locale_key)
+    groups = sorted(groups, key=_rank_score, reverse=True)
     if groups and all(not (g.summary or g.achievements) for g in groups):
         console.print(
             f"[yellow]⚠ no enriched cache for locale={locale_key}; "
