@@ -442,3 +442,37 @@ def test_status_enriched_flag_runs():
         cwd=Path(__file__).resolve().parent.parent,
     )
     assert r.returncode == 0, r.stderr
+
+
+# ---------------------------------------------------------------------------
+# Fix #23 — jd-check command
+# ---------------------------------------------------------------------------
+
+
+def test_jd_check_help():
+    import subprocess
+    from pathlib import Path
+    r = subprocess.run(
+        ["uv", "run", "python", "cli.py", "jd-check", "--help"],
+        capture_output=True, text=True, timeout=30,
+        cwd=Path(__file__).resolve().parent.parent,
+    )
+    assert r.returncode == 0, r.stderr
+    assert "--tailor" in r.stdout
+    assert "--threshold" in r.stdout
+
+
+# ---------------------------------------------------------------------------
+# Fix #26 — review-diff command
+# ---------------------------------------------------------------------------
+
+
+def test_review_diff_help():
+    import subprocess
+    from pathlib import Path
+    r = subprocess.run(
+        ["uv", "run", "python", "cli.py", "review-diff", "--help"],
+        capture_output=True, text=True, timeout=30,
+        cwd=Path(__file__).resolve().parent.parent,
+    )
+    assert r.returncode == 0, r.stderr

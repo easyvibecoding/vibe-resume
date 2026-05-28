@@ -1372,5 +1372,105 @@ def doctor(ctx: click.Context) -> None:
     )
 
 
+@cli.command("jd-check")
+@click.option("--tailor", required=True, help="Path to JD .txt to check coverage against.")
+@click.option("--persona", default=None, help="Narrow to a persona's cache.")
+@click.option("--locale", default=None, help="Narrow to a locale's cache.")
+@click.option("--threshold", type=int, default=None, help="Only show keywords below this %% coverage.")
+@click.pass_context
+def jd_check(ctx: click.Context, tailor: str, persona: str | None, locale: str | None, threshold: int | None) -> None:
+    """Report how well enriched bullets cover the JD's extracted keywords."""
+    from core.aggregator import load_groups
+    from core.review import parse_jd_keywords
+
+    jd_path = Path(tailor)
+    if not jd_path.exists():
+        raise click.UsageError(f"JD file not found: {jd_path}")
+    keywords = parse_jd_keywords(jd_path)
+    if not keywords:
+        console.print("[yellow]no keywords extracted from JD[/yellow]")
+        return
+
+    locale_key = locale or ctx.obj["config"].get("render", {}).get("locale") or "en_US"
+    groups = load_groups(persona=persona, locale=locale_key)
+    if not groups:
+        console.print(f"[yellow]no enriched cache for (persona={persona}, locale={locale_key})[/yellow]")
+        return
+
+    total = len(groups)
+    console.print(
+        f"[bold]JD-Cache alignment[/bold]  JD={jd_path.name}  "
+        f"cache=(persona={persona or 'default'}, locale={locale_key}), {total} groups\n"
+    )
+
+    t = Table()
+    t.add_column("Keyword")
+    t.add_column("Coverage", justify="right")
+    t.add_column("")
+    surfaced = 0
+    for kw in keywords:
+        hits = sum(
+            1 for g in groups
+            if kw.lower() in " ".join(
+                [(g.summary or "")] + list(g.achievements or []) + list(g.tech_stack or [])
+            ).lower()
+        )
+        pct = (hits * 100 // total) if total else 0
+        if threshold is not None and pct >= threshold:
+            continue
+        mark = "✓" if hits else "✗"
+        if hits:
+            surfaced += 1
+        t.add_row(kw, f"{hits}/{total} ({pct}%)", mark)
+    console.print(t)
+    console.print(
+        f"\n[bold]{surfaced}/{len(keywords)}[/bold] keywords surfaced in ≥1 group; "
+        f"{len(keywords) - surfaced} missing."
+    )
+
+
+@cli.command("review-diff")
+@click.argument("va")
+@click.argument("vb")
+@click.option("--jd", default=None, help="JD .txt for keyword-echo scoring on both versions.")
+@click.pass_context
+def review_diff(ctx: click.Context, va: str, vb: str, jd: str | None) -> None:
+    """Compare two résumé versions' review scorecards per-check.
+
+    VA and VB are version numbers (e.g. 3 7) or filenames.
+    """
+    from core.review import parse_jd_keywords, resolve_resume_path, review_file
+
+    hist = ROOT / (ctx.obj["config"].get("render", {}).get("output_dir") or "data/resume_history")
+
+    def _resolve(v: str) -> Path:
+        if v.isdigit():
+            return resolve_resume_path(hist, version=int(v))
+        return Path(v)
+
+    jd_kw = parse_jd_keywords(Path(jd)) if jd else None
+    pa, pb = _resolve(va), _resolve(vb)
+    ra = review_file(pa, jd_keywords=jd_kw)
+    rb = review_file(pb, jd_keywords=jd_kw)
+
+    by_name_b = {s.name: s for s in rb.scores}
+    t = Table(title=f"Review diff: {pa.name} → {pb.name}")
+    t.add_column("Check")
+    t.add_column("A", justify="right")
+    t.add_column("B", justify="right")
+    t.add_column("Δ", justify="right")
+    for sa in ra.scores:
+        sb = by_name_b.get(sa.name)
+        if sb is None:
+            continue
+        delta = sb.score - sa.score
+        dstr = "—" if delta == 0 else (f"+{delta}" if delta > 0 else str(delta))
+        t.add_row(sa.name, f"{sa.score}/{sa.max}", f"{sb.score}/{sb.max}", dstr)
+    total_delta = rb.total - ra.total
+    tdstr = "—" if total_delta == 0 else (f"+{total_delta}" if total_delta > 0 else str(total_delta))
+    t.add_row("TOTAL", f"{ra.total}/{ra.max_total}", f"{rb.total}/{rb.max_total}", tdstr)
+    console.print(t)
+
+
 if __name__ == "__main__":
     cli()
