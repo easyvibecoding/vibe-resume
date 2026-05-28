@@ -4,7 +4,7 @@ description: Generate a versioned, reviewer-scored résumé from the user's AI-c
 license: MIT
 compatibility: Requires Python 3.12+ and uv. Optional pandoc (PDF rendering) and claude CLI (LLM enrichment; falls back to rule-based). Works on macOS and Linux.
 metadata:
-  version: "0.6.1"
+  version: "0.6.2"
   author: easyvibecoding
   hermes:
     tags:

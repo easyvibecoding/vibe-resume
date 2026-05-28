@@ -4,6 +4,33 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.2] — 2026-05-28
+
+### Fixed
+
+- **#30 [P0 regression]: stale `templates_dir` crashed `render` after the
+  0.6.0 src/ move.** `config.example.yaml` still shipped
+  `render.templates_dir: "./render/templates"`, a path that no longer exists
+  (templates moved into `src/vibe_resume/render/templates/`). Because
+  `load_config` bootstraps `config.yaml` from the example, new users hit
+  `TemplateNotFound` on their first `render`. Fix: removed the stale knob from
+  the example, and `_render_md` now verifies a configured `templates_dir`
+  actually contains templates — falling back to the bundled package templates
+  with a warning instead of crashing. `render.templates_dir` is now an
+  optional override; templates ship inside the package.
+
+- **#31: `run --formats md,docx,pdf` exploded each format into its own
+  version.** Phase B iterated formats as a matrix axis, so a 2-locale run
+  produced 6 versions (each carrying only one format). `render_draft` now
+  accepts a comma-list of formats and emits them all against ONE version;
+  `run` Phase B makes a single render call per (locale, persona) cell.
+  `render -f all` / `-f md` string forms still work.
+
+- **#32: `trend` crashed (`TypeError: None < str`) on mixed persona history.**
+  Default grouping is `(locale, persona)` since #15; `sorted()` couldn't
+  order `None` (persona-less early runs) against `"agentic"` etc. Sort key is
+  now None-safe (`persona or ""`); persona-less rows display as `(default)`.
+
 ## [0.6.1] — 2026-05-28
 
 ### Fixed (test infrastructure)
