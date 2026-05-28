@@ -119,6 +119,44 @@ def aggregate(ctx: click.Context) -> None:
     default=False,
     help="Read *.yaml back from data/enrich_jobs/<persona>/<locale>/ and merge into the per-locale cache.",
 )
+@click.option(
+    "--tailor-keywords",
+    default=None,
+    help="Comma-separated extra keywords always included in the tailor block (e.g. 'LangGraph,MCP,LangSmith'). "
+         "Merged with --tailor extraction by default; use --tailor-keywords-strict to suppress extraction.",
+)
+@click.option(
+    "--tailor-keywords-cap",
+    type=int,
+    default=12,
+    show_default=True,
+    help="Override the keyword cap injected into the prompt. Higher = more JD signal but more prompt tokens.",
+)
+@click.option(
+    "--tailor-keywords-strict",
+    is_flag=True,
+    default=False,
+    help="Use only --tailor-keywords; skip the auto-extractor entirely.",
+)
+@click.option(
+    "--clean",
+    is_flag=True,
+    default=False,
+    help="Clear previous *.yaml files before emitting fresh prompts (otherwise existing yaml survives a re-emit).",
+)
+@click.option(
+    "--status",
+    is_flag=True,
+    default=False,
+    help="Show progress across all (persona, locale) job dirs without doing anything else.",
+)
+@click.option(
+    "--all-ready",
+    is_flag=True,
+    default=False,
+    help="With --ingest: ingest every (persona, locale) job dir whose yaml files are all present. "
+         "Skip in-progress batches.",
+)
 @click.pass_context
 def enrich(
     ctx: click.Context,
@@ -130,6 +168,12 @@ def enrich(
     level: str | None,
     mode: str,
     ingest: bool,
+    tailor_keywords: str | None,
+    tailor_keywords_cap: int,
+    tailor_keywords_strict: bool,
+    clean: bool,
+    status: bool,
+    all_ready: bool,
 ) -> None:
     """Generate per-group résumé bullets via Claude Code session (default) or claude -p subprocess."""
     from core.runner import run_enricher
@@ -145,6 +189,12 @@ def enrich(
         level=level,
         mode=mode,
         ingest=ingest,
+        tailor_keywords_override=tailor_keywords,
+        tailor_keywords_cap=tailor_keywords_cap,
+        tailor_keywords_strict=tailor_keywords_strict,
+        clean=clean,
+        status=status,
+        all_ready=all_ready,
     )
 
 

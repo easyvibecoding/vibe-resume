@@ -164,6 +164,12 @@ def run_enricher(
     *,
     mode: str = "prompt",
     ingest: bool = False,
+    tailor_keywords_override: str | None = None,
+    tailor_keywords_cap: int = 12,
+    tailor_keywords_strict: bool = False,
+    clean: bool = False,
+    status: bool = False,
+    all_ready: bool = False,
 ) -> None:
     from core.enricher import enrich_groups
 
@@ -172,6 +178,12 @@ def run_enricher(
         limit=limit, locale=locale, tailor=tailor,
         persona=persona, company=company, level=level,
         mode=mode, ingest=ingest,
+        tailor_keywords_override=tailor_keywords_override,
+        tailor_keywords_cap=tailor_keywords_cap,
+        tailor_keywords_strict=tailor_keywords_strict,
+        clean=clean,
+        status=status,
+        all_ready=all_ready,
     )
 
 
