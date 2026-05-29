@@ -325,3 +325,17 @@ def test_ai_red_flags_locale_gate_not_false_namedrop_zh():
     rep = review(_AI_ZH_MD, "zh_TW")
     rf = next(s for s in rep.scores if s.name == "AI framing red flags")
     assert not any("name-drop" in n.lower() for n in rf.notes), rf.notes
+
+
+# --- #56 agentic persona bakes in the human-gate (only when real) ------------
+
+def test_agentic_persona_encodes_human_gate_with_guardrail():
+    from vibe_resume.core.personas import get_persona
+    bias = get_persona("agentic").enrich_bias.lower()
+    # encodes the human-gate directive by default
+    assert "human gate" in bias or "human-verification" in bias or "human verification" in bias
+    assert "reviewed" in bias and "verified" in bias
+    # P1.2 guardrail: only when real, never boilerplate
+    assert "only when" in bias or "and only when" in bias
+    assert "boilerplate" in bias
+    assert "honest" in bias

@@ -170,7 +170,14 @@ PERSONAS: dict[str, Persona] = {
             "metrics when present (faithfulness %, answer/context relevance, latency, cost-per-task, "
             "tool success rate); name vector DBs when used (Weaviate, Pinecone, Milvus, Qdrant, "
             "pgvector). Lead bullet names the agent system by capability boundary, not framework. "
-            "Never invent a framework, metric, or eval the activity doesn't show."
+            "Never invent a framework, metric, or eval the activity doesn't show. "
+            "HUMAN GATE (#56): when — and only when — the activity actually shows the candidate "
+            "reviewed / verified / audited / security-checked the AI's output before it shipped, "
+            "lead or close that bullet with the human-verification step in the résumé's own language "
+            "(e.g. 'reviewed every diff before merge' / '所有產出經人工把關後合併') — high AI usage "
+            "paired with real human verification is the senior signal. If the activity does NOT show "
+            "a human gate, do NOT add one: a lower AI-proficiency score is the honest outcome, never "
+            "boilerplate-insert '人工把關 / human-verified' to pass the checker."
         ),
         review_tips=(
             "Reviewer is a Head of AI / ML Platform Lead. They want: named framework + production "
