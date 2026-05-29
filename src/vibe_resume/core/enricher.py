@@ -93,6 +93,13 @@ AGENTIC_SIGNALS_BLOCK = (
     "activity supports them; never invent):\n{lines}\n"
 )
 
+INSTALLED_TOOLKIT_BLOCK = (
+    "\n\nNOTE: This group is the candidate's *installed / curated* agentic "
+    "toolkit (plugins, Agent Skills, MCP servers), not project work. Frame it "
+    "as \"curates a production agentic toolkit (N plugins, M skills, P MCP "
+    "servers)\" — do not claim authorship of merely-installed skills.\n"
+)
+
 CONTRIBUTION_BLOCK = (
     "\n\nNOTE: This work is an EXTERNAL open-source contribution to a "
     "repository the candidate does not own. Frame bullets as "
@@ -330,6 +337,8 @@ def _build_prompt(
             sig_lines.append(line)
         if sig_lines:
             body += AGENTIC_SIGNALS_BLOCK.format(lines="\n".join(f"- {x}" for x in sig_lines))
+    if any(a.source == Source.INSTALLED_ENV for a in g.activities):
+        body += INSTALLED_TOOLKIT_BLOCK
     if emphasis is not None and (emphasis.intent or emphasis.keywords or emphasis.bias_instruction):
         body += emphasis_block(emphasis)
     return body

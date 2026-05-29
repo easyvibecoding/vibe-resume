@@ -204,3 +204,14 @@ def test_build_prompt_agentic_block_includes_orchestration():
     assert "multi-agent orchestration" in p
     assert "fan-out" in p and "verify-pipeline" in p
     assert "verification" in p
+
+
+def test_build_prompt_installed_toolkit_framing():
+    a = Activity(source=Source.INSTALLED_ENV, session_id="installed-toolkit",
+                 timestamp_start="2026-01-01T00:00:00+00:00", project="Agentic Toolkit",
+                 summary="Curates 3 Claude Code plugins, 5 Agent Skills, 2 MCP servers")
+    g = ProjectGroup(name="Agentic Toolkit", first_activity="2026-01-01T00:00:00+00:00",
+                     last_activity="2026-01-01T00:00:00+00:00", total_sessions=1, activities=[a])
+    p = _build_prompt(g)
+    assert "installed" in p.lower() and "curate" in p.lower()
+    assert "do not claim authorship" in p.lower()
