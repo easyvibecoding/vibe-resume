@@ -125,6 +125,57 @@ def emphasis(ctx: click.Context, intent: str | None, clear_: bool) -> None:
 
 
 @cli.command()
+@click.option("--ingest", "ingest_", is_flag=True, default=False,
+              help="Validate research.result.yaml and install the rubric override")
+@click.option("--status", "status_", is_flag=True, default=False,
+              help="Show the active rubric date + staleness")
+@click.pass_context
+def research(ctx: click.Context, ingest_: bool, status_: bool) -> None:
+    """Opt-in market-refresh: emit a cited-research prompt for this session to
+    run (web search + adversarial verify), then `--ingest` the result into
+    data/cache/market_rubric.yaml (consumed by enrich + review)."""
+    from datetime import UTC, datetime
+
+    from vibe_resume.core.research import (
+        PROMPT_NAME,
+        RESULT_NAME,
+        ResearchValidationError,
+        emit_research_prompt,
+        ingest_research,
+        staleness_note,
+    )
+    from vibe_resume.core.rubric import load_rubric
+
+    research_dir = ROOT / "data" / "research"
+
+    if status_:
+        rb = load_rubric()
+        click.echo(f"rubric version {rb.version}, refreshed_at {rb.refreshed_at}")
+        note = staleness_note(rb)
+        click.echo(note if note else "rubric is fresh")
+        return
+
+    if ingest_:
+        try:
+            _, warnings = ingest_research(research_dir / RESULT_NAME)
+        except ResearchValidationError as e:
+            raise click.ClickException(str(e)) from e
+        for w in warnings:
+            console.print(f"[yellow]{w}[/yellow]")
+        load_rubric.cache_clear()
+        click.echo("✓ installed data/cache/market_rubric.yaml — enrich/review now use it")
+        return
+
+    path = emit_research_prompt(research_dir, today=datetime.now(UTC).date().isoformat())
+    click.echo(f"✓ wrote {path}")
+    click.echo(
+        f"Next: in this Claude Code session, do the research the {PROMPT_NAME} "
+        f"describes and write {RESULT_NAME} next to it, then run "
+        "`vibe-resume research --ingest`."
+    )
+
+
+@cli.command()
 @click.option("--limit", "-n", type=int, default=None, help="Enrich top N groups only")
 @click.option("--locale", default=None, help="Target locale (controls bullet language + style)")
 @click.option(

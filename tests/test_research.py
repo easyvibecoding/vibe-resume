@@ -1,5 +1,6 @@
 """Tests for the opt-in research/market-refresh pass (#46)."""
 from datetime import date
+from pathlib import Path
 
 import pytest
 
@@ -84,3 +85,16 @@ def test_staleness_note():
     rb_fresh = R.load_rubric()  # bundled 2026-05-29
     assert RS.staleness_note(rb_fresh, as_of=date(2026, 5, 30)) is None
     assert RS.staleness_note(rb_fresh, as_of=date(2099, 1, 1)) is not None
+
+
+def test_cli_research_emit(tmp_path, monkeypatch):
+    from click.testing import CliRunner
+
+    from vibe_resume.cli import cli
+    monkeypatch.setattr("vibe_resume.cli.ROOT", tmp_path)
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        Path("config.yaml").write_text("scan:\n  roots: []\n", encoding="utf-8")
+        r = runner.invoke(cli, ["research"])
+        assert r.exit_code == 0, r.output
+        assert "research.prompt.md" in r.output
