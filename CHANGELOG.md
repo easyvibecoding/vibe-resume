@@ -4,6 +4,19 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.0] — 2026-05-30
+
+### Added
+
+- **`render --variants` multi-variant render** (#55) — one command emits the
+  standard variant set per locale: an **ATS** variant (page-budgeted, ~2 pages,
+  for broad applications) and a **detailed** variant (richer, for
+  interviews/portfolio), with `_ats` / `_detailed` filename suffixes. All
+  variants derive from the **same truthful enriched cache** — they differ only
+  in selection/length/framing, never in claims (P1.4); a shorter variant never
+  states anything the detailed one wouldn't. Config-overridable via
+  `config.render.variants`.
+
 ## [0.20.0] — 2026-05-30
 
 ### Changed
