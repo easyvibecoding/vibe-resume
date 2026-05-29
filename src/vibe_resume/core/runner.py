@@ -39,6 +39,7 @@ LOCAL_EXTRACTORS = [
     "claude_desktop",
     "git_repos",
     "github",
+    "installed_env",
 ]
 
 CLOUD_EXTRACTORS = [

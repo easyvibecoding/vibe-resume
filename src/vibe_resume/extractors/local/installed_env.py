@@ -72,3 +72,35 @@ def _read_mcp_servers() -> list[dict]:
             if name not in out and isinstance(scfg, dict):
                 out[name] = _transport(scfg)
     return [{"name": n, "transport": t} for n, t in out.items()]
+
+
+def extract(cfg: dict[str, Any]) -> list[Activity]:
+    plugins = _read_plugins()
+    skills = _read_skills()
+    servers = _read_mcp_servers()
+    if not (plugins or skills or servers):
+        return []
+    pf = PrivacyFilter(cfg)
+    plugins = [pf.redact(p) for p in plugins]
+    skills = [pf.redact(s) for s in skills]
+    servers = [{"name": pf.redact(s["name"]), "transport": s["transport"]} for s in servers]
+    np_, ns, nm = len(plugins), len(skills), len(servers)
+    now = datetime.now(UTC)
+    return [Activity(
+        source=Source.INSTALLED_ENV,
+        session_id="installed-toolkit",
+        timestamp_start=now,
+        timestamp_end=now,
+        project="Agentic Toolkit",
+        activity_type=ActivityType.CODING,
+        user_prompts_count=np_ + ns + nm,
+        tool_calls_count=0,
+        summary=f"Curates {np_} Claude Code plugins, {ns} Agent Skills, {nm} MCP servers",
+        raw_ref="installed-toolkit",
+        extra={
+            "plugins": plugins,
+            "skills": skills,
+            "mcp_servers": servers,
+            "counts": {"plugins": np_, "skills": ns, "mcp_servers": nm},
+        },
+    )]

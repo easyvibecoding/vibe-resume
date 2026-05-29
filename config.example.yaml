@@ -72,6 +72,8 @@ extractors:
     # commits authored by these emails count. Leave empty to auto-fill from
     # `git config --global user.email`.
     author_emails: []
+  installed_env:
+    enabled: false           # reads ~/.claude (plugins/skills) + MCP configs; opt in
   github:
     enabled: false           # network + needs `gh` CLI logged in + account-bound; opt in
     author_logins: []        # empty → gh's currently-authenticated user (@me)

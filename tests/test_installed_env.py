@@ -45,3 +45,36 @@ def test_read_mcp_servers_names_and_transport_only_no_secrets(tmp_path, monkeypa
     blob = json.dumps(servers)
     assert "sk-secret-xyz" not in blob and "hunter2" not in blob
     assert "browser-mcp" not in blob and "args" not in blob and "env" not in blob
+
+
+def test_extract_builds_one_toolkit_activity(tmp_path, monkeypatch):
+    from vibe_resume.core.schema import Source
+
+    plugins = tmp_path / "installed_plugins.json"
+    plugins.write_text(json.dumps({"m": {"pr-toolkit": {}}}))
+    skills_dir = tmp_path / "skills"
+    (skills_dir / "vibe").mkdir(parents=True)
+    (skills_dir / "vibe" / "SKILL.md").write_text("x")
+    mcp = tmp_path / ".claude.json"
+    mcp.write_text(json.dumps({"mcpServers": {"browser": {"command": "npx", "env": {"K": "sk-zzz"}}}}))
+    monkeypatch.setattr(ie, "_PLUGINS_JSON", plugins)
+    monkeypatch.setattr(ie, "_SKILLS_DIR", skills_dir)
+    monkeypatch.setattr(ie, "_MCP_CONFIG_PATHS", [mcp])
+
+    acts = ie.extract({"privacy": {"redact_patterns": ["sk-[A-Za-z0-9]{2,}"]}})
+    assert len(acts) == 1
+    a = acts[0]
+    assert a.source == Source.INSTALLED_ENV
+    assert a.project == "Agentic Toolkit"
+    assert a.extra["counts"] == {"plugins": 1, "skills": 1, "mcp_servers": 1}
+    assert a.extra["plugins"] == ["pr-toolkit"]
+    assert a.extra["skills"] == ["vibe"]
+    assert a.extra["mcp_servers"] == [{"name": "browser", "transport": "npx"}]
+    assert "sk-zzz" not in json.dumps(a.model_dump(mode="json"))
+
+
+def test_extract_empty_when_nothing_installed(tmp_path, monkeypatch):
+    monkeypatch.setattr(ie, "_PLUGINS_JSON", tmp_path / "no.json")
+    monkeypatch.setattr(ie, "_SKILLS_DIR", tmp_path / "noskills")
+    monkeypatch.setattr(ie, "_MCP_CONFIG_PATHS", [tmp_path / "no.claude.json"])
+    assert ie.extract({}) == []
