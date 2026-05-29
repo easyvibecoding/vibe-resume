@@ -152,6 +152,9 @@ privacy:
   # e.g. "PostgreSQL with pgvector" -> "relational DB with vector search"
   abstract_tech: false
 
+emphasis:
+  enabled: true     # enrich/render honor _emphasis.yaml when present (--no-emphasis overrides)
+
 curate:
   enabled: true                  # enrich/render prefer _project_groups.curated.json when present
   noise_globs:

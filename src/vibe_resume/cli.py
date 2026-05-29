@@ -96,6 +96,35 @@ def curate(ctx: click.Context, apply_: bool) -> None:
 
 
 @cli.command()
+@click.argument("intent", required=False)
+@click.option("--clear", "clear_", is_flag=True, default=False, help="Remove _emphasis.yaml")
+@click.pass_context
+def emphasis(ctx: click.Context, intent: str | None, clear_: bool) -> None:
+    """Set a free-text emphasis ('foreground my security work'); edit the
+    generated _emphasis.yaml to add keywords/spotlight/demote. Re-run `render`
+    for a light re-rank, or `enrich` for a deep bias-rewrite."""
+    from vibe_resume.core.aggregator import load_groups
+    from vibe_resume.core.emphasis import clear_emphasis, load_emphasis, write_emphasis
+
+    if clear_:
+        click.echo("cleared _emphasis.yaml" if clear_emphasis() else "no _emphasis.yaml to clear")
+        return
+    if intent:
+        rec = write_emphasis(intent)
+        click.echo(f"emphasis set: {rec.intent}")
+        names = [g.name for g in load_groups()]
+        if names:
+            click.echo("group names (for spotlight/demote): " + ", ".join(names[:30]))
+        click.echo("edit _emphasis.yaml → re-run `render` (light) or `enrich` (deep).")
+        return
+    cur = load_emphasis({})
+    click.echo(
+        f"intent: {cur.intent}\nkeywords: {cur.keywords}\nspotlight: {cur.spotlight}\ndemote: {cur.demote}"
+        if cur else "no emphasis set"
+    )
+
+
+@cli.command()
 @click.option("--limit", "-n", type=int, default=None, help="Enrich top N groups only")
 @click.option("--locale", default=None, help="Target locale (controls bullet language + style)")
 @click.option(
@@ -182,6 +211,8 @@ def curate(ctx: click.Context, apply_: bool) -> None:
          "(including partially-complete batches, which fall back to rule-based summaries for "
          "missing *.yaml). Useful after a multi-persona × multi-locale emit batch.",
 )
+@click.option("--no-emphasis", "no_emphasis", is_flag=True, default=False,
+              help="Ignore _emphasis.yaml for this run")
 @click.pass_context
 def enrich(
     ctx: click.Context,
@@ -200,10 +231,13 @@ def enrich(
     status: bool,
     all_ready: bool,
     ingest_all: bool,
+    no_emphasis: bool,
 ) -> None:
     """Generate per-group résumé bullets via Claude Code session (default) or claude -p subprocess."""
     from vibe_resume.core.runner import run_enricher
 
+    if no_emphasis:
+        ctx.obj["config"].setdefault("emphasis", {})["enabled"] = False
     _warn_if_company_stale(company)
     run_enricher(
         ctx.obj["config"],
@@ -248,6 +282,8 @@ def enrich(
     "--top-n", "top_n", type=int, default=None,
     help="Number of projects rendered in full detail (rest collapse to a one-liner). Default 6 or config.render.detailed_projects.",
 )
+@click.option("--no-emphasis", "no_emphasis", is_flag=True, default=False,
+              help="Ignore _emphasis.yaml for this run")
 @click.pass_context
 def render(
     ctx: click.Context,
@@ -257,6 +293,7 @@ def render(
     all_locales: bool,
     persona: str | None,
     top_n: int | None,
+    no_emphasis: bool,
 ) -> None:
     """Render resume draft to selected format and snapshot a version."""
     from vibe_resume.core.personas import PERSONAS, list_persona_keys
@@ -267,6 +304,8 @@ def render(
         raise click.UsageError("--locale and --all-locales are mutually exclusive")
 
     cfg = ctx.obj["config"]
+    if no_emphasis:
+        cfg.setdefault("emphasis", {})["enabled"] = False
     fmt = format or cfg.get("render", {}).get("default_format", "md")
 
     # Expand --persona into one or more concrete keys (or [None] for default).
