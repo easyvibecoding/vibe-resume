@@ -4,6 +4,20 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.0] — 2026-05-29
+
+### Added
+
+- **Installed-toolkit extractor** (`installed_env`, opt-in, #45) — inventories
+  the configured agentic toolkit: Claude Code plugins
+  (`~/.claude/plugins/installed_plugins.json`), standalone Agent Skills
+  (`~/.claude/skills/<name>/`), and configured MCP servers (`mcpServers` in
+  `~/.claude.json` / settings / Claude Desktop config). Emits one synthetic
+  "Agentic Toolkit" group (exempt from the noise filter) that the enricher
+  frames as installed/curated — distinct from authored and used (#43).
+  **Privacy-critical: only names + coarse transport are captured — never MCP
+  `env`/`args`/`url` values — and names run through `redact_patterns`.**
+
 ## [0.13.0] — 2026-05-29
 
 ### Added
