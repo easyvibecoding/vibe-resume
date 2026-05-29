@@ -4,6 +4,23 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] — 2026-05-29
+
+### Added
+
+- **SDD / TDD methodology signal** (`AgenticSignals.sdd` / `.tdd`, #44) —
+  detects Spec-Driven Development (OpenSpec / Spec-Kit / `specs/<feature>/`
+  trees / spec-kit artifacts) and Test-Driven Development (test-driven /
+  red-green / failing-test-first), distinct from mere test presence. The
+  enricher surfaces these as methodology bullets.
+
+### Fixed
+
+- **Bare `spec` no longer mis-books spec-driven work as testing** (#44). The
+  classifier TESTING regex dropped the bare `\bspec\b` token (kept `.spec.` /
+  `_spec` / `tests`), so `spec.md` / `specs/` / OpenSpec stop inflating the
+  `testing %` and instead feed the new SDD signal.
+
 ## [0.11.0] — 2026-05-29
 
 ### Added
