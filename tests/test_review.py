@@ -287,3 +287,14 @@ def test_ai_red_flags_flags_namedrop_and_unverified():
     assert rf.max == 10 and rf.score < 10
     joined = " ".join(rf.notes).lower()
     assert "name-drop" in joined or "junior" in joined or "unverified" in joined
+
+
+def test_ai_proficiency_surfaces_staleness(monkeypatch):
+    import vibe_resume.core.review as RV
+    from vibe_resume.core.rubric import MarketRubric
+    stale = MarketRubric(version=1, refreshed_at="2000-01-01",
+                         agentic_keywords=["Claude"], human_gate_verbs=["reviewed"])
+    monkeypatch.setattr(RV, "load_rubric", lambda: stale)
+    rep = RV.review(_AI_MD, "en_US")
+    prof = next(s for s in rep.scores if s.name == "AI proficiency")
+    assert any("stale" in n.lower() for n in prof.notes)

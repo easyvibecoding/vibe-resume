@@ -608,6 +608,12 @@ def _do_emit(cfg, persona, locale_key, tailor, company, level, limit,
         console.print("[yellow]no groups to enrich — run aggregate first[/yellow]")
         return
 
+    from vibe_resume.core.research import staleness_note
+    from vibe_resume.core.rubric import load_rubric as _load_rubric
+    _sn = staleness_note(_load_rubric())
+    if _sn:
+        console.print(f"[yellow]⚠ {_sn}[/yellow]")
+
     auto_kw: list[str] = []
     if tailor and not tailor_keywords_strict:
         p = Path(tailor)

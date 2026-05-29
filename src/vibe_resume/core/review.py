@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any
 
 from vibe_resume.core.paths import user_root
+from vibe_resume.core.rubric import load_rubric
 from vibe_resume.render.i18n import get_locale, resolve_locale
 
 ROOT = user_root()
@@ -582,6 +583,10 @@ def _check_ai_proficiency(md: str, rubric: Any) -> Score:
             notes.append(
                 f'L{ln} AI bullet has no number — consider measuring: {", ".join(hints[cat])}'
             )
+    from vibe_resume.core.research import staleness_note
+    sn = staleness_note(rubric)
+    if sn:
+        notes.append(f"⚠ {sn}")
     return Score("AI proficiency", pts, 10, notes)
 
 
@@ -656,7 +661,6 @@ def review(
     # AI-proficiency checks (#47) append after the base rubric; both self-skip
     # (max=0) when the résumé has no AI content, so non-AI résumés keep their
     # denominator and stay byte-comparable across versions.
-    from vibe_resume.core.rubric import load_rubric
     _rb = load_rubric()
     scores.append(_check_ai_proficiency(md_text, _rb))
     scores.append(_check_ai_red_flags(md_text, _rb))
