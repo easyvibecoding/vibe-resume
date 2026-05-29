@@ -17,6 +17,7 @@ from rich.console import Console
 
 from vibe_resume.core.aggregator import groups_path_for, load_groups
 from vibe_resume.core.company_profiles import CompanyProfile
+from vibe_resume.core.emphasis import EmphasisRecord, emphasis_block, load_emphasis
 from vibe_resume.core.levels import LevelArchetype
 from vibe_resume.core.paths import user_root
 from vibe_resume.core.personas import Persona
@@ -237,6 +238,7 @@ def _build_prompt(
     company: CompanyProfile | None = None,
     max_activities: int = 12,
     char_budget: int = 200,
+    emphasis: EmphasisRecord | None = None,
 ) -> str:
     raw_lines: list[str] = []
     for a in g.activities[:max_activities]:
@@ -294,6 +296,8 @@ def _build_prompt(
         (a.extra or {}).get("contribution") == "external" for a in gh_acts
     ):
         body += CONTRIBUTION_BLOCK
+    if emphasis is not None and (emphasis.intent or emphasis.keywords or emphasis.bias_instruction):
+        body += emphasis_block(emphasis)
     return body
 
 
@@ -538,6 +542,7 @@ def _do_emit(cfg, persona, locale_key, tailor, company, level, limit,
         clean=clean,
         input_activities=int(_enr.get("input_activities", 12)),
         input_char_budget=int(_enr.get("input_char_budget", 200)),
+        emphasis=load_emphasis(cfg),
     )
     persona_arg = f" --persona {persona}" if persona else ""
     n = len(groups[:limit]) if limit else len(groups)
@@ -735,6 +740,7 @@ def _enrich_with_subprocess(
     enr = cfg.get("enrich", {})
     input_activities = int(enr.get("input_activities", 12))
     input_char_budget = int(enr.get("input_char_budget", 200))
+    emphasis = load_emphasis(cfg)
     enriched: list[dict[str, Any]] = []
     n_to_enrich = limit if limit else len(groups)
 
@@ -764,6 +770,7 @@ def _enrich_with_subprocess(
                     company=company_obj,
                     max_activities=input_activities,
                     char_budget=input_char_budget,
+                    emphasis=emphasis,
                 )
             )
             parsed = _parse_yaml(out) if out else None

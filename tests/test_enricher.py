@@ -154,3 +154,18 @@ class TestFallbackSummary:
         assert fb["achievements"] == []
         # tech_stack is passed through from the group
         assert fb["tech_stack"] == g.tech_stack
+
+
+def test_build_prompt_includes_emphasis_block_last():
+    from vibe_resume.core.emphasis import EmphasisRecord
+    g = _many_act_group(3)
+    em = EmphasisRecord(intent="security + agents", keywords=["MCP"],
+                        bias_instruction="Lead with the trade-off.")
+    p = _build_prompt(g, emphasis=em)
+    assert "HIGHEST-PRIORITY EMPHASIS" in p
+    assert "security + agents" in p and "MCP" in p
+
+
+def test_build_prompt_no_emphasis_block_when_absent():
+    g = _many_act_group(3)
+    assert "HIGHEST-PRIORITY EMPHASIS" not in _build_prompt(g)

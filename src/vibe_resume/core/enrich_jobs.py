@@ -19,6 +19,7 @@ import yaml as _yaml
 from pydantic import AwareDatetime, BaseModel, Field
 from rich.console import Console
 
+from vibe_resume.core.emphasis import EmphasisRecord
 from vibe_resume.core.schema import ProjectGroup
 
 _console = Console()
@@ -77,6 +78,7 @@ def emit_jobs(
     clean: bool = False,
     input_activities: int = 12,
     input_char_budget: int = 200,
+    emphasis: EmphasisRecord | None = None,
 ) -> Path:
     """Write manifest.json + N *.prompt.md files for the session to process.
 
@@ -135,6 +137,7 @@ def emit_jobs(
             company=company_obj,
             max_activities=input_activities,
             char_budget=input_char_budget,
+            emphasis=emphasis,
         )
         (jobs_dir / prompt_name).write_text(prompt_body, encoding="utf-8")
 
