@@ -215,3 +215,36 @@ def test_build_prompt_installed_toolkit_framing():
     p = _build_prompt(g)
     assert "installed" in p.lower() and "curate" in p.lower()
     assert "do not claim authorship" in p.lower()
+
+
+# --- #47 AI-proficiency block ------------------------------------------------
+
+def _ai_grp(**kw):
+    base = dict(
+        name="X",
+        first_activity=datetime(2026, 1, 1),
+        last_activity=datetime(2026, 2, 1),
+        total_sessions=5,
+    )
+    base.update(kw)
+    return ProjectGroup(**base)
+
+
+def test_ai_proficiency_block_fires_on_signals():
+    from vibe_resume.core.schema import AgenticSignals
+    g = _ai_grp(agentic_signals=AgenticSignals(orchestration=["fan-out"]))
+    p = _build_prompt(g)
+    assert "AI-PROFICIENCY FRAMING" in p
+    assert "human quality gate" in p
+
+
+def test_ai_proficiency_block_absent_for_plain_group():
+    g = _ai_grp()
+    assert "AI-PROFICIENCY FRAMING" not in _build_prompt(g)
+
+
+def test_ai_proficiency_block_fires_on_agentic_persona():
+    from vibe_resume.core.personas import get_persona
+    g = _ai_grp()
+    p = _build_prompt(g, persona=get_persona("agentic"))
+    assert "AI-PROFICIENCY FRAMING" in p

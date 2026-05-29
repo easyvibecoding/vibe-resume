@@ -93,6 +93,19 @@ AGENTIC_SIGNALS_BLOCK = (
     "activity supports them; never invent):\n{lines}\n"
 )
 
+AI_PROFICIENCY_BLOCK = (
+    "\n\nAI-PROFICIENCY FRAMING (apply only when the raw activity supports it — "
+    "never invent):\n"
+    "- Winning bullet shape: {formula}.\n"
+    "- Pair AI delegation with the human-only work (architecture / security "
+    "review / verification): high usage + high verification reads senior; blind "
+    "enthusiasm does not.\n"
+    "- When the data supports it, surface senior differentiators: {senior}.\n"
+    "- Avoid these junior tells: {anti}.\n"
+    "- Frame AI tools as directed multipliers, not skills; keep every claim "
+    "grounded in the activity above.\n"
+)
+
 INSTALLED_TOOLKIT_BLOCK = (
     "\n\nNOTE: This group is the candidate's *installed / curated* agentic "
     "toolkit (plugins, Agent Skills, MCP servers), not project work. Frame it "
@@ -241,6 +254,30 @@ def _pick_template(locale_meta: dict[str, Any]) -> tuple[str, str]:
     return template, lang_label
 
 
+def _ai_relevant(
+    g: ProjectGroup,
+    persona: Persona | None,
+    emphasis: EmphasisRecord | None,
+) -> bool:
+    """Whether to inject the AI-proficiency framing block (#47).
+
+    Fires when the group carries any agentic signal, the active persona is the
+    agentic/AI-leadership one, or the emphasis intent/keywords mention AI."""
+    sig = g.agentic_signals
+    if sig is not None and (
+        sig.skills_authored or sig.skills_used or sig.mcp_servers_used
+        or sig.mcp_authored or sig.sdd or sig.tdd or sig.orchestration
+    ):
+        return True
+    if persona is not None and persona.key == "agentic":
+        return True
+    if emphasis is not None:
+        blob = f"{emphasis.intent} {' '.join(emphasis.keywords)}".lower()
+        if any(t in blob for t in ("ai", "agent", "llm", "mcp", "claude", "copilot")):
+            return True
+    return False
+
+
 def _build_prompt(
     g: ProjectGroup,
     locale_meta: dict[str, Any] | None = None,
@@ -339,6 +376,23 @@ def _build_prompt(
             body += AGENTIC_SIGNALS_BLOCK.format(lines="\n".join(f"- {x}" for x in sig_lines))
     if any(a.source == Source.INSTALLED_ENV for a in g.activities):
         body += INSTALLED_TOOLKIT_BLOCK
+    if _ai_relevant(g, persona, emphasis):
+        from vibe_resume.core.rubric import load_rubric
+        rb = load_rubric()
+        body += AI_PROFICIENCY_BLOCK.format(
+            formula=(
+                rb.bullet_formula
+                or "directing verb + named tool + scale + measurable delta + human quality gate"
+            ),
+            senior=(
+                "; ".join(rb.senior_differentiators[:4])
+                or "scoped MCP topology; authored Agent Skills; eval-harness ownership"
+            ),
+            anti=(
+                "; ".join(rb.anti_patterns[:4])
+                or "tool name-drop with no verification; raw-volume bragging"
+            ),
+        )
     if emphasis is not None and (emphasis.intent or emphasis.keywords or emphasis.bias_instruction):
         body += emphasis_block(emphasis)
     return body
