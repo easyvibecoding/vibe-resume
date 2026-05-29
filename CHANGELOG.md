@@ -4,6 +4,22 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.1] — 2026-05-29
+
+### Fixed
+
+- **Canonical-key merge no longer labels the merged project with a
+  version/cache folder** (#39). Representative-path selection prefers a
+  meaningful basename (not `0.2.0` / a plugin-cache path), then a work-tree
+  toplevel, then the most-seen path; falls back to the repo basename from the
+  git remote when every candidate leaf is meaningless. Since merging inflates
+  the session count, the affected project is often the highest-ranked one.
+- **`curate` `needs_decision` now fires for same-name/no-remote duplicates**
+  (#40). The classifier self-excluded by name, which also dropped a same-named
+  twin from the candidate set; it now self-excludes by identity and prefers a
+  canonical-keyed sibling as the merge anchor, so a no-remote copy folds into
+  the proven repo group instead of both being silently kept.
+
 ## [0.10.0] — 2026-05-29
 
 ### Added
