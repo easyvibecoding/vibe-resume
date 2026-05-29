@@ -835,3 +835,19 @@ def test_claude_ai_keeps_assistant_responses(tmp_path):
     blob = acts[0].summary + " " + (acts[0].extra.get("assistant", "") if acts[0].extra else "")
     assert "debounce" in blob
     assert "clearTimeout" in blob   # assistant response retained
+
+
+def test_claude_code_captures_git_identity(tmp_path, monkeypatch):
+    import vibe_resume.extractors.local.claude_code as cc
+
+    rows = [{"type": "user", "timestamp": "2026-01-01T00:00:00Z",
+             "cwd": "/Users/me/dev/foo",
+             "message": {"content": "do a thing"}}]
+    _write_session(tmp_path, rows)
+    monkeypatch.setattr(
+        cc, "git_identity",
+        lambda path, cache=None: ("github.com/me/foo", "/Users/me/dev/foo"),
+    )
+    acts = cc.extract({"extractors": {"claude_code": {"path": str(tmp_path)}}})
+    assert acts[0].extra["git_remote"] == "github.com/me/foo"
+    assert acts[0].extra["git_toplevel"] == "/Users/me/dev/foo"

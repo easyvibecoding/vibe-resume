@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from vibe_resume.core.schema import Activity, ActivityType, Source
-from vibe_resume.extractors.base import iter_jsonl, sample_spread
+from vibe_resume.extractors.base import git_identity, iter_jsonl, sample_spread
 
 NAME = "claude_code"
 _SUMMARY_MAX = 4000
@@ -33,6 +33,7 @@ def extract(cfg: dict[str, Any]) -> list[Activity]:
     capture_args = bool(sess.get("capture_tool_args", False))
 
     activities: list[Activity] = []
+    git_cache: dict = {}
     for project_dir in base.iterdir():
         if not project_dir.is_dir():
             continue
@@ -40,14 +41,15 @@ def extract(cfg: dict[str, Any]) -> list[Activity]:
             if "/subagents/" in str(jsonl_file):
                 continue
             act = _process_session(jsonl_file, project_dir.name,
-                                   sample_n, per_chars, capture_args)
+                                   sample_n, per_chars, capture_args, git_cache)
             if act:
                 activities.append(act)
     return activities
 
 
 def _process_session(path: Path, project_dirname: str,
-                     sample_n: int, per_chars: int, capture_args: bool) -> Activity | None:
+                     sample_n: int, per_chars: int, capture_args: bool,
+                     git_cache: dict) -> Activity | None:
     first_ts: datetime | None = None
     last_ts: datetime | None = None
     user_prompt_count = 0
@@ -119,6 +121,12 @@ def _process_session(path: Path, project_dirname: str,
     extra: dict[str, Any] = {"git_branch": git_branch, "tool_histogram": dict(tool_names)}
     if capture_args and tool_args:
         extra["tool_args"] = "\n".join(tool_args)
+    if cwd:
+        remote, toplevel = git_identity(cwd, git_cache)
+        if remote:
+            extra["git_remote"] = remote
+        if toplevel:
+            extra["git_toplevel"] = toplevel
 
     return Activity(
         source=Source.CLAUDE_CODE,
