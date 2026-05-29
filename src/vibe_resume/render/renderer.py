@@ -28,6 +28,14 @@ console = Console()
 ROOT = user_root()
 
 
+# Standard render variant set (#55): same enriched cache, different selection/length only.
+# ATS = page-budgeted for broad applications; detailed = richer for interviews/portfolio.
+DEFAULT_VARIANTS = [
+    {"name": "ats", "max_pages": 2.0, "top_n": 4},
+    {"name": "detailed", "top_n": 14},
+]
+
+
 def _history_path(cfg: dict[str, Any]) -> Path:
     p = Path(cfg.get("render", {}).get("output_dir") or "data/resume_history")
     if not p.is_absolute():
@@ -477,6 +485,7 @@ def render_draft(
     persona: str | None = None,
     top_n: int | None = None,
     max_pages: float | None = None,
+    variant: str | None = None,
 ) -> None:
     hist = _history_path(cfg)
     version = _next_version(hist)
@@ -490,7 +499,8 @@ def render_draft(
     locale_key = ctx["locale"]["_key"]
     loc_suffix = f"_{locale_key}"
     pers_suffix = f"_{persona}" if persona else ""
-    suffix = f"{loc_suffix}{pers_suffix}"
+    var_suffix = f"_{variant}" if variant else ""
+    suffix = f"{loc_suffix}{pers_suffix}{var_suffix}"
     md_path = hist / f"resume_v{version:03d}{suffix}.md"
     md_path.write_text(md_text)
     persona_tag = f", persona={persona}" if persona else ""

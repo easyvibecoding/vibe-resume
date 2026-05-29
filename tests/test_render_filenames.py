@@ -231,3 +231,31 @@ def test_composite_rank_prefers_deep_over_broad_shallow():
     broad = g("broad", 10, 5, ["a"])                  # broad but shallow
 
     assert _rank_score(deep) > _rank_score(broad)
+
+
+def test_variants_emit_ats_and_detailed_from_same_cache(tmp_path, monkeypatch):
+    """#55: --variants emits _ats + _detailed, same enriched cache, just selection."""
+    from click.testing import CliRunner
+
+    from vibe_resume.cli import cli
+    from vibe_resume.render import renderer
+
+    captured = []
+
+    def _fake_md(cfg, tailor, locale=None, persona=None, top_n=None, max_pages=None):
+        captured.append({"top_n": top_n, "max_pages": max_pages})
+        return ("# x\n", {"locale": {"_key": locale or "en_US"}, "_tpl_name": "f.j2",
+                          "profile": {"summary": "s"}, "groups": []})
+
+    monkeypatch.setattr(renderer, "_history_path", lambda cfg: tmp_path)
+    monkeypatch.setattr(renderer, "_render_md", _fake_md)
+    monkeypatch.setattr(renderer, "snapshot", lambda *a, **k: None)
+
+    r = CliRunner().invoke(cli, ["render", "--variants", "--locale", "en_US"], obj={"config": {}})
+    assert r.exit_code == 0, r.output
+    names = sorted(p.name for p in tmp_path.glob("*.md"))
+    assert any(n.endswith("_en_US_ats.md") for n in names), names
+    assert any(n.endswith("_en_US_detailed.md") for n in names), names
+    # ATS variant carries a page budget; detailed does not — same cache, different length
+    assert {"top_n": 4, "max_pages": 2.0} in captured
+    assert any(c["max_pages"] is None and c["top_n"] == 14 for c in captured)

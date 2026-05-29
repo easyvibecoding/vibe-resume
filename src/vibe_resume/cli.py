@@ -416,6 +416,9 @@ def enrich(
 @click.option("--max-pages", "max_pages", type=float, default=None,
               help="Page budget: tighten bullet density (achievements/group) to fit, "
                    "not only project count. Composes with --top-n. (config.render.page_budget)")
+@click.option("--variants", "variants", is_flag=True, default=False,
+              help="Emit the standard variant set per locale (ATS page-budgeted + detailed) "
+                   "from the same enriched cache; files suffixed _ats/_detailed. (config.render.variants)")
 @click.pass_context
 def render(
     ctx: click.Context,
@@ -427,6 +430,7 @@ def render(
     top_n: int | None,
     no_emphasis: bool,
     max_pages: float | None,
+    variants: bool,
 ) -> None:
     """Render resume draft to selected format and snapshot a version."""
     from vibe_resume.core.personas import PERSONAS, list_persona_keys
@@ -458,12 +462,22 @@ def render(
         if not persona_keys:
             persona_keys = [None]
 
+    from vibe_resume.render.renderer import DEFAULT_VARIANTS
+    variant_set = (cfg.get("render", {}).get("variants") or DEFAULT_VARIANTS) if variants else None
+
     def _render_for(locale_key: str | None, formats: list[str]) -> None:
         for p_key in persona_keys:
             if p_key:
                 console.print(f"\n[bold magenta]── persona: {p_key} ──[/bold magenta]")
             for f in formats:
-                run_render(cfg, fmt=f, tailor=tailor, locale=locale_key, persona=p_key, top_n=top_n, max_pages=max_pages)
+                if variant_set:
+                    # All variants derive from the SAME enriched cache — they differ
+                    # only in selection/length, never in claims (#55, P1.4).
+                    for v in variant_set:
+                        run_render(cfg, fmt=f, tailor=tailor, locale=locale_key, persona=p_key,
+                                   top_n=v.get("top_n"), max_pages=v.get("max_pages"), variant=v.get("name"))
+                else:
+                    run_render(cfg, fmt=f, tailor=tailor, locale=locale_key, persona=p_key, top_n=top_n, max_pages=max_pages)
 
     if all_locales:
         # If the user didn't pass --format, fan out over the configured list
