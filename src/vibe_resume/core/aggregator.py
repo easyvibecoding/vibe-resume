@@ -376,6 +376,20 @@ _SDD_RE = re.compile(r"openspec|spec[-_ ]?kit|spec-driven|規格驅動")
 _TDD_RE = re.compile(r"test-driven|\btdd\b|red[-/ ]green|failing\s+test")
 _SPECKIT_ARTIFACTS = {"spec.md", "plan.md", "tasks.md", "data-model.md", "constitution.md"}
 _SPECS_TREE_RE = re.compile(r"(?:^|/)specs/[^/]+/")
+_ORCH_ORDER = ["subagents", "fan-out", "supervisor-worker", "verify-pipeline",
+               "workflow-script", "agent-sdk"]
+_ORCH_PATTERNS: list[tuple[str, re.Pattern]] = [
+    ("subagents", re.compile(r"sub-?agent")),
+    ("fan-out", re.compile(r"fan-?out|parallel\s+agents")),
+    ("supervisor-worker", re.compile(r"worker\s+topolog|supervisor.{0,12}worker|\bsupervisor\b")),
+    ("verify-pipeline", re.compile(r"adversarial.{0,20}verif|judge\s+panel|verify.{0,12}pipeline|synthesi[sz]e")),
+    ("workflow-script", re.compile(r"workflow\s+script|workflow\s+orchestrat|self-pac(?:e|ing)")),
+    ("agent-sdk", re.compile(r"agent\s+sdk")),
+]
+_ORCH_SKILL_TAGS = {
+    "subagent-driven-development": "subagents",
+    "dispatching-parallel-agents": "fan-out",
+}
 
 
 def _mcp_server(tool_name: str) -> str | None:
@@ -394,6 +408,7 @@ def _agentic_signals(acts: list[Activity], group_name: str) -> AgenticSignals | 
     mcp_authored = False
     sdd = False
     tdd = False
+    orch: set[str] = set()
     used: set[str] = set()
     servers: set[str] = set()
     for a in acts:
@@ -403,6 +418,13 @@ def _agentic_signals(acts: list[Activity], group_name: str) -> AgenticSignals | 
             sdd = True
         if _TDD_RE.search(blob):
             tdd = True
+        for tag, pat in _ORCH_PATTERNS:
+            if pat.search(blob):
+                orch.add(tag)
+        for s in (a.extra or {}).get("skills_used") or []:
+            otag = _ORCH_SKILL_TAGS.get(s)
+            if otag:
+                orch.add(otag)
         for f in a.files_touched or []:
             fl = f.lower()
             if fl.endswith("/skill.md") or fl == "skill.md":
@@ -426,7 +448,8 @@ def _agentic_signals(acts: list[Activity], group_name: str) -> AgenticSignals | 
             srv = _mcp_server(nm)
             if srv:
                 servers.add(srv)
-    if not (authored or published or used or servers or mcp_authored or sdd or tdd):
+    orchestration = [t for t in _ORCH_ORDER if t in orch]
+    if not (authored or published or used or servers or mcp_authored or sdd or tdd or orchestration):
         return None
     return AgenticSignals(
         skills_authored=authored,
@@ -436,6 +459,7 @@ def _agentic_signals(acts: list[Activity], group_name: str) -> AgenticSignals | 
         mcp_authored=mcp_authored,
         sdd=sdd,
         tdd=tdd,
+        orchestration=orchestration,
     )
 
 

@@ -215,3 +215,21 @@ def test_agentic_signals_sdd_tdd_false_for_plain_group():
 def test_agentic_signals_only_sdd_still_builds():
     sig = _agentic_signals([_act_blob(summary="openspec planning")], "r")
     assert sig is not None and sig.sdd is True and sig.tdd is False
+
+
+def test_orchestration_from_blob_and_skills():
+    assert _agentic_signals([_act_blob(summary="used a sub-agent for X")], "r").orchestration == ["subagents"]
+    assert _agentic_signals([_act_sig(skills_used=["dispatching-parallel-agents"])], "r").orchestration == ["fan-out"]
+    assert _agentic_signals([_act_blob(summary="adversarial verify with a judge panel")], "r").orchestration == ["verify-pipeline"]
+    assert _agentic_signals([_act_blob(summary="built a workflow script, self-pacing")], "r").orchestration == ["workflow-script"]
+    assert _agentic_signals([_act_blob(summary="used the Agent SDK")], "r").orchestration == ["agent-sdk"]
+
+
+def test_orchestration_stable_order_and_distinct():
+    sig = _agentic_signals(
+        [_act_blob(summary="agent sdk fan-out supervisor worker; adversarial verify; sub-agent")], "r")
+    assert sig.orchestration == ["subagents", "fan-out", "supervisor-worker", "verify-pipeline", "agent-sdk"]
+
+
+def test_orchestration_absent_for_single_agent():
+    assert _agentic_signals([_act_blob(summary="prompted the model to write code", files=["a.py"])], "r") is None
