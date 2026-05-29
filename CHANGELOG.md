@@ -4,6 +4,21 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.0] — 2026-05-30
+
+### Added
+
+- **Evidence gap reconciliation** on the disclosure layer, surfaced by
+  `vibe-resume evidence` (`--jd` / `--json`):
+  - **Present-but-omitted JD keywords** (#54) — `keyword_gap` splits a JD's
+    keywords into *backed-by-signals-but-not-in-bullets* (a recall gap to
+    surface) vs *genuinely absent* (an honest gap to leave). Never stuffs a
+    keyword the activity doesn't support (P1.3).
+  - **Unsurfaced real metrics** (#53) — `unsurfaced_metrics` lists numbers
+    literally present in the activity but not yet in the bullets, as
+    human-confirm suggestions. Never invents or estimates a metric; a bullet
+    with no real number stays qualitative (P1.1).
+
 ## [0.18.0] — 2026-05-30
 
 ### Added
