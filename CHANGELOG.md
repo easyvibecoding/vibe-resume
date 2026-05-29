@@ -4,6 +4,33 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.0] — 2026-05-29
+
+### Added
+
+- **AI-proficiency rubric** (#47) — a bundled, cited, dated `market_rubric.yaml`
+  (winning-bullet formula, senior differentiators, anti-patterns, agentic
+  keyword set, regex yellow-flags, and metric hints) now drives both generation
+  and scoring, so output stops plateauing at "uses AI" framing.
+  - **enrich** — a gated `AI_PROFICIENCY_BLOCK` injects the formula
+    (*directing verb + named tool + scale + measurable delta + human quality
+    gate*), senior differentiators, and junior-tell anti-patterns into the LLM
+    prompt — but only when the group carries agentic signals (#43/#44/#45/#48),
+    the agentic persona is active, or the emphasis mentions AI. Non-fabrication
+    rule preserved.
+  - **review** — two new scorecard checks: a positive **AI proficiency** check
+    (rewards AI bullets that pair a tool with a human quality gate) and a
+    negative **AI framing red flags** check (junior volume-bragging, stale-stack
+    headline, unverified-judge claim, bare tool name-drop). Both self-skip
+    (`max=0`) when the résumé has no AI content, so non-AI résumés keep their
+    denominator and scores stay comparable across versions.
+  - **metric guidance, not fabrication** — a number-less AI bullet gets a
+    *pointer* to a real metric to measure (review round-trips, first-pass QA %,
+    token-cost %, eval task-completion) — never an injected value.
+- The rubric loader prefers a `data/cache/market_rubric.yaml` override when
+  present, wiring it forward for the #46 research/market-refresh pass with zero
+  rework.
+
 ## [0.14.0] — 2026-05-29
 
 ### Added

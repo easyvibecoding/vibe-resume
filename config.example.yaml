@@ -165,6 +165,12 @@ curate:
     - "**/scratch/**"
     - "**/sandbox/**"
 
+# AI-proficiency rubric (#47): enrich + review read a bundled, cited
+# market_rubric.yaml (senior-framing keywords, anti-patterns, metric hints).
+# No key needed here — it's always on. To override the bundled baseline, drop a
+# dated copy at data/cache/market_rubric.yaml (the #46 `research` pass writes
+# this); the loader prefers it and warns when it's >180 days stale.
+
 enrich:
   mode: "claude-code-agent"
   batch_size: 20
