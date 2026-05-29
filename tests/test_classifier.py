@@ -188,3 +188,16 @@ def test_capability_breadth_ignores_zero_counts() -> None:
         Category.TESTING: 2,
     }
     assert capability_breadth(counts) == 2
+
+
+def test_bare_spec_is_not_testing():
+    # spec-driven work must NOT be booked as testing (the #44 bug)
+    assert Category.TESTING not in classify(_act(summary="refined specs/auth/spec.md per OpenSpec"))
+    assert Category.TESTING not in classify(_act(summary="規格驅動開發 spec-kit"))
+
+
+def test_real_testing_still_detected():
+    assert Category.TESTING in classify(_act(summary="ran pytest"))
+    assert Category.TESTING in classify(_act(summary="added tests"))
+    assert Category.TESTING in classify(_act(files_touched=["src/auth.spec.ts"]))
+    assert Category.TESTING in classify(_act(files_touched=["auth_spec.rb"]))

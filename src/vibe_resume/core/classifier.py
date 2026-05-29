@@ -43,7 +43,7 @@ RULES: list[tuple[str, re.Pattern]] = [
     (Category.BUG_FIX, re.compile(r"(?:\bbug\b|\bfix(?:ed|ing)?\b|\berror\b|\bexception\b|\bcrash\b|\bfail(?:ed|ing|ure)?\b|修(?:正|好)|找原因|報錯|壞了|除錯|排查)")),
     (Category.FEATURE, re.compile(r"(?:implement|add(?:ed|ing)?\s+(?:a\s+)?(?:feature|endpoint|page|component)|build\s+(?:a\s+)?new|新增|加入|實作|開發|做出)")),
     (Category.REFACTOR, re.compile(r"(?:refactor|clean\s*up|restructure|簡化|重構|整理|移除)")),
-    (Category.TESTING, re.compile(r"\b(?:pytest|vitest|jest|unittest|mocha|cypress|playwright|smoke\s*test|\bspec\b|\btests?\b|測試)\b")),
+    (Category.TESTING, re.compile(r"(?:\bpytest\b|\bvitest\b|\bjest\b|\bunittest\b|\bmocha\b|\bcypress\b|\bplaywright\b|smoke\s*test|\.spec\.|_spec\b|\btests?\b|測試)")),
     (Category.UI_DESIGN, re.compile(r"(?:figma|mockup|prototype|design\s+system|ux\b|typography|色票|按鈕|介面|排版|spacing|layout)")),
     (Category.DOCS, re.compile(r"(?:readme|documentation|\bdocs?\b|comment|docstring|文件|註解|說明)")),
     (Category.PERFORMANCE, re.compile(r"(?:optimi[sz]e|latency|cache|slow|speed\s*up|throughput|benchmark|profile|加速|效能|延遲)")),
