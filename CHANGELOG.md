@@ -4,6 +4,23 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.0] — 2026-05-30
+
+### Added
+
+- **Score-is-a-proxy principle + evidence-disclosure layer** (#51) — the north
+  star for the truthfulness epic. `docs/PRINCIPLES.md` states P1 (the review
+  score is advisory; 6 Goodhart guardrails — no fabrication, real human gates,
+  evidence-backed keywords, non-distorting condensing, honest auto-iterate stop,
+  auditability) and P2 (disclosure over opacity).
+- **`core/evidence.py` + `vibe-resume evidence`** — discloses, per project group,
+  the *real* signals behind every enrich/review/iterate decision: candidate
+  metrics literally present (never invented), terms genuinely backed by the data,
+  where a human gate actually appears (locale-aware), and provenance. Lets an
+  agent self-mine what it needs to see and makes every later surfacing traceable
+  to a disclosed signal. `--json` for agent consumption, `--group` to filter.
+  The shared locale-aware `gate_terms` now lives in `core/rubric.py`.
+
 ## [0.16.1] — 2026-05-30
 
 ### Fixed
