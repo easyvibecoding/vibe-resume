@@ -4,6 +4,21 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.22.0] — 2026-05-30
+
+### Added
+
+- **`vibe-resume iterate` — truth-preserving score-driven auto-iterate** (#57,
+  capstone of the truthfulness epic; opt-in, dry-run by default). Tightens the
+  page budget — the only deterministic, truth-preserving lever — to lift the
+  review grade, then **stops at the bar (grade B) or honestly reports the ceiling**
+  ("page-count" / "genuine content gap") rather than distorting to pass. It
+  **never rewrites a bullet, invents a metric, or inserts a human gate** to chase
+  points. The edits that need rewriting — surface present-but-omitted keywords
+  (#54), strengthen real human-gate framing (#56), add real unsurfaced metrics
+  (#53) — are emitted as **human-applied-only suggestions sourced from the
+  disclosed evidence**, each traceable to a real signal (P1.5 + P1.6).
+
 ## [0.21.0] — 2026-05-30
 
 ### Added
