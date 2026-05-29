@@ -114,6 +114,18 @@ class ProjectGroup(BaseModel):
         default_factory=list,
         description="User-supplied hard numbers pulled from profile.project_metrics",
     )
+    canonical_key: str | None = Field(
+        default=None,
+        description="Identity-proven grouping key (remote:… / toplevel:…) from #37 reconcile",
+    )
+    merged_from: list[str] = Field(
+        default_factory=list,
+        description="Original project paths collapsed into this group (len>1 = a merge happened)",
+    )
+    merge_evidence: str | None = Field(
+        default=None,
+        description="Human-readable merge justification, e.g. 'same remote github.com/me/foo'",
+    )
 
 
 class UserProfile(BaseModel):

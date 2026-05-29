@@ -226,3 +226,19 @@ def test_load_profile_missing_file_raises(tmp_path: Path) -> None:
     FileNotFoundError and can handle it (e.g. CLI shows a bootstrap hint)."""
     with pytest.raises(FileNotFoundError):
         load_profile(tmp_path / "never_saved.yaml")
+
+
+def test_project_group_provenance_defaults_and_roundtrip():
+    from vibe_resume.core.schema import ProjectGroup
+    g = ProjectGroup(name="x", first_activity="2026-01-01T00:00:00+00:00",
+                     last_activity="2026-01-01T00:00:00+00:00", total_sessions=1)
+    assert g.canonical_key is None
+    assert g.merged_from == []
+    assert g.merge_evidence is None
+    g2 = ProjectGroup(**g.model_dump())
+    g2.canonical_key = "remote:github.com/me/foo"
+    g2.merged_from = ["/a", "/b"]
+    g2.merge_evidence = "same remote github.com/me/foo"
+    back = ProjectGroup(**g2.model_dump(mode="json"))
+    assert back.canonical_key == "remote:github.com/me/foo"
+    assert back.merged_from == ["/a", "/b"]
