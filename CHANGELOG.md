@@ -4,6 +4,18 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.0] — 2026-05-30
+
+### Added
+
+- **`render --max-pages` page budget** (#52) — hit a page target by tightening
+  *bullet density* (achievements per group, highest-signal first), not only by
+  dropping whole projects via `--top-n`; the two compose. Also
+  `config.render.page_budget`. The greedy fitter never goes below 2 bullets/group
+  and **never pads or over-claims** — if the floor is reached it keeps the honest
+  content and lets the page-count check surface the residual (P1.4 guardrail).
+  `estimate_pages` is now a shared helper in `core/review.py`.
+
 ## [0.17.0] — 2026-05-30
 
 ### Added

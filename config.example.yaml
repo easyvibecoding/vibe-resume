@@ -195,6 +195,10 @@ stats:
 
 render:
   default_format: "md"
+  # page_budget: optional float — tighten bullet density (achievements/group) to
+  # hit a page target, composing with detailed_projects/--top-n. CLI: --max-pages.
+  # Drops the least-representative bullets only; never pads (see docs/PRINCIPLES.md P1.4).
+  # page_budget: 2.0
   # templates_dir: optional override; templates ship inside the package
   output_dir: "./data/resume_history"
   draft_dir: "./data/drafts"
