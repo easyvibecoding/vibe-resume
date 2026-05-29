@@ -95,6 +95,7 @@ class AgenticSignals(BaseModel):
     mcp_authored: bool = False
     sdd: bool = False
     tdd: bool = False
+    orchestration: list[str] = Field(default_factory=list)
 
 
 class ProjectGroup(BaseModel):

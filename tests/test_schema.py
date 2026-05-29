@@ -265,3 +265,11 @@ def test_agentic_signals_sdd_tdd_defaults():
     s2 = AgenticSignals(sdd=True, tdd=True)
     back = AgenticSignals(**s2.model_dump())
     assert back.sdd is True and back.tdd is True
+
+
+def test_agentic_signals_orchestration_default_and_roundtrip():
+    from vibe_resume.core.schema import AgenticSignals
+    assert AgenticSignals().orchestration == []
+    s = AgenticSignals(orchestration=["fan-out", "verify-pipeline"])
+    back = AgenticSignals(**s.model_dump())
+    assert back.orchestration == ["fan-out", "verify-pipeline"]
