@@ -282,6 +282,50 @@ def _reconcile_github_projects(acts: list[Activity]) -> None:
             a.project = local_by_base[repo_base]
 
 
+def _canonical_key(act: Activity) -> str | None:
+    """Identity-proven grouping key for an activity's path. Prefer the git
+    origin remote, fall back to the work-tree toplevel; None means 'no proof
+    of identity' → keep the existing path-based key."""
+    extra = act.extra or {}
+    remote = extra.get("git_remote")
+    if remote:
+        return f"remote:{remote}"
+    toplevel = extra.get("git_toplevel")
+    if toplevel:
+        return f"toplevel:{toplevel}"
+    return None
+
+
+def _reconcile_local_projects(acts: list[Activity]) -> None:
+    """Collapse groups that are the same logical repo worked from different
+    paths (clones, renamed dirs, sub-packages). Cluster by canonical key,
+    rewrite each cluster's `project` to one representative path so the
+    existing path-based grouping merges them. Identity-proven only — never
+    merges by name, so unrelated same-named repos stay separate."""
+    clusters: dict[str, list[Activity]] = defaultdict(list)
+    for a in acts:
+        k = _canonical_key(a)
+        if k:
+            clusters[k].append(a)
+    for members in clusters.values():
+        rep: str | None = None
+        for a in members:
+            tl = (a.extra or {}).get("git_toplevel")
+            if tl:
+                rep = tl
+                break
+        if rep is None:
+            counts: dict[str, int] = defaultdict(int)
+            for a in members:
+                if a.project:
+                    counts[a.project] += 1
+            if not counts:
+                continue
+            rep = max(counts, key=lambda p: counts[p])
+        for a in members:
+            a.project = rep
+
+
 def aggregate_from_cache(cfg: dict[str, Any], cache_dir: Path) -> list[ProjectGroup]:
     pf = PrivacyFilter(cfg)
     all_acts: list[Activity] = []
@@ -294,6 +338,7 @@ def aggregate_from_cache(cfg: dict[str, Any], cache_dir: Path) -> list[ProjectGr
                 all_acts.append(pa)
 
     _reconcile_github_projects(all_acts)
+    _reconcile_local_projects(all_acts)
 
     prior_enrich = _load_prior_enrichment()
     user_metrics = _load_user_metrics()
