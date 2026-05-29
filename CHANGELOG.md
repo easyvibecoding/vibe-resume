@@ -4,6 +4,23 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] — 2026-05-29
+
+### Added
+
+- **`curate` gate** — a file-based human-in-the-loop checkpoint between
+  `aggregate` and `enrich` (#38). `vibe-resume curate` writes an editable
+  `_curation.yaml` classifying every project group into `auto_merge` /
+  `auto_drop` / `needs_decision` / `keep` with evidence; `curate --apply`
+  executes keep/merge_into/drop into a non-destructive
+  `_project_groups.curated.json` that `enrich`/`render` prefer. Human
+  decisions carry forward across re-runs (keyed by canonical identity);
+  headless runs apply only the high-confidence auto tiers. New `curate:`
+  config block (`enabled`, `noise_globs`).
+- Merge **provenance** on `ProjectGroup` (`canonical_key` / `merged_from` /
+  `merge_evidence`): the #37 cross-path auto-merge is now traceable in
+  `_project_groups.json` instead of silently rewriting paths.
+
 ## [0.8.0] — 2026-05-29
 
 ### Changed
