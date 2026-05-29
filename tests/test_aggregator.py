@@ -106,3 +106,16 @@ def test_reconcile_no_remote_no_toplevel_unchanged():
     acts = [_act(Source.CLAUDE_CODE, "/some/dir", sid="a")]
     _reconcile_local_projects(acts)
     assert acts[0].project == "/some/dir"
+
+
+def test_reconcile_returns_provenance_for_merged_cluster():
+    acts = [
+        _act(Source.GIT, "/dev/foo", remote="github.com/me/foo", toplevel="/dev/foo", sid="a"),
+        _act(Source.CODEX, "/side/foo", remote="github.com/me/foo", toplevel="/side/foo", sid="b"),
+    ]
+    prov = _reconcile_local_projects(acts)
+    rep = acts[0].project
+    assert rep in prov
+    assert prov[rep]["canonical_key"] == "remote:github.com/me/foo"
+    assert sorted(prov[rep]["merged_from"]) == ["/dev/foo", "/side/foo"]
+    assert "github.com/me/foo" in prov[rep]["evidence"]

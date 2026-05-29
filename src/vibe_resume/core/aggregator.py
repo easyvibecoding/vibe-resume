@@ -296,18 +296,21 @@ def _canonical_key(act: Activity) -> str | None:
     return None
 
 
-def _reconcile_local_projects(acts: list[Activity]) -> None:
+def _reconcile_local_projects(acts: list[Activity]) -> dict[str, dict[str, Any]]:
     """Collapse groups that are the same logical repo worked from different
     paths (clones, renamed dirs, sub-packages). Cluster by canonical key,
     rewrite each cluster's `project` to one representative path so the
-    existing path-based grouping merges them. Identity-proven only — never
-    merges by name, so unrelated same-named repos stay separate."""
+    existing path-based grouping merges them, and return per-representative
+    provenance (canonical_key / merged_from / evidence) for the audit trail.
+    Identity-proven only — never merges by name, so unrelated same-named
+    repos stay separate."""
     clusters: dict[str, list[Activity]] = defaultdict(list)
     for a in acts:
         k = _canonical_key(a)
         if k:
             clusters[k].append(a)
-    for members in clusters.values():
+    prov: dict[str, dict[str, Any]] = {}
+    for key, members in clusters.items():
         rep: str | None = None
         for a in members:
             tl = (a.extra or {}).get("git_toplevel")
@@ -322,8 +325,16 @@ def _reconcile_local_projects(acts: list[Activity]) -> None:
             if not counts:
                 continue
             rep = max(counts, key=lambda p: counts[p])
+        merged_from = sorted({a.project for a in members if a.project})
+        kind, _, value = key.partition(":")
         for a in members:
             a.project = rep
+        prov[rep] = {
+            "canonical_key": key,
+            "merged_from": merged_from,
+            "evidence": f"same {kind} {value}",
+        }
+    return prov
 
 
 def aggregate_from_cache(cfg: dict[str, Any], cache_dir: Path) -> list[ProjectGroup]:
@@ -338,7 +349,7 @@ def aggregate_from_cache(cfg: dict[str, Any], cache_dir: Path) -> list[ProjectGr
                 all_acts.append(pa)
 
     _reconcile_github_projects(all_acts)
-    _reconcile_local_projects(all_acts)
+    prov_by_rep = _reconcile_local_projects(all_acts)
 
     prior_enrich = _load_prior_enrichment()
     user_metrics = _load_user_metrics()
@@ -372,6 +383,7 @@ def aggregate_from_cache(cfg: dict[str, Any], cache_dir: Path) -> list[ProjectGr
 
         prior = prior_enrich.get(display_name, {})
         project_metrics = _metrics_for_project(display_name, user_metrics)
+        prov = prov_by_rep.get(path_val or "", {})
 
         grp = ProjectGroup(
             name=display_name,
@@ -389,6 +401,9 @@ def aggregate_from_cache(cfg: dict[str, Any], cache_dir: Path) -> list[ProjectGr
             achievements=prior.get("achievements") or [],
             domain_tags=prior.get("domain_tags") or [],
             metrics=project_metrics,
+            canonical_key=prov.get("canonical_key"),
+            merged_from=prov.get("merged_from", []),
+            merge_evidence=prov.get("evidence"),
         )
         groups.append(grp)
 
