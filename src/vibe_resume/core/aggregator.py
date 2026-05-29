@@ -157,6 +157,9 @@ def _is_meaningful(raw_key: str, g: ProjectGroup, min_sessions: int) -> bool:
     leaf = key_lc.split("/")[-1].lstrip(".")
     if leaf in NOISE_LEAFS:
         return False
+    # The curated installed-toolkit inventory is signal, not noise.
+    if any(a.source == Source.INSTALLED_ENV for a in g.activities):
+        return True
     # A single high-value external (open-source) merged PR is signal, not noise:
     # exempt it from the session-count floor (other noise rules still apply).
     if any(

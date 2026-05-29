@@ -233,3 +233,10 @@ def test_orchestration_stable_order_and_distinct():
 
 def test_orchestration_absent_for_single_agent():
     assert _agentic_signals([_act_blob(summary="prompted the model to write code", files=["a.py"])], "r") is None
+
+
+def test_installed_env_group_survives_noise_filter():
+    act = Activity(source=Source.INSTALLED_ENV, session_id="installed-toolkit",
+                   timestamp_start="2026-01-01T00:00:00+00:00", project="Agentic Toolkit")
+    g = _grp("Agentic Toolkit", [act])   # 1 session, breadth 0
+    assert _is_meaningful("agentic toolkit", g, min_sessions=2) is True
