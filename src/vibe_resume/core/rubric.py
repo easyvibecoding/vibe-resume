@@ -100,6 +100,19 @@ def _read(path: Path) -> dict[str, Any] | None:
     return data if isinstance(data, dict) else None
 
 
+def gate_terms(rubric: MarketRubric, lang: str | None = None) -> list[str]:
+    """Human-quality-gate terms: English base ∪ the active locale's phrasing (#50).
+
+    Shared by review (scoring) and evidence (disclosure). Tech terms stay English
+    so AI-content detection still fires on non-English résumés; only the human-gate
+    phrasing is locale-specific. Lowercased for substring matching."""
+    terms = list(rubric.human_gate_verbs)
+    by_locale = rubric.human_gate_verbs_by_locale or {}
+    if lang and lang in by_locale:
+        terms += list(by_locale[lang])
+    return [t.lower() for t in terms]
+
+
 @lru_cache(maxsize=1)
 def load_rubric() -> MarketRubric:
     override = _user_root() / "data" / "cache" / "market_rubric.yaml"

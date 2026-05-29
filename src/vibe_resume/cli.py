@@ -125,6 +125,47 @@ def emphasis(ctx: click.Context, intent: str | None, clear_: bool) -> None:
 
 
 @cli.command()
+@click.option("--locale", default=None, help="Locale for human-gate phrasing (zh_TW, ja_JP, …)")
+@click.option("--json", "as_json", is_flag=True, default=False, help="Emit JSON for an agent to mine")
+@click.option("--group", "group_filter", default=None, help="Only this group (substring match)")
+@click.pass_context
+def evidence(ctx: click.Context, locale: str | None, as_json: bool, group_filter: str | None) -> None:
+    """Disclose the *real* signals behind each group — candidate metrics, backed
+    terms, human-gate evidence, provenance (P2 disclosure). Lets an agent self-mine
+    what it needs to see; every later surfacing must trace to a disclosed signal."""
+    import json as _json
+
+    from vibe_resume.core.aggregator import load_groups
+    from vibe_resume.core.evidence import disclose_all
+    from vibe_resume.render.i18n import get_locale
+
+    lang = get_locale(locale or ctx.obj["config"].get("render", {}).get("locale")).get("language")
+    groups = load_groups()
+    if group_filter:
+        groups = [g for g in groups if group_filter.lower() in g.name.lower()]
+    if not groups:
+        click.echo("no groups — run aggregate first (or check --group filter)")
+        return
+    evs = disclose_all(groups, lang=lang)
+
+    if as_json:
+        click.echo(_json.dumps([e.as_dict() for e in evs], ensure_ascii=False, indent=2))
+        return
+
+    for e in evs:
+        console.print(f"\n[bold cyan]{e.group}[/bold cyan]  ({e.activity_count} activities)")
+        m = ", ".join(f"{c.value}" for c in e.candidate_metrics[:12]) or "[dim](none — keep bullets qualitative)[/dim]"
+        console.print(f"  real metrics present: {m}")
+        g = ", ".join(sorted({h.term for h in e.human_gate_evidence})) or "[dim](none — don't claim a human gate)[/dim]"
+        console.print(f"  human-gate evidence: {g}")
+        console.print(f"  backed terms: {', '.join(e.backed_terms[:20]) or '(none)'}")
+    console.print(
+        "\n[dim]Surface only what's disclosed here — never invent a metric, gate, "
+        "or keyword not shown (see docs/PRINCIPLES.md).[/dim]"
+    )
+
+
+@cli.command()
 @click.option("--ingest", "ingest_", is_flag=True, default=False,
               help="Validate research.result.yaml and install the rubric override")
 @click.option("--status", "status_", is_flag=True, default=False,

@@ -559,17 +559,10 @@ def _hint_category(bullet: str, hints: dict[str, list[str]]) -> str | None:
 
 
 def _gate_terms(rubric: Any, lang: str | None) -> list[str]:
-    """Human-quality-gate terms: English base ∪ the active locale's phrasing.
-
-    Non-English résumés keep tech terms in English (so `_has_ai_content` still
-    fires) but phrase the human gate in their own language — without the locale
-    union a correctly-framed zh/ja/ko/de/fr résumé scores 0 (#50). Union with
-    English handles mixed-script résumés."""
-    terms = list(getattr(rubric, "human_gate_verbs", []))
-    by_locale = getattr(rubric, "human_gate_verbs_by_locale", {}) or {}
-    if lang and lang in by_locale:
-        terms += list(by_locale[lang])
-    return [t.lower() for t in terms]
+    """Locale-aware human-gate terms (#50). Delegates to `rubric.gate_terms`,
+    the shared home for this logic (also used by the evidence-disclosure layer)."""
+    from vibe_resume.core.rubric import gate_terms
+    return gate_terms(rubric, lang)
 
 
 def _check_ai_proficiency(md: str, rubric: Any, lang: str | None = None) -> Score:
