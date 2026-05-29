@@ -88,6 +88,11 @@ employer-relevant specificity (named systems, scale markers, domain
 vocabulary) over generic phrasing when the data supports it.
 """
 
+AGENTIC_SIGNALS_BLOCK = (
+    "\n\nAGENTIC SIGNALS (factual — ground bullets in these only when the raw "
+    "activity supports them; never invent):\n{lines}\n"
+)
+
 CONTRIBUTION_BLOCK = (
     "\n\nNOTE: This work is an EXTERNAL open-source contribution to a "
     "repository the candidate does not own. Frame bullets as "
@@ -296,6 +301,23 @@ def _build_prompt(
         (a.extra or {}).get("contribution") == "external" for a in gh_acts
     ):
         body += CONTRIBUTION_BLOCK
+    sig = g.agentic_signals
+    if sig is not None:
+        sig_lines: list[str] = []
+        if sig.skills_authored:
+            line = f"authored skills: {', '.join(sig.skills_authored)}"
+            if sig.skills_published:
+                line += " (published to a plugin marketplace)"
+            sig_lines.append(line)
+        if sig.skills_used:
+            sig_lines.append(f"used {len(sig.skills_used)} skills: {', '.join(sig.skills_used)}")
+        if sig.mcp_servers_used:
+            sig_lines.append(
+                f"integrated {len(sig.mcp_servers_used)} MCP servers: {', '.join(sig.mcp_servers_used)}")
+        if sig.mcp_authored:
+            sig_lines.append("authored an MCP server")
+        if sig_lines:
+            body += AGENTIC_SIGNALS_BLOCK.format(lines="\n".join(f"- {x}" for x in sig_lines))
     if emphasis is not None and (emphasis.intent or emphasis.keywords or emphasis.bias_instruction):
         body += emphasis_block(emphasis)
     return body

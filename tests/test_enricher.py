@@ -169,3 +169,17 @@ def test_build_prompt_includes_emphasis_block_last():
 def test_build_prompt_no_emphasis_block_when_absent():
     g = _many_act_group(3)
     assert "HIGHEST-PRIORITY EMPHASIS" not in _build_prompt(g)
+
+
+def test_build_prompt_includes_agentic_signals_block():
+    from vibe_resume.core.schema import AgenticSignals
+    g = _many_act_group(3)
+    g.agentic_signals = AgenticSignals(skills_authored=["foo"], skills_published=True,
+                                       mcp_servers_used=["browser", "db"])
+    p = _build_prompt(g)
+    assert "AGENTIC SIGNALS" in p
+    assert "foo" in p and "browser" in p and "db" in p
+
+
+def test_build_prompt_no_agentic_block_when_absent():
+    assert "AGENTIC SIGNALS" not in _build_prompt(_many_act_group(3))
