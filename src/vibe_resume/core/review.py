@@ -520,6 +520,110 @@ def _check_red_flags(md: str, locale_meta: dict[str, Any]) -> Score:
     return Score("Red flags", pts, 10, notes)
 
 
+# -- AI-proficiency checks (#47) ---------------------------------------------
+
+def _has_ai_content(md: str, rubric: Any) -> bool:
+    low = md.lower()
+    terms = list(getattr(rubric, "agentic_keywords", [])) + list(
+        getattr(rubric, "ai_tool_names", [])
+    )
+    return any(t.lower() in low for t in terms)
+
+
+def _ai_bullets(md: str, rubric: Any) -> list[tuple[int, str]]:
+    terms = [
+        t.lower()
+        for t in list(getattr(rubric, "agentic_keywords", []))
+        + list(getattr(rubric, "ai_tool_names", []))
+    ]
+    return [
+        (ln, b)
+        for ln, b in _bullets_in_scope(md)
+        if any(t in b.lower() for t in terms)
+    ]
+
+
+def _hint_category(bullet: str, hints: dict[str, list[str]]) -> str | None:
+    low = bullet.lower()
+    table = {
+        "review": ("review", "qa", "pr"),
+        "cost": ("cost", "token", "cache"),
+        "cycle": ("cycle", "ship", "deploy", "lead time"),
+        "eval": ("eval", "judge", "validate", "test", "regression"),
+    }
+    for cat, kws in table.items():
+        if cat in hints and any(k in low for k in kws):
+            return cat
+    return next(iter(hints), None)
+
+
+def _check_ai_proficiency(md: str, rubric: Any) -> Score:
+    """Positive: AI bullets that pair a tool with a human quality gate.
+
+    Skipped (max=0) when the résumé carries no AI/agentic content, so non-AI
+    résumés keep their existing denominator. Number-less AI bullets get a
+    *pointer* to a real metric (never an injected value)."""
+    if not _has_ai_content(md, rubric):
+        return Score("AI proficiency", 0, 0, ["no AI/agentic content — skipped"])
+    bullets = _ai_bullets(md, rubric)
+    if not bullets:
+        return Score("AI proficiency", 0, 10, ["AI terms present but not in scored bullets"])
+    gates = [v.lower() for v in getattr(rubric, "human_gate_verbs", [])]
+    paired = [(ln, b) for ln, b in bullets if any(g in b.lower() for g in gates)]
+    ratio = len(paired) / len(bullets)
+    pts = min(int(round(ratio * 10)), 10)
+    notes = [f"{len(paired)}/{len(bullets)} AI bullets pair a tool with a human quality gate"]
+    hints = getattr(rubric, "metric_hints", {}) or {}
+    numberless = [(ln, b) for ln, b in bullets if _count_metrics(b) == 0]
+    if numberless and hints:
+        ln, b = numberless[0]
+        cat = _hint_category(b, hints)
+        if cat:
+            notes.append(
+                f'L{ln} AI bullet has no number — consider measuring: {", ".join(hints[cat])}'
+            )
+    return Score("AI proficiency", pts, 10, notes)
+
+
+def _check_ai_red_flags(md: str, rubric: Any) -> Score:
+    """Negative: junior framing, stale-stack headline, unverified-judge, name-drop.
+
+    Mirrors `_check_red_flags` (start at 10, deduct). Skipped (max=0) on a
+    non-AI résumé."""
+    if not _has_ai_content(md, rubric):
+        return Score("AI framing red flags", 0, 0, ["no AI/agentic content — skipped"])
+    pts = 10
+    notes: list[str] = []
+    head = "\n".join(md.splitlines()[:14])
+    gates = [v.lower() for v in getattr(rubric, "human_gate_verbs", [])]
+    for yf in getattr(rubric, "yellow_flags", ()):
+        if yf.kind == "stale_stack":
+            if yf.regex.search(head):
+                pts -= 2
+                notes.append(f"stale-stack in top fold — {yf.why}")
+        elif yf.kind == "junior_volume":
+            if yf.regex.search(md):
+                pts -= 3
+                notes.append(f"junior volume-bragging — {yf.why}")
+        elif yf.kind == "unverified_judge":
+            for ln, b in _bullets_in_scope(md):
+                if yf.regex.search(b) and not any(g in b.lower() for g in gates):
+                    pts -= 2
+                    notes.append(f"L{ln} unverified-judge claim — {yf.why}")
+                    break
+    for ln, b in _ai_bullets(md, rubric):
+        if _count_metrics(b) == 0 and not any(g in b.lower() for g in gates):
+            pts -= 2
+            notes.append(
+                f"L{ln} bare tool name-drop (no metric, no quality gate) — reads junior"
+            )
+            break
+    pts = max(pts, 0)
+    if not notes:
+        notes.append("no AI framing red flags detected")
+    return Score("AI framing red flags", pts, 10, notes)
+
+
 # -- public API --------------------------------------------------------------
 
 def review(
@@ -549,6 +653,13 @@ def review(
         # rubric — the 8 base checks remain comparable across résumé versions
         # even when a candidate swaps target employers between runs.
         scores.append(_check_company_keyword_coverage(md_text, company))
+    # AI-proficiency checks (#47) append after the base rubric; both self-skip
+    # (max=0) when the résumé has no AI content, so non-AI résumés keep their
+    # denominator and stay byte-comparable across versions.
+    from vibe_resume.core.rubric import load_rubric
+    _rb = load_rubric()
+    scores.append(_check_ai_proficiency(md_text, _rb))
+    scores.append(_check_ai_red_flags(md_text, _rb))
     scoring = [s for s in scores if s.max > 0]
     weights = getattr(persona, "review_weights", None) or {}
     raw_total = sum(s.score for s in scoring)

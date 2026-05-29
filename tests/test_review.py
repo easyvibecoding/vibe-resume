@@ -238,3 +238,52 @@ class TestEndToEnd:
         # Top fold + numbers + verbs + clean = ≥80% (B or better)
         assert report.total / report.max_total >= 0.8
         assert report.grade in {"A", "B"}
+
+
+# --- #47 AI-proficiency review checks ----------------------------------------
+
+_AI_MD = """# Jane Dev
+
+## Experience
+- Architected a Claude Code subagent pipeline; reviewed every diff, cutting review round-trips 40%
+- Used Claude Code to ship features
+- Built an eval harness; AI-validated 200 cases
+"""
+
+_PLAIN_MD = """# Jane Dev
+
+## Experience
+- Built a FastAPI service handling 2k req/s
+- Migrated Postgres with zero downtime
+"""
+
+
+def test_has_ai_content_gate():
+    from vibe_resume.core.review import _has_ai_content
+    from vibe_resume.core.rubric import load_rubric
+    rb = load_rubric()
+    assert _has_ai_content(_AI_MD, rb) is True
+    assert _has_ai_content(_PLAIN_MD, rb) is False
+
+
+def test_ai_checks_skipped_on_plain_resume():
+    from vibe_resume.core.review import review
+    rep = review(_PLAIN_MD, "en_US")
+    ai = [s for s in rep.scores if s.name in ("AI proficiency", "AI framing red flags")]
+    assert ai and all(s.max == 0 for s in ai)
+
+
+def test_ai_proficiency_rewards_human_gate():
+    from vibe_resume.core.review import review
+    rep = review(_AI_MD, "en_US")
+    prof = next(s for s in rep.scores if s.name == "AI proficiency")
+    assert prof.max == 10 and prof.score > 0
+
+
+def test_ai_red_flags_flags_namedrop_and_unverified():
+    from vibe_resume.core.review import review
+    rep = review(_AI_MD, "en_US")
+    rf = next(s for s in rep.scores if s.name == "AI framing red flags")
+    assert rf.max == 10 and rf.score < 10
+    joined = " ".join(rf.notes).lower()
+    assert "name-drop" in joined or "junior" in joined or "unverified" in joined
