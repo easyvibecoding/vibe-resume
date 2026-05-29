@@ -121,3 +121,29 @@ def test_unsurfaced_metrics_only_real_absent_from_bullets():
     assert "40%" not in vals              # already surfaced → not re-suggested
     # never invents: every suggestion traces to a real activity
     assert all(m.source_ref for m in unsurf)
+
+
+# --- #58 metric-candidate noise filter --------------------------------------
+
+def test_metric_candidates_drop_noise_keep_impact():
+    g = _group([_act(
+        "Cut latency 40% and 2.0x throughput, saved 256 h; "
+        "on 2026-03-16 fixed PR #10171 at 10.0.0.61:443 (ref 4302464412)"
+    )])
+    ev = disclose_evidence(g)
+    vals = {m.value for m in ev.candidate_metrics}
+    # impact metrics kept
+    assert "40%" in vals and any("2.0" in v and "x" in v.lower() for v in vals)
+    assert any("256" in v and "h" in v for v in vals)
+    # noise dropped: year, date frags, IP octets, port, PR#, long ID/phone run
+    assert not any(v.strip() in {"2026", "03", "16", "10", "61", "443", "10171"} for v in vals)
+    assert not any(v.strip() == "4302464412" for v in vals)
+    assert not any(len(v.strip()) >= 7 and v.strip().isdigit() for v in vals)
+
+
+def test_impact_metric_classifier_units():
+    from vibe_resume.core.evidence import _is_impact_metric
+    for good in ["40%", "2.0x", "1M", "12k", "256 h", "26 d", "$500", "35萬", "3倍"]:
+        assert _is_impact_metric(good), good
+    for noise in ["2026", "03", "443", "10171", "404", "4302464412", "126"]:
+        assert not _is_impact_metric(noise), noise

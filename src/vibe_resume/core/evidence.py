@@ -14,6 +14,7 @@ It never invents: it only surfaces what is literally present in the activities.
 """
 from __future__ import annotations
 
+import re
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
@@ -89,8 +90,28 @@ class GroupEvidence:
         }
 
 
+# An impact metric carries a unit/operator; bare integers (years, IPs, ports,
+# PR/issue numbers, IDs/phone-like runs) are incidental noise — not achievements.
+_IMPACT_SHAPE = re.compile(
+    r"[%×]"                       # percent / multiplier sign
+    r"|\d\s*[xX]\b"               # 2x / 2.0 x
+    r"|[倍萬億千]"                  # CJK magnitude/multiplier units
+    r"|\d\s*[kKmMbB]\b"           # 1M / 12k magnitude
+    r"|[$€£¥]"                    # currency
+    r"|\d\s*(?:ms|s|min|hrs?|h|d|day|days|week|month|quarter|year|個|天|小時|週|個月|年|人)\b"
+)
+
+
+def _is_impact_metric(value: str) -> bool:
+    """#58: keep only impact-shaped quantities; drop bare integers (dates, IPs,
+    ports, PR#, long ID/phone-like runs) that the bare-integer branch of the
+    metric regex incidentally matches. Precision only — not a score lever (#51)."""
+    return bool(_IMPACT_SHAPE.search(value))
+
+
 def _find_metrics(text: str) -> list[str]:
-    return METRIC_RE.findall(text) + CJK_METRIC_RE.findall(text)
+    raw = METRIC_RE.findall(text) + CJK_METRIC_RE.findall(text)
+    return [v for v in raw if _is_impact_metric(v)]
 
 
 def disclose_evidence(
