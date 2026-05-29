@@ -22,6 +22,7 @@ console = Console()
 
 ROOT = user_root()
 GROUPS_PATH = ROOT / "data" / "cache" / "_project_groups.json"
+CURATED_PATH = ROOT / "data" / "cache" / "_project_groups.curated.json"
 OBSERVED_SUMMARY_PATH = ROOT / "data" / "cache" / "_observed_summary.json"
 WINDOW_STATS_PATH = ROOT / "data" / "cache" / "_window_stats.json"
 
@@ -519,18 +520,21 @@ def groups_path_for(persona: str | None = None, locale: str | None = None) -> Pa
 def load_groups(
     persona: str | None = None,
     locale: str | None = None,
+    use_curated: bool = True,
 ) -> list[ProjectGroup]:
     """Load enriched groups with fallback chain.
 
-    Order: (persona, locale) → (None, locale) → GROUPS_PATH → [].
-    The final fallback (raw aggregator output) lets `render` show something
-    coherent even when enrich has not been run for the requested locale yet.
+    Order: (persona, locale) → (None, locale) → curated → GROUPS_PATH → [].
+    The curated cache (from `curate --apply`) is preferred over the raw
+    aggregator output as the un-enriched base; `use_curated=False` ignores it.
     """
     candidates: list[Path] = []
     if locale is not None:
         candidates.append(groups_path_for(persona, locale))
         if persona is not None:
             candidates.append(groups_path_for(None, locale))
+    if use_curated and CURATED_PATH.exists():
+        candidates.append(CURATED_PATH)
     candidates.append(GROUPS_PATH)
 
     for path in candidates:
