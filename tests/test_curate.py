@@ -129,3 +129,35 @@ def test_classify_needs_decision_same_name_no_remote_twin():
     assert nokey_entry.action == "merge_into"
     assert nokey_entry.target == "X"             # folds into the keyed twin
     assert keyed_entry.tier in ("keep", "auto_merge")   # keyed anchor is NOT flagged
+
+
+def _g_acts(name, path, sessions, canonical_key=None):
+    from vibe_resume.core.schema import Activity, Source
+    acts = [Activity(source=Source.GIT, session_id=f"{name}-{i}",
+                     timestamp_start="2026-01-01T00:00:00+00:00", project=path)
+            for i in range(sessions)]
+    return ProjectGroup(name=name, path=path,
+                        first_activity="2026-01-01T00:00:00+00:00",
+                        last_activity="2026-01-01T00:00:00+00:00",
+                        total_sessions=sessions, canonical_key=canonical_key,
+                        activities=acts)
+
+
+def test_apply_same_name_merge_keeps_one_no_data_loss():
+    # #41: applying a needs_decision merge of a same-named twin must keep the
+    # canonical group (carrying both groups' activities), not drop both.
+    from vibe_resume.core.curate import apply_curation
+
+    keyed = _g_acts("X", "/work/X", 10, canonical_key="remote:github.com/acme/x")
+    nokey = _g_acts("X", "/notes/X", 3)
+    groups = [keyed, nokey]
+    record = CurationRecord(version=1, generated_at="t", groups=[
+        CurationEntry(name="X", canonical_key="remote:github.com/acme/x", sessions=10,
+                      tier="keep", action="keep"),
+        CurationEntry(name="X", sessions=3, tier="needs_decision",
+                      action="merge_into", target="X"),
+    ])
+    out = apply_curation(groups, record)
+    assert len(out) == 1                       # exactly one X survives (no data loss)
+    assert out[0].canonical_key == "remote:github.com/acme/x"   # the keyed twin is the anchor
+    assert out[0].total_sessions == 13         # both groups' activities unioned

@@ -168,25 +168,42 @@ def _union_into(target: ProjectGroup, sources: list[ProjectGroup]) -> None:
 
 
 def apply_curation(groups: list[ProjectGroup], record: CurationRecord) -> list[ProjectGroup]:
-    """Execute keep / merge_into / drop into a new (non-destructive) group list."""
-    by_name = {g.name: g for g in groups}
-    entry_by_name = {e.name: e for e in record.groups}
-    dropped = {e.name for e in record.groups if e.action == "drop"}
+    """Execute keep / merge_into / drop into a new (non-destructive) group list.
 
-    merges: dict[str, list[ProjectGroup]] = defaultdict(list)
-    survivors: list[ProjectGroup] = []
-    for g in groups:
-        if g.name in dropped:
+    Groups are paired with their entries **positionally** (the record is
+    emitted in group order), and merge targets are resolved to a specific
+    surviving group **object** — never by name. This keeps same-named
+    duplicates (which #40 flags as needs_decision) from colliding and dropping
+    the kept group too (#41)."""
+    n = min(len(groups), len(record.groups))
+    survivors: list[ProjectGroup] = list(groups[n:])   # groups beyond the record are kept as-is
+    merge_src: list[tuple[ProjectGroup, str]] = []
+    for g, e in zip(groups[:n], record.groups[:n]):
+        if e.action == "drop":
             continue
-        e = entry_by_name.get(g.name)
-        if (e and e.action == "merge_into" and e.target
-                and e.target in by_name and e.target not in dropped):
-            merges[e.target].append(g)
+        if e.action == "merge_into" and e.target:
+            merge_src.append((g, e.target))
         else:
             survivors.append(g)
+
+    surv_by_name: dict[str, list[ProjectGroup]] = defaultdict(list)
+    for g in survivors:
+        surv_by_name[g.name].append(g)
+
+    pending: dict[int, list[ProjectGroup]] = defaultdict(list)
+    for g, target_name in merge_src:
+        cands = surv_by_name.get(target_name)
+        if not cands:
+            survivors.append(g)        # target dropped/absent → keep source, never lose it
+            continue
+        # prefer a canonical-keyed (identity-proven) survivor as the anchor
+        anchor = max(cands, key=lambda c: (c.canonical_key is not None, c.total_sessions))
+        pending[id(anchor)].append(g)
+
     for target in survivors:
-        if target.name in merges:
-            _union_into(target, merges[target.name])
+        srcs = pending.get(id(target))
+        if srcs:
+            _union_into(target, srcs)
     return survivors
 
 
