@@ -4,6 +4,19 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.22.1] — 2026-05-30
+
+### Fixed
+
+- **Metric-candidate noise in `evidence` / `iterate`** (#58) — the bare-integer
+  branch of the metric detector surfaced calendar dates, IP octets, ports,
+  PR/issue numbers, and long ID/phone-like digit runs as "candidate metrics".
+  The disclosure layer now keeps only impact-shaped quantities (%, multiplier,
+  magnitude k/M/B, time units, currency, CJK units) and drops bare integers —
+  a precision refinement that speeds the human-confirm step and removes the
+  privacy-adjacent long-digit runs. Not a score lever; no auto-surfacing (#51
+  unchanged).
+
 ## [0.22.0] — 2026-05-30
 
 ### Added
