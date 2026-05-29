@@ -147,3 +147,45 @@ def test_reconcile_name_hint_from_remote_when_all_leaves_bad():
     prov = _reconcile_local_projects(acts)
     rep = acts[0].project
     assert prov[rep]["name_hint"] == "foo"            # derived from remote basename
+
+
+from vibe_resume.core.aggregator import _agentic_signals, _mcp_server
+
+
+def test_mcp_server_extraction():
+    assert _mcp_server("mcp__browser__click") == "browser"
+    assert _mcp_server("mcp__db__query") == "db"
+    assert _mcp_server("Edit") is None
+    assert _mcp_server("mcp__only") is None
+
+
+def _act_sig(files=None, tool_hist=None, keywords=None, skills_used=None):
+    extra = {}
+    if tool_hist is not None:
+        extra["tool_histogram"] = tool_hist
+    if skills_used is not None:
+        extra["skills_used"] = skills_used
+    return Activity(source=Source.CLAUDE_CODE, session_id="s",
+                    timestamp_start="2026-01-01T00:00:00+00:00",
+                    files_touched=files or [], keywords=keywords or [], extra=extra)
+
+
+def test_agentic_signals_authored_published_and_mcp_used():
+    acts = [_act_sig(files=["skills/foo/SKILL.md", ".claude-plugin/plugin.json"],
+                     tool_hist={"mcp__browser__click": 3, "mcp__db__query": 1, "Edit": 5})]
+    sig = _agentic_signals(acts, "myrepo")
+    assert sig.skills_authored == ["foo"]
+    assert sig.skills_published is True
+    assert sig.mcp_servers_used == ["browser", "db"]
+
+
+def test_agentic_signals_skills_used_union_and_mcp_authored():
+    acts = [_act_sig(skills_used=["a"]),
+            _act_sig(skills_used=["b", "a"], files=["src/foo_mcp_server.py"])]
+    sig = _agentic_signals(acts, "r")
+    assert sig.skills_used == ["a", "b"]
+    assert sig.mcp_authored is True
+
+
+def test_agentic_signals_none_when_empty():
+    assert _agentic_signals([_act_sig(files=["src/main.py"])], "r") is None

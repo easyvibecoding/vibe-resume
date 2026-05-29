@@ -14,7 +14,7 @@ from rich.console import Console
 from vibe_resume.core.classifier import capability_breadth, tally_categories
 from vibe_resume.core.paths import user_root
 from vibe_resume.core.privacy import PrivacyFilter
-from vibe_resume.core.schema import Activity, ProjectGroup, Source
+from vibe_resume.core.schema import Activity, AgenticSignals, ProjectGroup, Source
 from vibe_resume.core.tech_canonical import canonical_list
 from vibe_resume.extractors.base import load_activities
 
@@ -369,6 +369,59 @@ def _reconcile_local_projects(acts: list[Activity]) -> dict[str, dict[str, Any]]
     return prov
 
 
+_MCP_SERVER_FILE_RE = re.compile(r"mcp[_-]?server.*\.py$")
+_PLUGIN_MANIFESTS = (".claude-plugin/plugin.json", ".codex-plugin/plugin.json",
+                     ".claude-plugin/marketplace.json")
+
+
+def _mcp_server(tool_name: str) -> str | None:
+    """`mcp__<server>__<tool>` → `<server>`; non-MCP tool names → None."""
+    if not tool_name.startswith("mcp__"):
+        return None
+    parts = tool_name.split("__")
+    return parts[1] if len(parts) >= 3 and parts[1] else None
+
+
+def _agentic_signals(acts: list[Activity], group_name: str) -> AgenticSignals | None:
+    """Derive Agent Skills / MCP competency signals from a group's activities.
+    Authoring from files_touched; usage from skills_used + tool_histogram/keywords."""
+    authored: list[str] = []
+    published = False
+    mcp_authored = False
+    used: set[str] = set()
+    servers: set[str] = set()
+    for a in acts:
+        for f in a.files_touched or []:
+            fl = f.lower()
+            if fl.endswith("/skill.md") or fl == "skill.md":
+                parts = f.rstrip("/").split("/")
+                name = parts[-2] if len(parts) >= 2 else group_name
+                if name and name not in authored:
+                    authored.append(name)
+            m = re.search(r"(?:^|/)skills/([^/]+)/", f)
+            if m and m.group(1) not in authored:
+                authored.append(m.group(1))
+            if any(mf in fl for mf in _PLUGIN_MANIFESTS):
+                published = True
+            if "fastmcp" in fl or _MCP_SERVER_FILE_RE.search(fl):
+                mcp_authored = True
+        used.update((a.extra or {}).get("skills_used") or [])
+        names = list((a.extra or {}).get("tool_histogram") or {}) + list(a.keywords or [])
+        for nm in names:
+            srv = _mcp_server(nm)
+            if srv:
+                servers.add(srv)
+    if not (authored or published or used or servers or mcp_authored):
+        return None
+    return AgenticSignals(
+        skills_authored=authored,
+        skills_published=published,
+        skills_used=sorted(used),
+        mcp_servers_used=sorted(servers),
+        mcp_authored=mcp_authored,
+    )
+
+
 def aggregate_from_cache(cfg: dict[str, Any], cache_dir: Path) -> list[ProjectGroup]:
     pf = PrivacyFilter(cfg)
     all_acts: list[Activity] = []
@@ -440,6 +493,7 @@ def aggregate_from_cache(cfg: dict[str, Any], cache_dir: Path) -> list[ProjectGr
             canonical_key=prov.get("canonical_key"),
             merged_from=prov.get("merged_from", []),
             merge_evidence=prov.get("evidence"),
+            agentic_signals=_agentic_signals(acts, display_name),
         )
         groups.append(grp)
 
