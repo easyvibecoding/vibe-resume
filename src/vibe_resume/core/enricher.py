@@ -417,12 +417,15 @@ def _build_prompt(
     return body
 
 
-def _call_claude(prompt: str, timeout: int = 180) -> str | None:
+def _call_claude(prompt: str, timeout: int = 180, model: str | None = None) -> str | None:
     if not shutil.which("claude"):
         return None
+    cmd = ["claude", "-p", prompt, "--output-format", "text"]
+    if model:
+        cmd += ["--model", model]
     try:
         r = subprocess.run(
-            ["claude", "-p", prompt, "--output-format", "text"],
+            cmd,
             capture_output=True,
             text=True,
             timeout=timeout,
@@ -817,6 +820,12 @@ def _enrich_with_subprocess(
     locale_meta = get_locale(locale or cfg.get("render", {}).get("locale"))
     console.print(f"[dim]enriching in locale={locale_meta['_key']} style={locale_meta['style']}[/dim]")
 
+    # #60: subagent fan-out runs on a quota-isolated tier (default Sonnet), not
+    # the orchestrator's own pool — protects the primary session's budget.
+    from vibe_resume.core.agents import resolve_subagent_model
+    sub_model = resolve_subagent_model(cfg, command="enrich")
+    console.print(f"[dim]subprocess model tier: {sub_model}[/dim]")
+
     tailor_keywords: list[str] | None = None
     if tailor:
         from vibe_resume.core.review import parse_jd_keywords
@@ -893,7 +902,8 @@ def _enrich_with_subprocess(
                     max_activities=input_activities,
                     char_budget=input_char_budget,
                     emphasis=emphasis,
-                )
+                ),
+                model=sub_model,
             )
             parsed = _parse_yaml(out) if out else None
         else:

@@ -179,6 +179,13 @@ research:
   # surface a refresh hint once that cache ages past the built-in 180-day threshold.
   enabled: false
 
+# Subagent model tier for tool-spawned fan-outs (#60). Default sonnet — a
+# quota-isolated, capable sub-tier so an Opus orchestrator's budget isn't
+# exhausted by a large scan/enrich fan-out. Per-command override via
+# `scan.subagent_model` / `enrich.subagent_model`, or the --subagent-model flag.
+agents:
+  subagent_model: "sonnet"   # opus | sonnet | haiku (haiku only when explicitly chosen)
+
 enrich:
   mode: "claude-code-agent"
   batch_size: 20
