@@ -13,7 +13,7 @@ def fake_render(tmp_path, monkeypatch):
     from vibe_resume.render import renderer
     monkeypatch.setattr(renderer, "_history_path", lambda cfg: tmp_path)
     # Patch _render_md so we don't depend on profile/groups disk state
-    def _fake_md(cfg, tailor, locale=None, persona=None, top_n=None):
+    def _fake_md(cfg, tailor, locale=None, persona=None, top_n=None, max_pages=None):
         locale_key = locale or "en_US"
         return ("# fake\n", {"locale": {"_key": locale_key}, "_tpl_name": "fake.j2",
                               "profile": {}, "groups": []})
@@ -53,7 +53,7 @@ def test_render_all_locales_with_persona_list_expands_matrix(tmp_path, monkeypat
 
     monkeypatch.setattr(renderer, "_history_path", lambda cfg: tmp_path)
 
-    def _fake_md(cfg, tailor, locale=None, persona=None, top_n=None):
+    def _fake_md(cfg, tailor, locale=None, persona=None, top_n=None, max_pages=None):
         return (
             "# fake\n",
             {
@@ -95,7 +95,7 @@ def test_render_all_locales_with_persona_list_expands_matrix(tmp_path, monkeypat
 def test_render_warns_on_empty_profile_summary(tmp_path, monkeypatch, capsys):
     from vibe_resume.render import renderer
     monkeypatch.setattr(renderer, "_history_path", lambda cfg: tmp_path)
-    def _fake_md(cfg, tailor, locale=None, persona=None, top_n=None):
+    def _fake_md(cfg, tailor, locale=None, persona=None, top_n=None, max_pages=None):
         return ("# fake\n", {
             "locale": {"_key": "en_US"}, "_tpl_name": "fake.j2",
             "profile": {"summary": ""},
@@ -110,7 +110,7 @@ def test_render_warns_on_empty_profile_summary(tmp_path, monkeypatch, capsys):
 def test_render_no_warning_when_summary_present(tmp_path, monkeypatch, capsys):
     from vibe_resume.render import renderer
     monkeypatch.setattr(renderer, "_history_path", lambda cfg: tmp_path)
-    def _fake_md(cfg, tailor, locale=None, persona=None, top_n=None):
+    def _fake_md(cfg, tailor, locale=None, persona=None, top_n=None, max_pages=None):
         return ("# fake\n", {
             "locale": {"_key": "en_US"}, "_tpl_name": "fake.j2",
             "profile": {"summary": "Senior FS engineer"},
@@ -140,7 +140,7 @@ def test_render_draft_multi_format_single_version(tmp_path, monkeypatch):
     monkeypatch.setattr(renderer, "_history_path", lambda cfg: tmp_path)
     monkeypatch.setattr(renderer, "snapshot", lambda *a, **k: None)
 
-    def _fake_md(cfg, tailor, locale=None, persona=None, top_n=None):
+    def _fake_md(cfg, tailor, locale=None, persona=None, top_n=None, max_pages=None):
         return ("# fake\n", {
             "locale": {"_key": "en_US"},
             "_tpl_name": "f.j2",
@@ -172,7 +172,7 @@ def test_render_draft_all_string_still_works(tmp_path, monkeypatch):
     monkeypatch.setattr(renderer, "_history_path", lambda cfg: tmp_path)
     monkeypatch.setattr(renderer, "snapshot", lambda *a, **k: None)
 
-    def _fake_md(cfg, tailor, locale=None, persona=None, top_n=None):
+    def _fake_md(cfg, tailor, locale=None, persona=None, top_n=None, max_pages=None):
         return ("# fake\n", {
             "locale": {"_key": "en_US"},
             "_tpl_name": "f.j2",
@@ -200,7 +200,7 @@ def test_top_n_threaded_into_context(tmp_path, monkeypatch):
     monkeypatch.setattr(renderer, "_history_path", lambda cfg: tmp_path)
     monkeypatch.setattr(renderer, "snapshot", lambda *a, **k: None)
 
-    def spy(cfg, tailor, locale=None, persona=None, top_n=None):
+    def spy(cfg, tailor, locale=None, persona=None, top_n=None, max_pages=None):
         captured["top_n"] = top_n
         return ("# x\n", {"locale": {"_key": "en_US"}, "_tpl_name": "f.j2",
                            "profile": {"summary": "s"}, "groups": [], "top_n": top_n or 6})

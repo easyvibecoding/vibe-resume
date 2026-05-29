@@ -443,6 +443,21 @@ def _check_contact_line(md: str) -> Score:
     return Score("Contact line width", 2, 10, [f"{width} display-width chars — reviewer sees broken/crowded header; split into 2 lines or drop URLs"])
 
 
+def estimate_pages(md: str) -> float:
+    """Approximate rendered page count from non-blank lines + wrap width.
+
+    ~45 effective non-blank lines per US-Letter/A4 page at 11pt/1in margins; a
+    wrapped line (~95 display cols, CJK counted double) adds another visual line.
+    Shared by the page-count review check and the render page-budget fitter (#52)."""
+    eff = 0.0
+    for ln in md.splitlines():
+        if not ln.strip():
+            continue
+        width = sum(2 if ord(c) > 0x2E7F else 1 for c in ln)
+        eff += max(1.0, width / 95)
+    return eff / 45.0
+
+
 def _check_page_estimate(md: str, locale_meta: dict[str, Any]) -> Score:
     """Approximate page count from non-blank line + char totals.
 
@@ -451,17 +466,8 @@ def _check_page_estimate(md: str, locale_meta: dict[str, Any]) -> Score:
     paragraphs. CJK pages fit slightly fewer characters; we still use line
     count because heading + bullet density dominates.
     """
-    nonblank = [ln for ln in md.splitlines() if ln.strip()]
-    # rough effective-line equivalent: a wrapped paragraph counts as 2.
-    eff = 0.0
-    for ln in nonblank:
-        # crude wrap estimate: every ~95 chars adds another visual line
-        width = sum(2 if ord(c) > 0x2E7F else 1 for c in ln)
-        eff += max(1.0, width / 95)
-    pages = eff / 45.0
-
     target = _LOCALE_PAGE_TARGETS.get(locale_meta.get("_key"), DEFAULT_PAGE_TARGET)
-    pages_est = pages
+    pages_est = estimate_pages(md)
     if pages_est <= target:
         pts = 10
     elif pages_est <= target + 0.2:

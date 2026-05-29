@@ -166,7 +166,7 @@ def _sort_groups(groups, emphasis):
     return sorted(groups, key=lambda g: _rank_score(g) + rank_delta(g.name, emphasis), reverse=True)
 
 
-def _render_md(cfg: dict[str, Any], tailor: str | None, locale: str | None = None, persona: str | None = None, top_n: int | None = None) -> tuple[str, dict]:
+def _render_md(cfg: dict[str, Any], tailor: str | None, locale: str | None = None, persona: str | None = None, top_n: int | None = None, max_pages: float | None = None) -> tuple[str, dict]:
     tpl_cfg = cfg.get("render", {}).get("templates_dir")
     bundled = Path(__file__).parent / "templates"
     if tpl_cfg:
@@ -261,7 +261,38 @@ def _render_md(cfg: dict[str, Any], tailor: str | None, locale: str | None = Non
     tpl_name = _pick_template(env, locale_meta["_key"])
     tpl = env.get_template(tpl_name)
     ctx["_tpl_name"] = tpl_name
+    budget = max_pages if max_pages is not None else cfg.get("render", {}).get("page_budget")
+    if budget:
+        return _fit_to_page_budget(tpl, ctx, locale_meta, float(budget)), ctx
     return tpl.render(**ctx), ctx
+
+
+def _fit_to_page_budget(tpl, ctx: dict, locale_meta: dict, budget: float, floor: int = 2) -> str:
+    """Greedily tighten *bullet density* to hit a page budget (#52).
+
+    Caps achievements-per-group (highest-signal first — enrich already orders
+    them best-first), never below `floor`, re-rendering until the estimated page
+    count fits or the floor is reached. Alignment guardrail (P1.4): this only
+    *drops the least-representative bullets*; it never pads, over-claims what
+    remains, or removes a true caveat to strengthen a bullet."""
+    from vibe_resume.core.review import estimate_pages
+
+    groups = ctx["groups"]
+    full = [list(g.get("achievements") or []) for g in groups]
+    longest = max((len(a) for a in full), default=0)
+    md = tpl.render(**ctx)
+    if longest <= floor or estimate_pages(md) <= budget:
+        return md
+    for cap in range(longest - 1, floor - 1, -1):
+        for g, orig in zip(groups, full):
+            g["achievements"] = orig[:cap]
+        md = tpl.render(**ctx)
+        if estimate_pages(md) <= budget:
+            return md
+    # floor reached and still over budget — keep the floored version (honest:
+    # the ceiling is real content, not something to pad away). Caller/review
+    # will surface the residual page-count.
+    return md
 
 
 def _hide_table_borders(table) -> None:
@@ -445,11 +476,12 @@ def render_draft(
     locale: str | None = None,
     persona: str | None = None,
     top_n: int | None = None,
+    max_pages: float | None = None,
 ) -> None:
     hist = _history_path(cfg)
     version = _next_version(hist)
 
-    md_text, ctx = _render_md(cfg, tailor, locale=locale, persona=persona, top_n=top_n)
+    md_text, ctx = _render_md(cfg, tailor, locale=locale, persona=persona, top_n=top_n, max_pages=max_pages)
     if not (ctx.get("profile", {}).get("summary") or "").strip():
         console.print(
             "[yellow]⚠ profile.summary is empty — Top fold check will score ≤6/10. "

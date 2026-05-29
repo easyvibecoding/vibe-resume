@@ -376,6 +376,9 @@ def enrich(
 )
 @click.option("--no-emphasis", "no_emphasis", is_flag=True, default=False,
               help="Ignore _emphasis.yaml for this run")
+@click.option("--max-pages", "max_pages", type=float, default=None,
+              help="Page budget: tighten bullet density (achievements/group) to fit, "
+                   "not only project count. Composes with --top-n. (config.render.page_budget)")
 @click.pass_context
 def render(
     ctx: click.Context,
@@ -386,6 +389,7 @@ def render(
     persona: str | None,
     top_n: int | None,
     no_emphasis: bool,
+    max_pages: float | None,
 ) -> None:
     """Render resume draft to selected format and snapshot a version."""
     from vibe_resume.core.personas import PERSONAS, list_persona_keys
@@ -422,7 +426,7 @@ def render(
             if p_key:
                 console.print(f"\n[bold magenta]── persona: {p_key} ──[/bold magenta]")
             for f in formats:
-                run_render(cfg, fmt=f, tailor=tailor, locale=locale_key, persona=p_key, top_n=top_n)
+                run_render(cfg, fmt=f, tailor=tailor, locale=locale_key, persona=p_key, top_n=top_n, max_pages=max_pages)
 
     if all_locales:
         # If the user didn't pass --format, fan out over the configured list

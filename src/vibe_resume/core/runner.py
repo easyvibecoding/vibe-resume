@@ -196,7 +196,8 @@ def run_render(
     locale: str | None = None,
     persona: str | None = None,
     top_n: int | None = None,
+    max_pages: float | None = None,
 ) -> None:
     from vibe_resume.render.renderer import render_draft
 
-    render_draft(cfg, fmt=fmt, tailor=tailor, locale=locale, persona=persona, top_n=top_n)
+    render_draft(cfg, fmt=fmt, tailor=tailor, locale=locale, persona=persona, top_n=top_n, max_pages=max_pages)
