@@ -171,6 +171,14 @@ curate:
 # dated copy at data/cache/market_rubric.yaml (the #46 `research` pass writes
 # this); the loader prefers it and warns when it's >180 days stale.
 
+research:
+  # Opt-in market-refresh (#46). `vibe-resume research` works regardless of this
+  # flag — it documents that the pass does network + LLM work in your Claude Code
+  # session (web search + adversarial verify) and writes a cited, dated
+  # data/cache/market_rubric.yaml that enrich + review then consume. enrich/review
+  # surface a refresh hint once that cache ages past the built-in 180-day threshold.
+  enabled: false
+
 enrich:
   mode: "claude-code-agent"
   batch_size: 20

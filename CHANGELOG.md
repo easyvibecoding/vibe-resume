@@ -4,6 +4,30 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.0] — 2026-05-29
+
+### Added
+
+- **Research / market-refresh pass** (`vibe-resume research`, #46) — an opt-in
+  step that keeps the AI-proficiency rubric (#47) current with the AI-hiring
+  market without ever fabricating numbers. It mirrors the proven enrich
+  emit → session-processes → ingest flow:
+  - `vibe-resume research` writes a cited-research prompt (`data/research/
+    research.prompt.md`) that fans out across recruiter criteria, senior-vs-junior
+    signals, ATS keyword sets, credible metric *ranges*, and current yellow-flag
+    anti-patterns — and **adversarially verifies** each claim, killing ungrounded
+    hype that lacks a citation.
+  - `vibe-resume research --ingest` strictly validates the session's result and
+    installs `data/cache/market_rubric.yaml` (the #47 loader override). **A rubric
+    with no `sources` is rejected** — no un-sourced framing is ever installed; a
+    bad-regex yellow-flag is dropped with a warning rather than aborting.
+  - `vibe-resume research --status` shows the active rubric date + staleness.
+- **Staleness surfacing** — `enrich` (emit) prints a refresh hint and `review`
+  appends one to the AI-proficiency check once the active rubric ages past the
+  180-day threshold. Informational only — no score impact.
+- **Hard constraint preserved** — the research prompt forbids writing metric
+  *values* into bullets; ranges are for sanity-checking / flagging only.
+
 ## [0.15.0] — 2026-05-29
 
 ### Added
