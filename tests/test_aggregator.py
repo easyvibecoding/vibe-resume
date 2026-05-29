@@ -188,3 +188,30 @@ def test_agentic_signals_skills_used_union_and_mcp_authored():
 
 def test_agentic_signals_none_when_empty():
     assert _agentic_signals([_act_sig(files=["src/main.py"])], "r") is None
+
+
+def _act_blob(summary="", files=None):
+    return Activity(source=Source.CLAUDE_CODE, session_id="s",
+                    timestamp_start="2026-01-01T00:00:00+00:00",
+                    summary=summary, files_touched=files or [], extra={})
+
+
+def test_agentic_signals_sdd_from_keyword_and_artifact():
+    assert _agentic_signals([_act_blob(summary="drove this with OpenSpec")], "r").sdd is True
+    assert _agentic_signals([_act_blob(files=["specs/auth/spec.md"])], "r").sdd is True
+    assert _agentic_signals([_act_blob(summary="規格驅動")], "r").sdd is True
+
+
+def test_agentic_signals_tdd_from_keyword():
+    assert _agentic_signals([_act_blob(summary="strict test-driven, failing test first")], "r").tdd is True
+    assert _agentic_signals([_act_blob(summary="red-green-refactor loop")], "r").tdd is True
+
+
+def test_agentic_signals_sdd_tdd_false_for_plain_group():
+    sig = _agentic_signals([_act_blob(summary="added a fastapi endpoint", files=["src/api.py"])], "r")
+    assert sig is None   # no agentic signal at all → None
+
+
+def test_agentic_signals_only_sdd_still_builds():
+    sig = _agentic_signals([_act_blob(summary="openspec planning")], "r")
+    assert sig is not None and sig.sdd is True and sig.tdd is False

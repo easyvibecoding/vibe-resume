@@ -372,6 +372,10 @@ def _reconcile_local_projects(acts: list[Activity]) -> dict[str, dict[str, Any]]
 _MCP_SERVER_FILE_RE = re.compile(r"mcp[_-]?server.*\.py$")
 _PLUGIN_MANIFESTS = (".claude-plugin/plugin.json", ".codex-plugin/plugin.json",
                      ".claude-plugin/marketplace.json")
+_SDD_RE = re.compile(r"openspec|spec[-_ ]?kit|spec-driven|規格驅動")
+_TDD_RE = re.compile(r"test-driven|\btdd\b|red[-/ ]green|failing\s+test")
+_SPECKIT_ARTIFACTS = {"spec.md", "plan.md", "tasks.md", "data-model.md", "constitution.md"}
+_SPECS_TREE_RE = re.compile(r"(?:^|/)specs/[^/]+/")
 
 
 def _mcp_server(tool_name: str) -> str | None:
@@ -388,9 +392,17 @@ def _agentic_signals(acts: list[Activity], group_name: str) -> AgenticSignals | 
     authored: list[str] = []
     published = False
     mcp_authored = False
+    sdd = False
+    tdd = False
     used: set[str] = set()
     servers: set[str] = set()
     for a in acts:
+        blob = " ".join([a.summary or "", " ".join(a.keywords or []),
+                         " ".join(a.files_touched or [])]).lower()
+        if _SDD_RE.search(blob):
+            sdd = True
+        if _TDD_RE.search(blob):
+            tdd = True
         for f in a.files_touched or []:
             fl = f.lower()
             if fl.endswith("/skill.md") or fl == "skill.md":
@@ -405,13 +417,16 @@ def _agentic_signals(acts: list[Activity], group_name: str) -> AgenticSignals | 
                 published = True
             if "fastmcp" in fl or _MCP_SERVER_FILE_RE.search(fl):
                 mcp_authored = True
+            base = f.rstrip("/").split("/")[-1].lower()
+            if base in _SPECKIT_ARTIFACTS or _SPECS_TREE_RE.search(f):
+                sdd = True
         used.update((a.extra or {}).get("skills_used") or [])
         names = list((a.extra or {}).get("tool_histogram") or {}) + list(a.keywords or [])
         for nm in names:
             srv = _mcp_server(nm)
             if srv:
                 servers.add(srv)
-    if not (authored or published or used or servers or mcp_authored):
+    if not (authored or published or used or servers or mcp_authored or sdd or tdd):
         return None
     return AgenticSignals(
         skills_authored=authored,
@@ -419,6 +434,8 @@ def _agentic_signals(acts: list[Activity], group_name: str) -> AgenticSignals | 
         skills_used=sorted(used),
         mcp_servers_used=sorted(servers),
         mcp_authored=mcp_authored,
+        sdd=sdd,
+        tdd=tdd,
     )
 
 
