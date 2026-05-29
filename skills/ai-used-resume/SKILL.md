@@ -65,6 +65,10 @@ Invoke this skill whenever the user wants to **turn their AI-tool usage history 
 | Score latest | `uv run vibe-resume review` |
 | Score with JD echo | `uv run vibe-resume review --jd data/imports/jd.txt` |
 | Score with persona lens | `uv run vibe-resume review --persona hr` — appends persona-specific review tips |
+| **Disclose real signals (self-mine)** | `uv run vibe-resume evidence --json` — per group: candidate metrics, backed terms, human-gate evidence, provenance. `--jd <file>` adds present-but-omitted vs genuinely-absent keywords. **Surface only what's disclosed — never invent.** |
+| **Fit a page budget** | `uv run vibe-resume render --max-pages 2 --locale en_US` — tighten bullet density, not just `--top-n` |
+| **Standard variant set** | `uv run vibe-resume render --variants --locale en_US` — ATS (page-budgeted) + detailed, same cache |
+| **Truth-preserving auto-iterate** | `uv run vibe-resume iterate --locale en_US` — lift the grade via truthful levers, stop honestly at the ceiling, print human-applied suggestions (dry-run; `--write` to snapshot) |
 | Per-locale trend | `uv run vibe-resume trend --locale zh_TW` |
 
 | Locale quick map | |
@@ -184,6 +188,19 @@ Invoke this skill whenever the user wants to **turn their AI-tool usage history 
    ```
 
    Bar is grade **B / 80%** before sending a draft to a real reviewer.
+
+7. **Self-mine the real signals, then iterate truthfully.** Don't guess what to
+   strengthen — disclose it:
+   ```bash
+   uv run vibe-resume evidence --jd data/imports/jd.txt   # what's REALLY there
+   uv run vibe-resume iterate --locale en_US              # truth-preserving lift, stops honestly
+   ```
+   `evidence` discloses, per group, the candidate metrics, backed terms,
+   human-gate evidence, and provenance the tool can actually see — so you (the
+   agent) surface only disclosed signals and never invent. `iterate` tightens the
+   page budget to lift the grade and reports the honest ceiling + human-applied
+   suggestions. **The score is a proxy: never trade truthfulness or
+   human-in-the-loop for points** — see [docs/PRINCIPLES.md](../../docs/PRINCIPLES.md).
 
 ## Pitfalls
 
