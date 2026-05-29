@@ -642,6 +642,7 @@ def test_git_repos_parses_numstat(monkeypatch: pytest.MonkeyPatch, tmp_path: Pat
         return subprocess.CompletedProcess(cmd, 0, stdout="user@example.com\n", stderr="")
 
     monkeypatch.setattr(git_repos.subprocess, "run", fake_run)
+    monkeypatch.setattr(git_repos, "git_identity", lambda *a, **k: (None, None))
 
     cfg = {
         "scan": {"mode": "whitelist", "roots": [str(tmp_path / "work")], "exclude_globs": []},
@@ -656,6 +657,31 @@ def test_git_repos_parses_numstat(monkeypatch: pytest.MonkeyPatch, tmp_path: Pat
     assert a.extra["insertions"] == 14
     assert a.extra["deletions"] == 3
     assert "feat: add auth" in a.extra["subjects"]
+
+
+def test_git_repos_captures_remote_and_toplevel(monkeypatch, tmp_path):
+    from vibe_resume.extractors.local import git_repos
+
+    repo = tmp_path / "work" / "demo"
+    (repo / ".git").mkdir(parents=True)
+
+    def fake_run(cmd, **_kw):
+        if "log" in cmd:
+            return subprocess.CompletedProcess(cmd, 0, stdout=_FAKE_LOG, stderr="")
+        return subprocess.CompletedProcess(cmd, 0, stdout="user@example.com\n", stderr="")
+
+    monkeypatch.setattr(git_repos.subprocess, "run", fake_run)
+    monkeypatch.setattr(
+        git_repos, "git_identity",
+        lambda path, cache=None: ("github.com/acme/demo", str(repo)),
+    )
+    cfg = {
+        "scan": {"mode": "whitelist", "roots": [str(tmp_path / "work")], "exclude_globs": []},
+        "extractors": {"git_repos": {"author_emails": ["user@example.com"]}},
+    }
+    acts = git_repos.extract(cfg)
+    assert acts[0].extra["git_remote"] == "github.com/acme/demo"
+    assert acts[0].extra["git_toplevel"] == str(repo)
 
 
 def test_git_log_parses_body_and_files(monkeypatch):

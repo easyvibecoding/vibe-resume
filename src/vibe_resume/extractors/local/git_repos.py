@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, NamedTuple
 
 from vibe_resume.core.schema import Activity, ActivityType, Source
+from vibe_resume.extractors.base import git_identity
 
 NAME = "git_repos"
 
@@ -152,10 +153,12 @@ def extract(cfg: dict[str, Any]) -> list[Activity]:
     repos = _find_repos(roots, excludes)
 
     activities: list[Activity] = []
+    git_cache: dict = {}
     for repo in repos:
         commits = _git_log(repo, emails)
         if not commits:
             continue
+        remote, toplevel = git_identity(repo, git_cache)
         # bucket by year-month
         buckets: dict[str, list[Commit]] = defaultdict(list)
         for c in commits:
@@ -180,6 +183,17 @@ def extract(cfg: dict[str, Any]) -> list[Activity]:
             summary = " | ".join(s[:80] for s in subjects[:3])
             if bodies:
                 summary = f"{summary} ‖ {bodies[0].replace(chr(10), ' ')}"
+            extra = {
+                "commits": len(items),
+                "insertions": ins,
+                "deletions": dels,
+                "subjects": subjects,
+                "commit_bodies": [b[:_BODY_EXCERPT] for b in bodies],
+            }
+            if remote:
+                extra["git_remote"] = remote
+            if toplevel:
+                extra["git_toplevel"] = toplevel
             activities.append(
                 Activity(
                     source=Source.GIT,
@@ -193,13 +207,7 @@ def extract(cfg: dict[str, Any]) -> list[Activity]:
                     summary=summary[:_SUMMARY_MAX],
                     files_touched=files,
                     raw_ref=f"{repo}@{ym}",
-                    extra={
-                        "commits": len(items),
-                        "insertions": ins,
-                        "deletions": dels,
-                        "subjects": subjects,
-                        "commit_bodies": [b[:_BODY_EXCERPT] for b in bodies],
-                    },
+                    extra=extra,
                 )
             )
     return activities
