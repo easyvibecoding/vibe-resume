@@ -8,11 +8,20 @@ single bad line to lose the rest of the session.
 """
 from __future__ import annotations
 
+import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
 
+import pytest
+
 from vibe_resume.core.schema import Activity, ActivityType, Source
-from vibe_resume.extractors.base import iter_jsonl, load_activities, save_activities
+from vibe_resume.extractors.base import (
+    _normalize_remote,
+    git_identity,
+    iter_jsonl,
+    load_activities,
+    save_activities,
+)
 
 # ─────────────────────── iter_jsonl ───────────────────────────────────────
 
@@ -129,3 +138,69 @@ def test_save_empty_list_produces_empty_array(tmp_path: Path) -> None:
     out = tmp_path / "empty.json"
     save_activities([], out)
     assert load_activities(out) == []
+
+
+# ─────────────────────── git_identity ─────────────────────────────────────
+
+
+@pytest.mark.parametrize("url,expected", [
+    ("https://github.com/Acme/Project-A.git", "github.com/acme/project-a"),
+    ("https://github.com/acme/project-a", "github.com/acme/project-a"),
+    ("git@github.com:Acme/Project-A.git", "github.com/acme/project-a"),
+    ("ssh://git@github.com/acme/project-a.git", "github.com/acme/project-a"),
+    ("https://github.com/acme/project-a/", "github.com/acme/project-a"),
+])
+def test_normalize_remote(url, expected):
+    assert _normalize_remote(url) == expected
+
+
+def _git_dispatch(monkeypatch, *, toplevel="/repo/foo", toplevel_rc=0,
+                  remote="git@github.com:acme/foo.git", remote_rc=0):
+    import vibe_resume.extractors.base as base
+    calls = {"n": 0}
+
+    def run(cmd, **kw):
+        calls["n"] += 1
+        if "rev-parse" in cmd:
+            return subprocess.CompletedProcess(
+                cmd, toplevel_rc, stdout=(toplevel + "\n") if toplevel_rc == 0 else "", stderr="")
+        if "remote" in cmd:
+            return subprocess.CompletedProcess(
+                cmd, remote_rc, stdout=(remote + "\n") if remote_rc == 0 else "", stderr="")
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(base.subprocess, "run", run)
+    return calls
+
+
+def test_git_identity_remote_and_toplevel(tmp_path, monkeypatch):
+    _git_dispatch(monkeypatch, toplevel=str(tmp_path), remote="git@github.com:acme/foo.git")
+    remote, toplevel = git_identity(tmp_path)
+    assert remote == "github.com/acme/foo"
+    assert toplevel == str(tmp_path)
+
+
+def test_git_identity_worktree_without_remote(tmp_path, monkeypatch):
+    _git_dispatch(monkeypatch, toplevel=str(tmp_path), remote_rc=1)
+    remote, toplevel = git_identity(tmp_path)
+    assert remote is None
+    assert toplevel == str(tmp_path)
+
+
+def test_git_identity_non_worktree(tmp_path, monkeypatch):
+    _git_dispatch(monkeypatch, toplevel_rc=128)
+    assert git_identity(tmp_path) == (None, None)
+
+
+def test_git_identity_nonexistent_path_skips_subprocess(monkeypatch):
+    calls = _git_dispatch(monkeypatch)
+    assert git_identity("/no/such/path/xyz") == (None, None)
+    assert calls["n"] == 0   # guard short-circuits before any git call
+
+
+def test_git_identity_memoizes_per_path(tmp_path, monkeypatch):
+    calls = _git_dispatch(monkeypatch, toplevel=str(tmp_path))
+    cache = {}
+    git_identity(tmp_path, cache)
+    git_identity(tmp_path, cache)
+    assert calls["n"] == 2   # one rev-parse + one remote, NOT four
