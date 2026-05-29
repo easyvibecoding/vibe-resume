@@ -316,6 +316,12 @@ def _build_prompt(
                 f"integrated {len(sig.mcp_servers_used)} MCP servers: {', '.join(sig.mcp_servers_used)}")
         if sig.mcp_authored:
             sig_lines.append("authored an MCP server")
+        if sig.sdd:
+            sig_lines.append(
+                "drove spec-driven development (OpenSpec / Spec-Kit): "
+                "spec → plan → tasks → implementation")
+        if sig.tdd:
+            sig_lines.append("practices test-driven development (failing test first)")
         if sig_lines:
             body += AGENTIC_SIGNALS_BLOCK.format(lines="\n".join(f"- {x}" for x in sig_lines))
     if emphasis is not None and (emphasis.intent or emphasis.keywords or emphasis.bias_instruction):

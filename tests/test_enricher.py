@@ -183,3 +183,13 @@ def test_build_prompt_includes_agentic_signals_block():
 
 def test_build_prompt_no_agentic_block_when_absent():
     assert "AGENTIC SIGNALS" not in _build_prompt(_many_act_group(3))
+
+
+def test_build_prompt_agentic_block_includes_sdd_tdd():
+    from vibe_resume.core.schema import AgenticSignals
+    g = _many_act_group(3)
+    g.agentic_signals = AgenticSignals(sdd=True, tdd=True)
+    p = _build_prompt(g)
+    assert "AGENTIC SIGNALS" in p
+    assert "spec-driven development" in p
+    assert "test-driven development" in p
