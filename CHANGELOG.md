@@ -4,6 +4,18 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.0] — 2026-05-30
+
+### Changed
+
+- **Agentic persona bakes in the human-gate pairing** (#56) — the `agentic`
+  persona's enrich directive now leads/closes an AI bullet with the real
+  human-verification step (locale-appropriate phrasing) by default, lifting the
+  AI-proficiency signal (#47) without a manual prompt — **but only when the
+  activity actually shows the candidate reviewed/verified/audited the output.**
+  Never boilerplate-inserted to pass the checker; if there's no real gate, the
+  bullet doesn't claim one and a lower score is the honest outcome (P1.2).
+
 ## [0.19.0] — 2026-05-30
 
 ### Added
