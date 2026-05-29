@@ -21,6 +21,7 @@ from vibe_resume.extractors.base import (
     iter_jsonl,
     load_activities,
     save_activities,
+    skill_uses_in,
 )
 
 # ─────────────────────── iter_jsonl ───────────────────────────────────────
@@ -204,3 +205,14 @@ def test_git_identity_memoizes_per_path(tmp_path, monkeypatch):
     git_identity(tmp_path, cache)
     git_identity(tmp_path, cache)
     assert calls["n"] == 2   # one rev-parse + one remote, NOT four
+
+
+def test_skill_uses_in_extracts_basenames():
+    text = ("Base directory for this skill: /Users/me/.claude/skills/foo\n"
+            "...\nBase directory for this skill: /x/y/bar/\n")
+    assert skill_uses_in(text) == ["foo", "bar"]
+
+
+def test_skill_uses_in_none_when_absent():
+    assert skill_uses_in("just a normal prompt") == []
+    assert skill_uses_in("") == []

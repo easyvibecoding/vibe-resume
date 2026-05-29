@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 from collections.abc import Iterator
 from pathlib import Path
@@ -59,6 +60,15 @@ def sample_spread(items: list[str], k: int) -> list[str]:
     last = len(uniq) - 1
     idxs = sorted({round(i * last / (k - 1)) for i in range(k)})
     return [uniq[i] for i in idxs]
+
+
+_SKILL_BASE_RE = re.compile(r"Base directory for this skill:\s*(\S+)")
+
+
+def skill_uses_in(text: str) -> list[str]:
+    """Skill names (basename of the announced base dir) found in session text,
+    e.g. 'Base directory for this skill: …/skills/foo' → 'foo'."""
+    return [m.rstrip("/").split("/")[-1] for m in _SKILL_BASE_RE.findall(text or "")]
 
 
 def _normalize_remote(url: str) -> str:
