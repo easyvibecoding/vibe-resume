@@ -1,8 +1,11 @@
+import yaml as _yaml
+
 from vibe_resume.core.curate import (
     DEFAULT_NOISE_GLOBS,
     CurationEntry,
     CurationRecord,
     classify,
+    emit_curation,
 )
 from vibe_resume.core.schema import ProjectGroup
 
@@ -53,3 +56,29 @@ def test_classify_proven_different_remotes_not_flagged():
     b = _g("test", path="/b/test", canonical_key="remote:github.com/you/test", merged_from=["/b/test"])
     entries = classify([a, b], DEFAULT_NOISE_GLOBS)
     assert all(e.tier == "keep" for e in entries)   # different remotes → not needs_decision
+
+
+def test_emit_writes_yaml_and_carries_forward_human_action(tmp_path):
+    groups = [
+        _g("CRM", path="/work/CRM", sessions=10),
+        _g("CRM-copy", path="/test/CRM", sessions=3),
+    ]
+    out = tmp_path / "_curation.yaml"
+    rec = emit_curation(groups, DEFAULT_NOISE_GLOBS, out, now="2026-01-01T00:00:00Z")
+    assert out.exists()
+    e = {x.name: x for x in rec.groups}["CRM-copy"]
+    assert e.action == "merge_into"
+
+    # human edits: reject the merge (keep) and re-save
+    data = _yaml.safe_load(out.read_text())
+    for grp in data["groups"]:
+        if grp["name"] == "CRM-copy":
+            grp["action"] = "keep"
+            grp["target"] = None
+    out.write_text(_yaml.safe_dump(data))
+
+    # re-emit: prior human action (keep) must be carried forward
+    rec2 = emit_curation(groups, DEFAULT_NOISE_GLOBS, out, now="2026-01-02T00:00:00Z")
+    e2 = {x.name: x for x in rec2.groups}["CRM-copy"]
+    assert e2.action == "keep"     # human override preserved
+    assert e2.target is None

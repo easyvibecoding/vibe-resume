@@ -9,8 +9,10 @@ from __future__ import annotations
 
 import fnmatch
 from collections import defaultdict
+from pathlib import Path
 from typing import Literal
 
+import yaml
 from pydantic import BaseModel
 
 from vibe_resume.core.schema import ProjectGroup
@@ -78,3 +80,37 @@ def classify(groups: list[ProjectGroup], noise_globs: list[str]) -> list[Curatio
             merged_from=g.merged_from,
         ))
     return entries
+
+
+def _load_prior(path: Path) -> CurationRecord | None:
+    if not path.exists():
+        return None
+    try:
+        return CurationRecord(**(yaml.safe_load(path.read_text()) or {}))
+    except Exception:
+        return None
+
+
+def emit_curation(
+    groups: list[ProjectGroup],
+    noise_globs: list[str],
+    out_path: Path,
+    *,
+    now: str,
+) -> CurationRecord:
+    """Classify groups, carry forward any prior human action/target keyed by
+    canonical identity (canonical_key, else name), write `_curation.yaml`."""
+    entries = classify(groups, noise_globs)
+    prior = _load_prior(out_path)
+    if prior:
+        prior_by_id = {(p.canonical_key or p.name): p for p in prior.groups}
+        for e in entries:
+            p = prior_by_id.get(e.canonical_key or e.name)
+            if p is not None:
+                # informational fields refresh; human's action/target persists
+                e.action = p.action
+                e.target = p.target
+    record = CurationRecord(version=1, generated_at=now, groups=entries)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(yaml.safe_dump(record.model_dump(), sort_keys=False, allow_unicode=True))
+    return record
