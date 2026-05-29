@@ -1,0 +1,94 @@
+# Bundled AI-proficiency market rubric — consumed by enrich + review (#47).
+# Refresh via `vibe-resume research` (#46) to overwrite a dated, cited copy at
+# <user_root>/data/cache/market_rubric.yaml, which takes precedence over this.
+version: 1
+refreshed_at: "2026-05-29"
+source_note: >
+  Bundled baseline distilled from 2025-2026 AI-hiring research. Treat as hints,
+  not hard filters; refresh via `vibe-resume research` (#46) for a dated pull.
+sources:
+  - title: "Compound Engineering (Every)"
+    url: "https://every.to/source-code/the-compound-engineer"
+  - title: "Anthropic — Effective context engineering for AI agents"
+    url: "https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents"
+  - title: "Anthropic — Building effective agents"
+    url: "https://www.anthropic.com/engineering/building-effective-agents"
+  - title: "DORA 2025 — State of AI-assisted Software Development"
+    url: "https://dora.dev/research/2025/"
+  - title: "Jobscan — ATS résumé / keyword guidance (2026)"
+    url: "https://www.jobscan.co/blog/ats-resume/"
+
+bullet_formula: "directing verb + named tool + context/scale + measurable delta + human quality gate"
+
+# Surfaces senior framing in enrich; doubles as the AI-content gate in review.
+agentic_keywords:
+  - MCP
+  - subagent
+  - Agent Skills
+  - context engineering
+  - eval harness
+  - LLM-as-judge
+  - compound engineering
+  - model routing
+  - spec-driven
+  - test-driven
+  - orchestration
+  - prompt caching
+
+# Bare tool mentions — used by the AI-content gate + the name-drop red flag.
+ai_tool_names:
+  - Claude Code
+  - Claude
+  - Copilot
+  - Cursor
+  - GPT
+  - ChatGPT
+  - LLM
+  - AI agent
+
+# Verbs that prove the human judgment layer (positive signal in both surfaces).
+human_gate_verbs:
+  - reviewed
+  - verified
+  - validated
+  - architected
+  - audited
+  - vetted
+  - gated
+  - benchmarked
+
+# Injected into the enrich prompt as "surface when supported".
+senior_differentiators:
+  - "scoped MCP / supervisor-subagent topology"
+  - "authored Agent Skills for team quality & consistency"
+  - "subagents for context isolation"
+  - "token-cost mechanism (model routing, caching, context pruning)"
+  - "compound engineering (Plan -> Work -> Review -> Compound loop)"
+  - "owns the eval harness / LLM-as-judge"
+
+# Injected into the enrich prompt as "avoid these junior tells".
+anti_patterns:
+  - "'AI wrote it, I shipped it' with no verification"
+  - "a 2024-only stack (LangChain + Pinecone + ChatGPT API) as the headline"
+  - "raw-volume bragging ('3x more PRs')"
+  - "assuming impact instead of measuring it"
+  - "unverified LLM-as-judge claims"
+
+# Regex-driven review red-flag detections.
+yellow_flag_patterns:
+  - kind: stale_stack
+    pattern: "(?i)\\b(langchain|pinecone)\\b"
+    why: "a 2024-only stack (LangChain/Pinecone) as a headline now reads as a yellow flag"
+  - kind: junior_volume
+    pattern: "(?i)\\b\\d+\\s*x\\s+(?:more|faster|as many)\\b.*\\b(prs?|commits?|lines|tickets?)\\b"
+    why: "raw-volume bragging reads junior — pair the volume with an outcome metric"
+  - kind: unverified_judge
+    pattern: "(?i)\\bai[- ]?(?:reviewed|validated|judged|verified|approved)\\b"
+    why: "an 'AI reviewed/validated' claim with no eval/verification evidence is unverified"
+
+# Which REAL metric to go measure — a pointer, never an injected value.
+metric_hints:
+  review: ["review round-trips saved", "first-pass QA %"]
+  cost: ["token-cost % reduction", "model-routing savings"]
+  cycle: ["cycle time", "lead time for changes"]
+  eval: ["eval task-completion %", "regression catch rate"]
