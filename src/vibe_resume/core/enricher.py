@@ -93,6 +93,12 @@ AGENTIC_SIGNALS_BLOCK = (
     "activity supports them; never invent):\n{lines}\n"
 )
 
+CODEBASE_GROUNDING_BLOCK = (
+    "\n\nCODEBASE GROUNDING (#59 — verified from the project's own source; ground "
+    "bullets in these confirmed capabilities, but still never claim beyond what "
+    "the activity + this grounding show):\n{lines}\n"
+)
+
 AI_PROFICIENCY_BLOCK = (
     "\n\nAI-PROFICIENCY FRAMING (apply only when the raw activity supports it — "
     "never invent):\n"
@@ -376,6 +382,19 @@ def _build_prompt(
             body += AGENTIC_SIGNALS_BLOCK.format(lines="\n".join(f"- {x}" for x in sig_lines))
     if any(a.source == Source.INSTALLED_ENV for a in g.activities):
         body += INSTALLED_TOOLKIT_BLOCK
+    from vibe_resume.core.codebase_scan import load_scan
+    grounding = load_scan().get(g.name)
+    if grounding is not None and (grounding.purpose or grounding.concrete_features):
+        gl: list[str] = []
+        if grounding.purpose:
+            gl.append(f"purpose: {grounding.purpose}")
+        if grounding.concrete_features:
+            gl.append(f"features: {', '.join(grounding.concrete_features[:8])}")
+        if grounding.confirmed_tech:
+            gl.append(f"confirmed tech: {', '.join(grounding.confirmed_tech[:12])}")
+        if grounding.entrypoints:
+            gl.append(f"entrypoints: {', '.join(grounding.entrypoints[:6])}")
+        body += CODEBASE_GROUNDING_BLOCK.format(lines="\n".join(f"- {x}" for x in gl))
     if _ai_relevant(g, persona, emphasis):
         from vibe_resume.core.rubric import load_rubric
         rb = load_rubric()

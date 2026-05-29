@@ -389,6 +389,48 @@ def enrich(
 
 
 @cli.command()
+@click.option("--ingest", "ingest_", is_flag=True, default=False,
+              help="Read *.scan.yaml results into the grounding cache")
+@click.pass_context
+def scan(ctx: click.Context, ingest_: bool) -> None:
+    """Opt-in codebase scan (#59): gather a bounded, redacted slice of each
+    project's real repo and emit a per-project prompt for a cheaper-model subagent
+    to summarize into grounded purpose/features; `--ingest` writes the grounding
+    that enrich consumes. Describes only what the code shows — never uploads code,
+    drops secrets, honors privacy.blocklist."""
+    from vibe_resume.core.aggregator import load_groups
+    from vibe_resume.core.codebase_scan import emit_scan_jobs, ingest_scan
+
+    jobs_dir = ROOT / "data" / "scan_jobs"
+    if ingest_:
+        n, warnings = ingest_scan(jobs_dir)
+        for w in warnings:
+            console.print(f"  [yellow]{w}[/yellow]")
+        console.print(f"[green]✓[/green] grounded {n} project(s) → data/cache/_codebase_scan.json")
+        return
+
+    import re as _re
+
+    from vibe_resume.core.privacy import derive_profile_redactors
+    profile = {}
+    pf = ROOT / "profile.yaml"
+    if pf.exists():
+        import yaml as _yaml
+        profile = _yaml.safe_load(pf.read_text(encoding="utf-8")) or {}
+    redactors = [_re.compile(p) for p in derive_profile_redactors(profile)]
+
+    groups = load_groups()
+    _dir, emitted, skipped = emit_scan_jobs(groups, jobs_dir, redactors)
+    console.print(f"[green]✓[/green] wrote {emitted} scan prompt(s) to {jobs_dir} "
+                  f"({skipped} group(s) skipped — no resolvable local path)")
+    console.print(
+        "[cyan]Next:[/cyan] in this session, process each *.scan.prompt.md with a "
+        "cheaper model (Haiku-class subagents, one per project, in parallel) → write "
+        "*.scan.yaml next to it, then run `uv run vibe-resume scan --ingest`."
+    )
+
+
+@cli.command()
 @click.option("--locale", default=None, help="Target locale")
 @click.option("--persona", default=None, help="Reviewer persona (single key)")
 @click.option("--tailor", default=None, help="JD file → adds present-but-omitted keyword suggestions")
