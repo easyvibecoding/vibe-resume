@@ -119,3 +119,31 @@ def test_reconcile_returns_provenance_for_merged_cluster():
     assert prov[rep]["canonical_key"] == "remote:github.com/me/foo"
     assert sorted(prov[rep]["merged_from"]) == ["/dev/foo", "/side/foo"]
     assert "github.com/me/foo" in prov[rep]["evidence"]
+
+
+def test_reconcile_rep_prefers_meaningful_leaf_over_version_folder():
+    # #39: a plugin-cache copy whose leaf is a version folder must NOT become
+    # the representative (and thus the display name) over a real working dir.
+    acts = [
+        _act(Source.GIT, "/Users/me/dev/foo", remote="github.com/acme/foo",
+             toplevel="/Users/me/dev/foo", sid="a"),
+        # cache copy with MORE sessions but a version-like leaf under /.cache/
+        _act(Source.CODEX, "/Users/me/.cache/tool/foo/0.2.0", remote="github.com/acme/foo",
+             toplevel="/Users/me/.cache/tool/foo/0.2.0", sid="b"),
+        _act(Source.CODEX, "/Users/me/.cache/tool/foo/0.2.0", remote="github.com/acme/foo",
+             toplevel="/Users/me/.cache/tool/foo/0.2.0", sid="c"),
+    ]
+    prov = _reconcile_local_projects(acts)
+    rep = acts[0].project
+    assert rep.rstrip("/").split("/")[-1] == "foo"   # meaningful leaf wins over "0.2.0"
+    assert prov[rep]["name_hint"] is None             # rep already meaningful
+
+
+def test_reconcile_name_hint_from_remote_when_all_leaves_bad():
+    acts = [
+        _act(Source.GIT, "/a/0.2.0", remote="github.com/acme/foo", toplevel="/a/0.2.0", sid="a"),
+        _act(Source.CODEX, "/b/0.3.0", remote="github.com/acme/foo", toplevel="/b/0.3.0", sid="b"),
+    ]
+    prov = _reconcile_local_projects(acts)
+    rep = acts[0].project
+    assert prov[rep]["name_hint"] == "foo"            # derived from remote basename

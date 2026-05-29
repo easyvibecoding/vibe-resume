@@ -297,6 +297,29 @@ def _canonical_key(act: Activity) -> str | None:
     return None
 
 
+_VERSION_LEAF_RE = re.compile(r"^v?\d+\.\d+")
+_NOISE_PATH_SEGMENTS = (
+    "/.cache/", "/plugins/", "/marketplace", "/node_modules/", "/.npm/", "/site-packages/",
+)
+
+
+def _meaningful_leaf(path: str) -> bool:
+    """A path whose basename is a recognizable project name — not a version
+    folder (`0.2.0`, `v1.3`) and not buried under a plugin/cache dir."""
+    low = path.lower()
+    if any(seg in low for seg in _NOISE_PATH_SEGMENTS):
+        return False
+    leaf = path.rstrip("/").split("/")[-1]
+    return bool(leaf) and not _VERSION_LEAF_RE.match(leaf)
+
+
+def _name_from_remote(canonical_key: str) -> str | None:
+    """`remote:github.com/acme/foo` → `foo`; non-remote keys → None."""
+    if canonical_key.startswith("remote:"):
+        return canonical_key.rstrip("/").split("/")[-1] or None
+    return None
+
+
 def _reconcile_local_projects(acts: list[Activity]) -> dict[str, dict[str, Any]]:
     """Collapse groups that are the same logical repo worked from different
     paths (clones, renamed dirs, sub-packages). Cluster by canonical key,
@@ -312,20 +335,19 @@ def _reconcile_local_projects(acts: list[Activity]) -> dict[str, dict[str, Any]]
             clusters[k].append(a)
     prov: dict[str, dict[str, Any]] = {}
     for key, members in clusters.items():
-        rep: str | None = None
+        counts: dict[str, int] = defaultdict(int)
         for a in members:
-            tl = (a.extra or {}).get("git_toplevel")
-            if tl:
-                rep = tl
-                break
-        if rep is None:
-            counts: dict[str, int] = defaultdict(int)
-            for a in members:
-                if a.project:
-                    counts[a.project] += 1
-            if not counts:
-                continue
-            rep = max(counts, key=lambda p: counts[p])
+            if a.project:
+                counts[a.project] += 1
+        toplevels = {(a.extra or {}).get("git_toplevel") for a in members}
+        toplevels.discard(None)
+        candidates = set(counts) | toplevels
+        if not candidates:
+            continue
+        # Pick the representative path: prefer a meaningful basename (not a
+        # version folder / cache path, #39), then a work-tree toplevel, then
+        # the most-seen path. Avoids labelling the merged group `0.2.0`.
+        rep = max(candidates, key=lambda p: (_meaningful_leaf(p), p in toplevels, counts.get(p, 0)))
         merged_from = sorted({a.project for a in members if a.project})
         kind, _, value = key.partition(":")
         for a in members:
@@ -334,6 +356,9 @@ def _reconcile_local_projects(acts: list[Activity]) -> dict[str, dict[str, Any]]
             "canonical_key": key,
             "merged_from": merged_from,
             "evidence": f"same {kind} {value}",
+            # If even the best path has a meaningless leaf, fall back to the
+            # repo basename from the remote so the résumé header isn't a version.
+            "name_hint": None if _meaningful_leaf(rep) else _name_from_remote(key),
         }
     return prov
 
@@ -379,12 +404,16 @@ def aggregate_from_cache(cfg: dict[str, Any], cache_dir: Path) -> list[ProjectGr
         cat_counts = tally_categories(acts)
         breadth = capability_breadth(cat_counts)
         headline = _make_headline(cat_counts)
-        display_name = _humanize_group_name(_humanize_name(key, path_val, acts), path_val)
+        prov = prov_by_rep.get(path_val or "", {})
+        # A canonical-merge may supply a name_hint (repo basename from the
+        # remote) when the representative path's leaf is a version/cache folder.
+        display_name = prov.get("name_hint") or _humanize_group_name(
+            _humanize_name(key, path_val, acts), path_val
+        )
         canonical_tech = canonical_list(sorted(tech))
 
         prior = prior_enrich.get(display_name, {})
         project_metrics = _metrics_for_project(display_name, user_metrics)
-        prov = prov_by_rep.get(path_val or "", {})
 
         grp = ProjectGroup(
             name=display_name,
