@@ -80,6 +80,22 @@ def aggregate(ctx: click.Context) -> None:
 
 
 @cli.command()
+@click.option("--apply", "apply_", is_flag=True, default=False,
+              help="Execute the edited _curation.yaml into _project_groups.curated.json")
+@click.pass_context
+def curate(ctx: click.Context, apply_: bool) -> None:
+    """Review/auto-curate project groups (merge dupes, drop noise) via an
+    editable _curation.yaml checkpoint between aggregate and enrich."""
+    from datetime import UTC, datetime
+
+    from vibe_resume.core.curate import run_curate
+
+    msg = run_curate(ctx.obj["config"], apply=apply_,
+                     now=datetime.now(UTC).isoformat(timespec="seconds"))
+    click.echo(msg)
+
+
+@cli.command()
 @click.option("--limit", "-n", type=int, default=None, help="Enrich top N groups only")
 @click.option("--locale", default=None, help="Target locale (controls bullet language + style)")
 @click.option(

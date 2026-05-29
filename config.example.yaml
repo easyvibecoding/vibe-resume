@@ -152,6 +152,14 @@ privacy:
   # e.g. "PostgreSQL with pgvector" -> "relational DB with vector search"
   abstract_tech: false
 
+curate:
+  enabled: true                  # enrich/render prefer _project_groups.curated.json when present
+  noise_globs:
+    - "**/tmp/**"
+    - "**/temp/**"
+    - "**/scratch/**"
+    - "**/sandbox/**"
+
 enrich:
   mode: "claude-code-agent"
   batch_size: 20

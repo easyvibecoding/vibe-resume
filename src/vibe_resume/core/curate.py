@@ -10,14 +10,21 @@ from __future__ import annotations
 import fnmatch
 from collections import defaultdict
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
+import orjson
 import yaml
 from pydantic import BaseModel
 
+from vibe_resume.core.paths import user_root
 from vibe_resume.core.schema import ProjectGroup
 
 DEFAULT_NOISE_GLOBS = ["**/tmp/**", "**/temp/**", "**/scratch/**", "**/sandbox/**"]
+
+_ROOT = user_root()
+GROUPS_PATH = _ROOT / "data" / "cache" / "_project_groups.json"
+CURATION_YAML = _ROOT / "data" / "cache" / "_curation.yaml"
+CURATED_PATH = _ROOT / "data" / "cache" / "_project_groups.curated.json"
 
 
 class CurationEntry(BaseModel):
@@ -173,3 +180,36 @@ def apply_curation(groups: list[ProjectGroup], record: CurationRecord) -> list[P
         if target.name in merges:
             _union_into(target, merges[target.name])
     return survivors
+
+
+def _load_raw_groups() -> list[ProjectGroup]:
+    if not GROUPS_PATH.exists():
+        return []
+    return [ProjectGroup(**g) for g in orjson.loads(GROUPS_PATH.read_bytes())]
+
+
+def run_curate(cfg: dict[str, Any], *, apply: bool, now: str) -> str:
+    """CLI entry. Without --apply: emit _curation.yaml + return a tier summary.
+    With --apply: read _curation.yaml (or headless auto-only) → write curated."""
+    curate_cfg = cfg.get("curate", {})
+    noise_globs = curate_cfg.get("noise_globs") or DEFAULT_NOISE_GLOBS
+    groups = _load_raw_groups()
+    if not groups:
+        return "no groups — run aggregate first"
+
+    if not apply:
+        rec = emit_curation(groups, noise_globs, CURATION_YAML, now=now)
+        tiers: dict[str, int] = defaultdict(int)
+        for e in rec.groups:
+            tiers[e.tier] += 1
+        summary = ", ".join(f"{k}={v}" for k, v in sorted(tiers.items()))
+        return f"wrote {CURATION_YAML} — {summary}"
+
+    prior = _load_prior(CURATION_YAML)
+    record = prior if prior is not None else headless_record(groups, noise_globs)
+    curated = apply_curation(groups, record)
+    CURATED_PATH.parent.mkdir(parents=True, exist_ok=True)
+    CURATED_PATH.write_bytes(
+        orjson.dumps([g.model_dump(mode="json") for g in curated],
+                     option=orjson.OPT_INDENT_2))
+    return f"wrote {CURATED_PATH} — {len(curated)} groups"
