@@ -1,6 +1,8 @@
 from vibe_resume.core.aggregator import (
+    _agentic_signals,
     _canonical_key,
     _is_meaningful,
+    _mcp_server,
     _reconcile_github_projects,
     _reconcile_local_projects,
 )
@@ -147,9 +149,6 @@ def test_reconcile_name_hint_from_remote_when_all_leaves_bad():
     prov = _reconcile_local_projects(acts)
     rep = acts[0].project
     assert prov[rep]["name_hint"] == "foo"            # derived from remote basename
-
-
-from vibe_resume.core.aggregator import _agentic_signals, _mcp_server
 
 
 def test_mcp_server_extraction():
