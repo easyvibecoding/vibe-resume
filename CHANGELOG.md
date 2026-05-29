@@ -4,6 +4,20 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0] — 2026-05-29
+
+### Added
+
+- **Agent Skills + MCP competency signal** (`AgenticSignals` on each project
+  group, #43) — distinguishes **authoring** from **usage**: skills authored
+  (from `SKILL.md` / `skills/<name>/` / plugin manifests, with a published
+  flag), skills used (from session `Base directory for this skill:` markers),
+  MCP servers integrated (from `mcp__<server>__` tool calls), and a
+  conservative MCP-authoring flag. The enricher now appends a factual agentic-
+  signals hint so bullets can foreground this Tier-1 agentic competency instead
+  of collapsing it into a generic `agent-tooling %`. First of the competency-
+  signal epic; shared `AgenticSignals` surface extended by later releases.
+
 ## [0.10.2] — 2026-05-29
 
 ### Fixed
