@@ -22,7 +22,13 @@ console = Console()
 
 ROOT = user_root()
 GROUPS_PATH = ROOT / "data" / "cache" / "_project_groups.json"
-CURATED_PATH = ROOT / "data" / "cache" / "_project_groups.curated.json"
+
+
+def _curated_path() -> Path:
+    """Curated cache path, derived from GROUPS_PATH at call time so tests that
+    monkeypatch GROUPS_PATH redirect this too (#42). Mirrors groups_path_for,
+    which also derives from GROUPS_PATH.parent."""
+    return GROUPS_PATH.with_name("_project_groups.curated.json")
 OBSERVED_SUMMARY_PATH = ROOT / "data" / "cache" / "_observed_summary.json"
 WINDOW_STATS_PATH = ROOT / "data" / "cache" / "_window_stats.json"
 
@@ -562,8 +568,10 @@ def load_groups(
         candidates.append(groups_path_for(persona, locale))
         if persona is not None:
             candidates.append(groups_path_for(None, locale))
-    if use_curated and CURATED_PATH.exists():
-        candidates.append(CURATED_PATH)
+    if use_curated:
+        curated = _curated_path()
+        if curated.exists():
+            candidates.append(curated)
     candidates.append(GROUPS_PATH)
 
     for path in candidates:

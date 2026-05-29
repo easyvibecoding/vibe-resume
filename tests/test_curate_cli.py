@@ -25,7 +25,6 @@ def _seed(path, specs):
 
 def test_curate_emit_then_apply(tmp_path, monkeypatch):
     monkeypatch.setattr(aggregator, "GROUPS_PATH", tmp_path / "_project_groups.json")
-    monkeypatch.setattr(aggregator, "CURATED_PATH", tmp_path / "_project_groups.curated.json")
     monkeypatch.setattr(curate, "GROUPS_PATH", tmp_path / "_project_groups.json")
     monkeypatch.setattr(curate, "CURATION_YAML", tmp_path / "_curation.yaml")
     monkeypatch.setattr(curate, "CURATED_PATH", tmp_path / "_project_groups.curated.json")

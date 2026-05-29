@@ -12,17 +12,17 @@ def _dump(path, names):
 
 
 def test_load_groups_prefers_curated(tmp_path, monkeypatch):
+    # #42: monkeypatching ONLY GROUPS_PATH must also redirect the curated
+    # lookup (derived as a sibling), so the suite stays hermetic.
     monkeypatch.setattr(aggregator, "GROUPS_PATH", tmp_path / "_project_groups.json")
-    monkeypatch.setattr(aggregator, "CURATED_PATH", tmp_path / "_project_groups.curated.json")
     _dump(aggregator.GROUPS_PATH, ["raw1", "raw2"])
-    _dump(aggregator.CURATED_PATH, ["curated1"])
+    _dump(tmp_path / "_project_groups.curated.json", ["curated1"])
     got = aggregator.load_groups()
-    assert [g.name for g in got] == ["curated1"]       # curated wins over raw
+    assert [g.name for g in got] == ["curated1"]       # curated (sibling) wins over raw
 
 
 def test_load_groups_no_curated_uses_raw(tmp_path, monkeypatch):
     monkeypatch.setattr(aggregator, "GROUPS_PATH", tmp_path / "_project_groups.json")
-    monkeypatch.setattr(aggregator, "CURATED_PATH", tmp_path / "_project_groups.curated.json")
     _dump(aggregator.GROUPS_PATH, ["raw1"])
     got = aggregator.load_groups()
     assert [g.name for g in got] == ["raw1"]
@@ -30,8 +30,14 @@ def test_load_groups_no_curated_uses_raw(tmp_path, monkeypatch):
 
 def test_load_groups_no_curated_flag_ignores_curated(tmp_path, monkeypatch):
     monkeypatch.setattr(aggregator, "GROUPS_PATH", tmp_path / "_project_groups.json")
-    monkeypatch.setattr(aggregator, "CURATED_PATH", tmp_path / "_project_groups.curated.json")
     _dump(aggregator.GROUPS_PATH, ["raw1"])
-    _dump(aggregator.CURATED_PATH, ["curated1"])
+    _dump(tmp_path / "_project_groups.curated.json", ["curated1"])
     got = aggregator.load_groups(use_curated=False)
     assert [g.name for g in got] == ["raw1"]
+
+
+def test_load_groups_empty_when_nothing_exists(tmp_path, monkeypatch):
+    # #42 regression: only GROUPS_PATH patched, no files at all → [] (no leak
+    # from a real on-disk curated cache).
+    monkeypatch.setattr(aggregator, "GROUPS_PATH", tmp_path / "_project_groups.json")
+    assert aggregator.load_groups() == []
