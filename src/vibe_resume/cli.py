@@ -128,15 +128,16 @@ def emphasis(ctx: click.Context, intent: str | None, clear_: bool) -> None:
 @click.option("--locale", default=None, help="Locale for human-gate phrasing (zh_TW, ja_JP, …)")
 @click.option("--json", "as_json", is_flag=True, default=False, help="Emit JSON for an agent to mine")
 @click.option("--group", "group_filter", default=None, help="Only this group (substring match)")
+@click.option("--jd", "jd_path", default=None, help="JD file → report present-but-omitted vs genuinely-absent keywords (#54)")
 @click.pass_context
-def evidence(ctx: click.Context, locale: str | None, as_json: bool, group_filter: str | None) -> None:
+def evidence(ctx: click.Context, locale: str | None, as_json: bool, group_filter: str | None, jd_path: str | None) -> None:
     """Disclose the *real* signals behind each group — candidate metrics, backed
-    terms, human-gate evidence, provenance (P2 disclosure). Lets an agent self-mine
-    what it needs to see; every later surfacing must trace to a disclosed signal."""
+    terms, human-gate evidence, provenance (P2 disclosure). With --jd, also report
+    the keyword recall gap. Every later surfacing must trace to a disclosed signal."""
     import json as _json
 
     from vibe_resume.core.aggregator import load_groups
-    from vibe_resume.core.evidence import disclose_all
+    from vibe_resume.core.evidence import disclose_all, keyword_gap, unsurfaced_metrics
     from vibe_resume.render.i18n import get_locale
 
     lang = get_locale(locale or ctx.obj["config"].get("render", {}).get("locale")).get("language")
@@ -147,18 +148,54 @@ def evidence(ctx: click.Context, locale: str | None, as_json: bool, group_filter
         click.echo("no groups — run aggregate first (or check --group filter)")
         return
     evs = disclose_all(groups, lang=lang)
+    # what the bullets already say, per group + overall (for gap reconciliation)
+    surfaced_by_group = {
+        g.name: " ".join([g.summary or ""] + list(g.achievements or [])) for g in groups
+    }
+    surfaced_all = " ".join(surfaced_by_group.values())
+
+    gap = None
+    if jd_path:
+        from pathlib import Path
+
+        from vibe_resume.core.review import parse_jd_keywords
+        p = Path(jd_path)
+        if p.exists():
+            gap = keyword_gap(parse_jd_keywords(p), evs, surfaced_all)
+        else:
+            console.print(f"[yellow]JD file not found: {p}[/yellow]")
 
     if as_json:
-        click.echo(_json.dumps([e.as_dict() for e in evs], ensure_ascii=False, indent=2))
+        out = {"groups": [e.as_dict() for e in evs]}
+        out["unsurfaced_metrics"] = {
+            e.group: [m.as_dict() for m in unsurfaced_metrics(e, surfaced_by_group.get(e.group, ""))]
+            for e in evs
+        }
+        if gap is not None:
+            out["keyword_gap"] = gap.as_dict()
+        click.echo(_json.dumps(out, ensure_ascii=False, indent=2))
         return
 
     for e in evs:
         console.print(f"\n[bold cyan]{e.group}[/bold cyan]  ({e.activity_count} activities)")
         m = ", ".join(f"{c.value}" for c in e.candidate_metrics[:12]) or "[dim](none — keep bullets qualitative)[/dim]"
         console.print(f"  real metrics present: {m}")
+        unsurf = unsurfaced_metrics(e, surfaced_by_group.get(e.group, ""))
+        if unsurf:
+            console.print(
+                f"  [yellow]real metrics NOT yet in bullets (consider surfacing — human-confirm):[/yellow] "
+                f"{', '.join(c.value for c in unsurf[:12])}"
+            )
         g = ", ".join(sorted({h.term for h in e.human_gate_evidence})) or "[dim](none — don't claim a human gate)[/dim]"
         console.print(f"  human-gate evidence: {g}")
         console.print(f"  backed terms: {', '.join(e.backed_terms[:20]) or '(none)'}")
+
+    if gap is not None:
+        console.print("\n[bold]JD keyword reconciliation[/bold]")
+        console.print(f"  [green]present but omitted (surface these):[/green] {', '.join(gap.present_but_omitted) or '(none)'}")
+        console.print(f"  [dim]genuinely absent (honest gap — leave): {', '.join(gap.genuinely_absent) or '(none)'}[/dim]")
+        console.print(f"  already surfaced: {', '.join(gap.already_surfaced) or '(none)'}")
+
     console.print(
         "\n[dim]Surface only what's disclosed here — never invent a metric, gate, "
         "or keyword not shown (see docs/PRINCIPLES.md).[/dim]"

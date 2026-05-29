@@ -95,3 +95,29 @@ def test_cli_evidence_json(tmp_path, monkeypatch):
         r = runner.invoke(cli, ["evidence", "--json"])
         assert r.exit_code == 0, r.output
         assert "40%" in r.output and "candidate_metrics" in r.output
+
+
+# --- #53/#54 gap reconciliation ---------------------------------------------
+
+def test_keyword_gap_splits_present_vs_absent():
+    from vibe_resume.core.evidence import keyword_gap
+    g = _group([_act("Built a RAG pipeline", tech=["LlamaIndex"], kw=["pgvector"])])
+    evs = [disclose_evidence(g)]
+    # bullets mention pgvector but not LlamaIndex; Kubernetes not backed at all
+    gap = keyword_gap(["LlamaIndex", "pgvector", "Kubernetes"], evs,
+                      surfaced_text="optimized the pgvector index")
+    assert gap.present_but_omitted == ["LlamaIndex"]   # backed, not surfaced → surface
+    assert "pgvector" in gap.already_surfaced
+    assert gap.genuinely_absent == ["Kubernetes"]      # not backed → honest gap (P1.3)
+
+
+def test_unsurfaced_metrics_only_real_absent_from_bullets():
+    from vibe_resume.core.evidence import unsurfaced_metrics
+    g = _group([_act("Cut latency 40% and served 2k req/s")])
+    ev = disclose_evidence(g)
+    unsurf = unsurfaced_metrics(ev, surfaced_text="reduced latency 40% via caching")
+    vals = {m.value for m in unsurf}
+    assert any("2k" in v for v in vals)   # real, not yet in bullets → suggest
+    assert "40%" not in vals              # already surfaced → not re-suggested
+    # never invents: every suggestion traces to a real activity
+    assert all(m.source_ref for m in unsurf)

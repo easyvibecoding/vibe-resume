@@ -156,3 +156,60 @@ def disclose_all(
 ) -> list[GroupEvidence]:
     rb = rubric or load_rubric()
     return [disclose_evidence(g, rb, lang) for g in groups]
+
+
+# -- gap reconciliation on the disclosure layer (#53 metrics, #54 keywords) ---
+
+@dataclass
+class KeywordGap:
+    """Split JD keywords against what the signals actually back (#54)."""
+
+    present_but_omitted: list[str] = field(default_factory=list)  # backed yet not in bullets → surface
+    genuinely_absent: list[str] = field(default_factory=list)     # not backed → honest gap, leave
+    already_surfaced: list[str] = field(default_factory=list)
+
+    def as_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+def keyword_gap(
+    jd_keywords: list[str],
+    evidences: list[GroupEvidence],
+    surfaced_text: str,
+) -> KeywordGap:
+    """Reconcile JD keywords against disclosed evidence + what bullets already say.
+
+    Surfaces only keywords **genuinely backed by the user's activity** but missing
+    from the bullets (a recall gap). Keywords the data doesn't back are reported as
+    `genuinely_absent` and left alone — never stuffed (P1.3 guardrail)."""
+    low_surfaced = (surfaced_text or "").lower()
+    gap = KeywordGap()
+    for kw in jd_keywords:
+        backed = any(e.backs_term(kw) for e in evidences)
+        surfaced = kw.lower() in low_surfaced
+        if surfaced:
+            gap.already_surfaced.append(kw)
+        elif backed:
+            gap.present_but_omitted.append(kw)
+        else:
+            gap.genuinely_absent.append(kw)
+    return gap
+
+
+def unsurfaced_metrics(
+    evidence: GroupEvidence,
+    surfaced_text: str,
+) -> list[MetricCandidate]:
+    """Real metrics present in the activity but not yet in the bullets (#53).
+
+    These are *suggestions a human confirms* — only numbers literally in the
+    signals, never invented or estimated (P1.1 guardrail)."""
+    low = (surfaced_text or "").lower()
+    out: list[MetricCandidate] = []
+    seen: set[str] = set()
+    for m in evidence.candidate_metrics:
+        if m.value.lower() in low or m.value in seen:
+            continue
+        seen.add(m.value)
+        out.append(m)
+    return out
