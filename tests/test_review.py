@@ -298,3 +298,30 @@ def test_ai_proficiency_surfaces_staleness(monkeypatch):
     rep = RV.review(_AI_MD, "en_US")
     prof = next(s for s in rep.scores if s.name == "AI proficiency")
     assert any("stale" in n.lower() for n in prof.notes)
+
+
+# --- #50 locale-aware human-gate (AI proficiency) ----------------------------
+
+_AI_ZH_MD = """# 王小明
+
+## 經歷
+- 以 Claude Code 子代理流程協作開發,所有產出均經人工把關與安全性複核後合併
+- 設計 MCP 工具鏈,由人工把關架構與安全審查後合併
+- 透過 LLM-as-judge 評測,補上錯誤處理與守門驗證後修復
+"""
+
+
+def test_ai_proficiency_locale_aware_human_gate_zh():
+    from vibe_resume.core.review import review
+    rep = review(_AI_ZH_MD, "zh_TW")
+    prof = next(s for s in rep.scores if s.name == "AI proficiency")
+    assert prof.max == 10
+    assert prof.score > 0, prof.notes  # #50: zh human-gate phrasing must count
+
+
+def test_ai_red_flags_locale_gate_not_false_namedrop_zh():
+    # zh AI bullets WITH a human gate must not be flagged as bare name-drop
+    from vibe_resume.core.review import review
+    rep = review(_AI_ZH_MD, "zh_TW")
+    rf = next(s for s in rep.scores if s.name == "AI framing red flags")
+    assert not any("name-drop" in n.lower() for n in rf.notes), rf.notes

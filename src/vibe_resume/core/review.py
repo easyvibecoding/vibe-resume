@@ -558,7 +558,21 @@ def _hint_category(bullet: str, hints: dict[str, list[str]]) -> str | None:
     return next(iter(hints), None)
 
 
-def _check_ai_proficiency(md: str, rubric: Any) -> Score:
+def _gate_terms(rubric: Any, lang: str | None) -> list[str]:
+    """Human-quality-gate terms: English base ∪ the active locale's phrasing.
+
+    Non-English résumés keep tech terms in English (so `_has_ai_content` still
+    fires) but phrase the human gate in their own language — without the locale
+    union a correctly-framed zh/ja/ko/de/fr résumé scores 0 (#50). Union with
+    English handles mixed-script résumés."""
+    terms = list(getattr(rubric, "human_gate_verbs", []))
+    by_locale = getattr(rubric, "human_gate_verbs_by_locale", {}) or {}
+    if lang and lang in by_locale:
+        terms += list(by_locale[lang])
+    return [t.lower() for t in terms]
+
+
+def _check_ai_proficiency(md: str, rubric: Any, lang: str | None = None) -> Score:
     """Positive: AI bullets that pair a tool with a human quality gate.
 
     Skipped (max=0) when the résumé carries no AI/agentic content, so non-AI
@@ -569,7 +583,7 @@ def _check_ai_proficiency(md: str, rubric: Any) -> Score:
     bullets = _ai_bullets(md, rubric)
     if not bullets:
         return Score("AI proficiency", 0, 10, ["AI terms present but not in scored bullets"])
-    gates = [v.lower() for v in getattr(rubric, "human_gate_verbs", [])]
+    gates = _gate_terms(rubric, lang)
     paired = [(ln, b) for ln, b in bullets if any(g in b.lower() for g in gates)]
     ratio = len(paired) / len(bullets)
     pts = min(int(round(ratio * 10)), 10)
@@ -590,7 +604,7 @@ def _check_ai_proficiency(md: str, rubric: Any) -> Score:
     return Score("AI proficiency", pts, 10, notes)
 
 
-def _check_ai_red_flags(md: str, rubric: Any) -> Score:
+def _check_ai_red_flags(md: str, rubric: Any, lang: str | None = None) -> Score:
     """Negative: junior framing, stale-stack headline, unverified-judge, name-drop.
 
     Mirrors `_check_red_flags` (start at 10, deduct). Skipped (max=0) on a
@@ -600,7 +614,7 @@ def _check_ai_red_flags(md: str, rubric: Any) -> Score:
     pts = 10
     notes: list[str] = []
     head = "\n".join(md.splitlines()[:14])
-    gates = [v.lower() for v in getattr(rubric, "human_gate_verbs", [])]
+    gates = _gate_terms(rubric, lang)
     for yf in getattr(rubric, "yellow_flags", ()):
         if yf.kind == "stale_stack":
             if yf.regex.search(head):
@@ -662,8 +676,9 @@ def review(
     # (max=0) when the résumé has no AI content, so non-AI résumés keep their
     # denominator and stay byte-comparable across versions.
     _rb = load_rubric()
-    scores.append(_check_ai_proficiency(md_text, _rb))
-    scores.append(_check_ai_red_flags(md_text, _rb))
+    _lang = loc.get("language")
+    scores.append(_check_ai_proficiency(md_text, _rb, _lang))
+    scores.append(_check_ai_red_flags(md_text, _rb, _lang))
     scoring = [s for s in scores if s.max > 0]
     weights = getattr(persona, "review_weights", None) or {}
     raw_total = sum(s.score for s in scoring)

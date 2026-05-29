@@ -46,7 +46,10 @@ ai_tool_names:
   - LLM
   - AI agent
 
-# Verbs that prove the human judgment layer (positive signal in both surfaces).
+# Verbs/phrases that prove the human judgment layer (positive signal in both
+# surfaces). The base list is English; `human_gate_verbs_by_locale` adds the
+# equivalent phrasing per language so a correctly-framed non-English résumé is
+# not scored 0 (#50). review unions the base list with the active locale's terms.
 human_gate_verbs:
   - reviewed
   - verified
@@ -56,6 +59,16 @@ human_gate_verbs:
   - vetted
   - gated
   - benchmarked
+
+# Keyed by locale language code (zh covers zh_TW/zh_CN/zh_HK). Substring match,
+# so include the common stems. Tech terms stay English, so `_has_ai_content`
+# still fires on non-English résumés — only the human-gate phrasing differs.
+human_gate_verbs_by_locale:
+  zh: [人工把關, 把關, 人工複核, 複核, 人工審查, 人工審核, 審查, 安全審查, 人工驗證, 守門, 審核, 人工確認]
+  ja: [レビュー, 検証, 監査, 人手で確認, 目視確認]
+  ko: [검토, 검증, 감사, 수동 확인]
+  de: [geprüft, verifiziert, auditiert, überprüft, geprüfte]
+  fr: [revu, vérifié, audité, revue, contrôlé]
 
 # Injected into the enrich prompt as "surface when supported".
 senior_differentiators:

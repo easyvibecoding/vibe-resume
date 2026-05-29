@@ -43,6 +43,7 @@ class MarketRubric:
     agentic_keywords: list[str] = field(default_factory=list)
     ai_tool_names: list[str] = field(default_factory=list)
     human_gate_verbs: list[str] = field(default_factory=list)
+    human_gate_verbs_by_locale: dict[str, list[str]] = field(default_factory=dict)
     senior_differentiators: list[str] = field(default_factory=list)
     anti_patterns: list[str] = field(default_factory=list)
     yellow_flags: tuple[YellowFlag, ...] = ()
@@ -78,6 +79,10 @@ def _coerce(data: dict[str, Any]) -> MarketRubric:
         agentic_keywords=list(data.get("agentic_keywords") or []),
         ai_tool_names=list(data.get("ai_tool_names") or []),
         human_gate_verbs=list(data.get("human_gate_verbs") or []),
+        human_gate_verbs_by_locale={
+            str(k): list(v)
+            for k, v in (data.get("human_gate_verbs_by_locale") or {}).items()
+        },
         senior_differentiators=list(data.get("senior_differentiators") or []),
         anti_patterns=list(data.get("anti_patterns") or []),
         yellow_flags=yfs,
