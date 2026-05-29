@@ -4,6 +4,20 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.1] — 2026-05-30
+
+### Fixed
+
+- **AI-proficiency review check was English-only** (#50) — `human_gate_verbs`
+  matched the "AI bullet paired with a human quality gate" signal only in
+  English, so a correctly-framed non-English résumé (zh/ja/ko/de/fr) scored
+  **AI proficiency 0/10** and was falsely flagged as a bare tool name-drop, even
+  when every AI bullet explicitly paired a tool with human verification. The
+  rubric now carries `human_gate_verbs_by_locale`; `review` unions the English
+  base list with the active locale's phrasing (e.g. 人工把關 / 複核 / 審查 for
+  `zh_*`, レビュー / 検証 for `ja_JP`, geprüft / verifiziert for `de_DE`) so the
+  headline senior-vs-junior signal is scored fairly across all 10 shipped locales.
+
 ## [0.16.0] — 2026-05-29
 
 ### Added
