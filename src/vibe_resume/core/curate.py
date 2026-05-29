@@ -114,3 +114,62 @@ def emit_curation(
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(yaml.safe_dump(record.model_dump(), sort_keys=False, allow_unicode=True))
     return record
+
+
+def headless_record(groups: list[ProjectGroup], noise_globs: list[str]) -> CurationRecord:
+    """A record honoring ONLY the high-confidence auto tiers: keep auto_drop's
+    `drop`, but downgrade needs_decision to `keep` (no human confirmation)."""
+    entries = classify(groups, noise_globs)
+    for e in entries:
+        if e.tier == "needs_decision":
+            e.action, e.target = "keep", None
+    return CurationRecord(version=1, generated_at="headless", groups=entries)
+
+
+def _union_into(target: ProjectGroup, sources: list[ProjectGroup]) -> None:
+    acts = list(target.activities)
+    for s in sources:
+        acts.extend(s.activities)
+    members = [target, *sources]
+    target.activities = acts
+    target.total_sessions = sum(g.total_sessions for g in members)
+    target.sources = sorted({s for g in members for s in g.sources}, key=lambda s: s.value)
+    target.first_activity = min(g.first_activity for g in members)
+    target.last_activity = max(g.last_activity for g in members)
+    target.tech_stack = sorted({t for g in members for t in g.tech_stack})
+    cat: dict[str, int] = dict(target.category_counts)
+    for s in sources:
+        for k, v in s.category_counts.items():
+            cat[k] = cat.get(k, 0) + v
+    target.category_counts = cat
+    target.capability_breadth = sum(1 for v in cat.values() if v > 0)
+    paths: set[str] = set(target.merged_from)
+    for s in sources:
+        paths.update(s.merged_from or ([s.path] if s.path else []))
+    target.merged_from = sorted(paths)
+    target.merge_evidence = "; ".join(
+        x for x in [target.merge_evidence, "curate merge"] if x
+    )
+
+
+def apply_curation(groups: list[ProjectGroup], record: CurationRecord) -> list[ProjectGroup]:
+    """Execute keep / merge_into / drop into a new (non-destructive) group list."""
+    by_name = {g.name: g for g in groups}
+    entry_by_name = {e.name: e for e in record.groups}
+    dropped = {e.name for e in record.groups if e.action == "drop"}
+
+    merges: dict[str, list[ProjectGroup]] = defaultdict(list)
+    survivors: list[ProjectGroup] = []
+    for g in groups:
+        if g.name in dropped:
+            continue
+        e = entry_by_name.get(g.name)
+        if (e and e.action == "merge_into" and e.target
+                and e.target in by_name and e.target not in dropped):
+            merges[e.target].append(g)
+        else:
+            survivors.append(g)
+    for target in survivors:
+        if target.name in merges:
+            _union_into(target, merges[target.name])
+    return survivors

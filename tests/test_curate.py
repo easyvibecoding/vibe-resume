@@ -82,3 +82,34 @@ def test_emit_writes_yaml_and_carries_forward_human_action(tmp_path):
     e2 = {x.name: x for x in rec2.groups}["CRM-copy"]
     assert e2.action == "keep"     # human override preserved
     assert e2.target is None
+
+
+def test_apply_drop_merge_keep():
+    from vibe_resume.core.curate import apply_curation
+
+    crm = _g("CRM", path="/work/CRM", sessions=10)
+    crm_copy = _g("CRM-copy", path="/test/CRM", sessions=3)
+    tmp = _g("scratch", path="/Users/me/tmp/scratch", sessions=1)
+    groups = [crm, crm_copy, tmp]
+    record = CurationRecord(version=1, generated_at="t", groups=[
+        CurationEntry(name="CRM", sessions=10, tier="keep", action="keep"),
+        CurationEntry(name="CRM-copy", sessions=3, tier="needs_decision",
+                      action="merge_into", target="CRM"),
+        CurationEntry(name="scratch", sessions=1, tier="auto_drop", action="drop"),
+    ])
+    out = apply_curation(groups, record)
+    names = {g.name for g in out}
+    assert names == {"CRM"}                       # scratch dropped, CRM-copy merged
+    merged = out[0]
+    assert merged.total_sessions == 13            # 10 + 3 unioned
+    assert "/test/CRM" in merged.merged_from
+
+
+def test_apply_headless_no_record_applies_auto_only():
+    from vibe_resume.core.curate import apply_curation, headless_record
+
+    crm = _g("CRM", path="/work/CRM", sessions=10)
+    tmp = _g("scratch", path="/Users/me/tmp/scratch", sessions=1)
+    record = headless_record([crm, tmp], DEFAULT_NOISE_GLOBS)
+    out = apply_curation([crm, tmp], record)
+    assert {g.name for g in out} == {"CRM"}       # noise auto-dropped, no merge_into
