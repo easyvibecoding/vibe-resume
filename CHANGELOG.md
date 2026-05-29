@@ -4,6 +4,20 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] — 2026-05-29
+
+### Added
+
+- **`emphasis` lever** — `vibe-resume emphasis "<intent>"` writes an editable
+  `_emphasis.yaml` (intent / keywords / bias_instruction / spotlight / demote)
+  that re-shapes output to a chosen focus (#38). `enrich` injects it as the
+  highest-priority bias block; `render` boosts `spotlight` groups into the
+  detailed top-N and sinks `demote` groups to one-liners. Depth is implicit:
+  re-run `render` for a light re-rank (no LLM) or `enrich` for a deep
+  bias-rewrite. Hand-edited keywords/spotlight/demote carry forward when the
+  intent changes; `--no-emphasis` / `emphasis --clear` disable it. New
+  `emphasis:` config block. Completes #38 (the curate gate shipped in 0.9.0).
+
 ## [0.9.0] — 2026-05-29
 
 ### Added
