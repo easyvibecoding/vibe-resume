@@ -851,3 +851,21 @@ def test_claude_code_captures_git_identity(tmp_path, monkeypatch):
     acts = cc.extract({"extractors": {"claude_code": {"path": str(tmp_path)}}})
     assert acts[0].extra["git_remote"] == "github.com/me/foo"
     assert acts[0].extra["git_toplevel"] == "/Users/me/dev/foo"
+
+
+def test_codex_captures_git_identity(tmp_path, monkeypatch):
+    import vibe_resume.extractors.local.codex as cx
+
+    rows = [{"type": "session_meta", "timestamp": "2026-01-01T00:00:00Z",
+             "payload": {"cwd": "/Users/me/dev/bar", "id": "s1"}},
+            {"type": "response_item", "timestamp": "2026-01-01T00:01:00Z",
+             "payload": {"type": "message", "role": "user", "content": "hi"}}]
+    f = tmp_path / "rollout-2026-01-01-uuid.jsonl"
+    f.write_text("\n".join(json.dumps(r) for r in rows))
+    monkeypatch.setattr(
+        cx, "git_identity",
+        lambda path, cache=None: ("github.com/me/bar", "/Users/me/dev/bar"),
+    )
+    acts = cx.extract({"extractors": {"codex": {"path": str(tmp_path)}}})
+    assert acts[0].extra["git_remote"] == "github.com/me/bar"
+    assert acts[0].extra["git_toplevel"] == "/Users/me/dev/bar"

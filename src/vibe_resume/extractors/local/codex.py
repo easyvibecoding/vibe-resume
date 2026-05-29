@@ -31,7 +31,7 @@ from pathlib import Path
 from typing import Any
 
 from vibe_resume.core.schema import Activity, ActivityType, Source
-from vibe_resume.extractors.base import iter_jsonl, sample_spread
+from vibe_resume.extractors.base import git_identity, iter_jsonl, sample_spread
 
 NAME = "codex"
 _SUMMARY_MAX = 4000
@@ -101,9 +101,10 @@ def extract(cfg: dict[str, Any]) -> list[Activity]:
 
     activities: list[Activity] = []
     seen_session_ids: set[str] = set()
+    git_cache: dict = {}
     for base in bases:
         for rollout_file in base.rglob("rollout-*.jsonl"):
-            act = _process_session(rollout_file, sample_n, per_chars, capture_args)
+            act = _process_session(rollout_file, sample_n, per_chars, capture_args, git_cache)
             if not act:
                 continue
             # If the same session rolled from active → archived the UUID is
@@ -118,7 +119,7 @@ def extract(cfg: dict[str, Any]) -> list[Activity]:
 
 
 def _process_session(path: Path, sample_n: int, per_chars: int,
-                     capture_args: bool) -> Activity | None:
+                     capture_args: bool, git_cache: dict) -> Activity | None:
     first_ts: datetime | None = None
     last_ts: datetime | None = None
     user_prompts = 0
@@ -194,6 +195,12 @@ def _process_session(path: Path, sample_n: int, per_chars: int,
         extra["git_branch"] = git_branch
     if capture_args and tool_args:
         extra["tool_args"] = "\n".join(tool_args)
+    if cwd:
+        remote, toplevel = git_identity(cwd, git_cache)
+        if remote:
+            extra["git_remote"] = remote
+        if toplevel:
+            extra["git_toplevel"] = toplevel
 
     return Activity(
         source=Source.CODEX,
