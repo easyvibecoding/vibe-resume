@@ -273,3 +273,8 @@ def test_agentic_signals_orchestration_default_and_roundtrip():
     s = AgenticSignals(orchestration=["fan-out", "verify-pipeline"])
     back = AgenticSignals(**s.model_dump())
     assert back.orchestration == ["fan-out", "verify-pipeline"]
+
+
+def test_source_installed_env_value():
+    from vibe_resume.core.schema import Source
+    assert Source.INSTALLED_ENV.value == "installed-env"

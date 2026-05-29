@@ -59,6 +59,7 @@ class Source(str, Enum):
     GIT = "git"
     GITHUB = "github"
     DEVIN = "devin"
+    INSTALLED_ENV = "installed-env"
     OTHER = "other"
 
 
