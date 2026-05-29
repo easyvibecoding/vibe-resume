@@ -4,6 +4,20 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.0] — 2026-05-30
+
+### Added
+
+- **Configurable subagent model tier across fan-outs** (#60) — tool-spawned
+  subagent fan-outs (codebase scan #59, subprocess enrich) now pick their model
+  tier by **quota-pool isolation + sufficiency**, not a hardcoded cheapest.
+  `core/agents.py::resolve_subagent_model` resolves: `--subagent-model` flag >
+  per-command `config.<cmd>.subagent_model` > `config.agents.subagent_model` >
+  default **sonnet** (so an Opus orchestrator's budget isn't exhausted by a large
+  fan-out; Sonnet→Sonnet stays; Haiku only when explicitly chosen). Honored by
+  `enrich --mode subprocess` (`claude -p --model`) and surfaced in `scan`'s
+  next-step hint. Purely operational — truthfulness/human-in-the-loop untouched (#51).
+
 ## [0.23.0] — 2026-05-30
 
 ### Added
