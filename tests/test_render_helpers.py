@@ -172,3 +172,31 @@ def test_headline_map_covers_the_expected_categories() -> None:
     template doesn't end up displaying the raw slug."""
     expected = {"frontend", "backend", "devops", "testing", "security", "data-ml"}
     assert expected.issubset(HEADLINE_MAP.keys())
+
+
+def test_sort_groups_spotlight_floats_demote_sinks():
+    from vibe_resume.core.emphasis import EmphasisRecord
+    from vibe_resume.core.schema import ProjectGroup
+    from vibe_resume.render.renderer import _sort_groups
+
+    def g(name, sessions):
+        return ProjectGroup(name=name, first_activity="2026-01-01T00:00:00+00:00",
+                            last_activity="2026-01-01T00:00:00+00:00", total_sessions=sessions)
+
+    big = g("big", 100)       # high _rank_score
+    small = g("small", 1)     # low _rank_score
+    em = EmphasisRecord(spotlight=["small"], demote=["big"])
+    ordered = [x.name for x in _sort_groups([big, small], em)]
+    assert ordered == ["small", "big"]      # spotlight floats above, demote sinks
+
+
+def test_sort_groups_no_emphasis_is_rank_order():
+    from vibe_resume.core.schema import ProjectGroup
+    from vibe_resume.render.renderer import _sort_groups
+
+    def g(name, sessions):
+        return ProjectGroup(name=name, first_activity="2026-01-01T00:00:00+00:00",
+                            last_activity="2026-01-01T00:00:00+00:00", total_sessions=sessions)
+
+    ordered = [x.name for x in _sort_groups([g("a", 1), g("b", 100)], None)]
+    assert ordered == ["b", "a"]            # plain _rank_score order

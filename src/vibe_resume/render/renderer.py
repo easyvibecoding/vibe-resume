@@ -157,6 +157,15 @@ def _rank_score(g) -> int:
     return g.total_sessions + len(g.achievements or []) * 5 + (g.capability_breadth or 0) * 2
 
 
+def _sort_groups(groups, emphasis):
+    """Rank groups by _rank_score, with emphasis spotlight/demote applied as a
+    dominating delta so spotlighted groups float into the detailed top-N and
+    demoted ones sink to one-liners."""
+    from vibe_resume.core.emphasis import rank_delta
+
+    return sorted(groups, key=lambda g: _rank_score(g) + rank_delta(g.name, emphasis), reverse=True)
+
+
 def _render_md(cfg: dict[str, Any], tailor: str | None, locale: str | None = None, persona: str | None = None, top_n: int | None = None) -> tuple[str, dict]:
     tpl_cfg = cfg.get("render", {}).get("templates_dir")
     bundled = Path(__file__).parent / "templates"
@@ -202,8 +211,10 @@ def _render_md(cfg: dict[str, Any], tailor: str | None, locale: str | None = Non
     env.filters["date_range"] = lambda start, end: format_date_range(start, end, locale_key)
     env.filters["localized"] = lambda obj, key: localized(obj, key, locale_key)
 
+    from vibe_resume.core.emphasis import load_emphasis
+
     groups = load_groups(persona=persona, locale=locale_key)
-    groups = sorted(groups, key=_rank_score, reverse=True)
+    groups = _sort_groups(groups, load_emphasis(cfg))
     if groups and all(not (g.summary or g.achievements) for g in groups):
         console.print(
             f"[yellow]⚠ no enriched cache for locale={locale_key}; "
