@@ -4,6 +4,25 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] — 2026-05-29
+
+### Changed
+
+- **Same logical repo worked from multiple paths now collapses into one
+  project group** (#37). Extractors capture each path's normalized git
+  `origin` remote + work-tree toplevel (`git_remote` / `git_toplevel` in
+  `Activity.extra`); the aggregator derives an identity-proven canonical
+  key (remote → toplevel) and rewrites duplicate groups onto one
+  representative path. Fixes double-counted projects from clones, renamed
+  dirs, and sub-package working directories. Merges only on proven identity
+  — unrelated same-named repos (different remote) stay separate.
+
+### Added
+
+- `extractors/base.py::git_identity(path, cache)` helper + `_normalize_remote`
+  — shared, memoized git-remote/toplevel resolver (reused by the upcoming
+  #38 curate gate).
+
 ## [0.7.0] — 2026-05-29
 
 ### Added
