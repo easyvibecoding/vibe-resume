@@ -4,6 +4,18 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.0] — 2026-05-29
+
+### Added
+
+- **Multi-agent orchestration signal** (`AgenticSignals.orchestration`, #48) —
+  detects subagents, parallel fan-out, supervisor/worker, fan-out→verify
+  pipelines, workflow scripts, and Agent SDK usage as distinct pattern tags
+  (from activity text + `skills_used`), instead of folding them into a generic
+  `agent-tooling %`. The enricher surfaces the topology — flagging a
+  verification/judge stage as a senior signal. Completes the competency-signal
+  set (tools #43 · methodology #44 · process #48).
+
 ## [0.12.0] — 2026-05-29
 
 ### Added
