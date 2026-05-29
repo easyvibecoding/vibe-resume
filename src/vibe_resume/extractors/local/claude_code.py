@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from vibe_resume.core.schema import Activity, ActivityType, Source
-from vibe_resume.extractors.base import git_identity, iter_jsonl, sample_spread
+from vibe_resume.extractors.base import git_identity, iter_jsonl, sample_spread, skill_uses_in
 
 NAME = "claude_code"
 _SUMMARY_MAX = 4000
@@ -61,6 +61,7 @@ def _process_session(path: Path, project_dirname: str,
     tool_names: defaultdict[str, int] = defaultdict(int)
     user_text_chunks: list[str] = []
     tool_args: list[str] = []
+    skills_used: set[str] = set()
     any_entry = False
 
     for entry in iter_jsonl(path):
@@ -90,6 +91,8 @@ def _process_session(path: Path, project_dirname: str,
                 )
             else:
                 txt = ""
+            if txt:
+                skills_used.update(skill_uses_in(txt))
             if txt and not txt.startswith("<") and "<system-reminder>" not in txt:
                 user_prompt_count += 1
                 user_text_chunks.append(txt[:per_chars])
@@ -127,6 +130,8 @@ def _process_session(path: Path, project_dirname: str,
             extra["git_remote"] = remote
         if toplevel:
             extra["git_toplevel"] = toplevel
+    if skills_used:
+        extra["skills_used"] = sorted(skills_used)
 
     return Activity(
         source=Source.CLAUDE_CODE,

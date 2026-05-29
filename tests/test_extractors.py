@@ -869,3 +869,31 @@ def test_codex_captures_git_identity(tmp_path, monkeypatch):
     acts = cx.extract({"extractors": {"codex": {"path": str(tmp_path)}}})
     assert acts[0].extra["git_remote"] == "github.com/me/bar"
     assert acts[0].extra["git_toplevel"] == "/Users/me/dev/bar"
+
+
+def test_claude_code_captures_skills_used(tmp_path, monkeypatch):
+    import vibe_resume.extractors.local.claude_code as cc
+
+    rows = [{"type": "user", "timestamp": "2026-01-01T00:00:00Z",
+             "message": {"content": "Base directory for this skill: /x/skills/foo\ndo it"}},
+            {"type": "user", "timestamp": "2026-01-01T00:01:00Z",
+             "message": {"content": "normal follow-up"}}]
+    _write_session(tmp_path, rows)
+    monkeypatch.setattr(cc, "git_identity", lambda path, cache=None: (None, None))
+    acts = cc.extract({"extractors": {"claude_code": {"path": str(tmp_path)}}})
+    assert acts[0].extra["skills_used"] == ["foo"]
+
+
+def test_codex_captures_skills_used(tmp_path, monkeypatch):
+    import vibe_resume.extractors.local.codex as cx
+
+    rows = [{"type": "session_meta", "timestamp": "2026-01-01T00:00:00Z",
+             "payload": {"cwd": "/proj", "id": "s1"}},
+            {"type": "response_item", "timestamp": "2026-01-01T00:01:00Z",
+             "payload": {"type": "message", "role": "user",
+                         "content": "Base directory for this skill: /x/skills/bar\ngo"}}]
+    f = tmp_path / "rollout-2026-01-01-uuid.jsonl"
+    f.write_text("\n".join(json.dumps(r) for r in rows))
+    monkeypatch.setattr(cx, "git_identity", lambda path, cache=None: (None, None))
+    acts = cx.extract({"extractors": {"codex": {"path": str(tmp_path)}}})
+    assert acts[0].extra["skills_used"] == ["bar"]

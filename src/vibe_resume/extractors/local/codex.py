@@ -31,7 +31,7 @@ from pathlib import Path
 from typing import Any
 
 from vibe_resume.core.schema import Activity, ActivityType, Source
-from vibe_resume.extractors.base import git_identity, iter_jsonl, sample_spread
+from vibe_resume.extractors.base import git_identity, iter_jsonl, sample_spread, skill_uses_in
 
 NAME = "codex"
 _SUMMARY_MAX = 4000
@@ -132,6 +132,7 @@ def _process_session(path: Path, sample_n: int, per_chars: int,
     tool_names: dict[str, int] = {}
     user_text_chunks: list[str] = []
     tool_args: list[str] = []
+    skills_used: set[str] = set()
     any_entry = False
 
     for entry in iter_jsonl(path):
@@ -165,6 +166,8 @@ def _process_session(path: Path, sample_n: int, per_chars: int,
         payload_type = payload.get("type")
         if payload_type == "message" and payload.get("role") == "user":
             txt = _flatten_content(payload.get("content", ""))
+            if txt:
+                skills_used.update(skill_uses_in(txt))
             # Skip synthetic system reminders injected into the stream.
             if txt and not txt.startswith("<") and "<system-reminder>" not in txt:
                 user_prompts += 1
@@ -201,6 +204,8 @@ def _process_session(path: Path, sample_n: int, per_chars: int,
             extra["git_remote"] = remote
         if toplevel:
             extra["git_toplevel"] = toplevel
+    if skills_used:
+        extra["skills_used"] = sorted(skills_used)
 
     return Activity(
         source=Source.CODEX,
