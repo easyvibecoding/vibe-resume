@@ -4,6 +4,22 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.2] — 2026-05-29
+
+### Fixed
+
+- **`curate --apply` no longer drops same-named groups (data loss)** (#41).
+  `apply_curation` keyed lookups by group name, so applying a `needs_decision`
+  merge of a same-named twin sent both groups to the merge-source bucket and
+  neither to survivors — silently deleting the kept project. It now pairs
+  groups with entries positionally and resolves merge targets to a specific
+  surviving group object (preferring the canonical-keyed anchor), so exactly
+  one group survives carrying both groups' activities.
+- **`load_groups` curated-cache lookup is now anchored to `GROUPS_PATH`** (#42).
+  The curated path is derived via `GROUPS_PATH.with_name(...)` at call time
+  instead of a standalone constant, so monkeypatching `GROUPS_PATH` redirects
+  it too and the suite stays hermetic on machines with a real curated cache.
+
 ## [0.10.1] — 2026-05-29
 
 ### Fixed
