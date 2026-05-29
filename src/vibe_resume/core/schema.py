@@ -93,6 +93,8 @@ class AgenticSignals(BaseModel):
     skills_used: list[str] = Field(default_factory=list)
     mcp_servers_used: list[str] = Field(default_factory=list)
     mcp_authored: bool = False
+    sdd: bool = False
+    tdd: bool = False
 
 
 class ProjectGroup(BaseModel):

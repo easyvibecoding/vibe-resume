@@ -256,3 +256,12 @@ def test_agentic_signals_defaults_and_group_field():
     back = ProjectGroup(**g.model_dump(mode="json"))
     assert back.agentic_signals.skills_authored == ["foo"]
     assert back.agentic_signals.mcp_servers_used == ["browser"]
+
+
+def test_agentic_signals_sdd_tdd_defaults():
+    from vibe_resume.core.schema import AgenticSignals
+    s = AgenticSignals()
+    assert s.sdd is False and s.tdd is False
+    s2 = AgenticSignals(sdd=True, tdd=True)
+    back = AgenticSignals(**s2.model_dump())
+    assert back.sdd is True and back.tdd is True
