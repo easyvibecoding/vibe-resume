@@ -81,6 +81,20 @@ class Activity(BaseModel):
     extra: dict[str, Any] = Field(default_factory=dict)
 
 
+class AgenticSignals(BaseModel):
+    """Structured agentic-competency signals derived from raw activity.
+
+    Shared surface for the AI-proficiency epic — later issues add fields
+    (SDD/TDD #44, orchestration #48). All optional/defaulted for back-compat.
+    """
+
+    skills_authored: list[str] = Field(default_factory=list)
+    skills_published: bool = False
+    skills_used: list[str] = Field(default_factory=list)
+    mcp_servers_used: list[str] = Field(default_factory=list)
+    mcp_authored: bool = False
+
+
 class ProjectGroup(BaseModel):
     """Aggregated activities for one project."""
 
@@ -125,6 +139,10 @@ class ProjectGroup(BaseModel):
     merge_evidence: str | None = Field(
         default=None,
         description="Human-readable merge justification, e.g. 'same remote github.com/me/foo'",
+    )
+    agentic_signals: AgenticSignals | None = Field(
+        default=None,
+        description="Agent Skills / MCP / methodology competency signals (author vs use)",
     )
 
 

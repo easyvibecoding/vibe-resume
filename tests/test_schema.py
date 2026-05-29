@@ -242,3 +242,17 @@ def test_project_group_provenance_defaults_and_roundtrip():
     back = ProjectGroup(**g2.model_dump(mode="json"))
     assert back.canonical_key == "remote:github.com/me/foo"
     assert back.merged_from == ["/a", "/b"]
+
+
+def test_agentic_signals_defaults_and_group_field():
+    from vibe_resume.core.schema import AgenticSignals, ProjectGroup
+    s = AgenticSignals()
+    assert s.skills_authored == [] and s.skills_used == [] and s.mcp_servers_used == []
+    assert s.skills_published is False and s.mcp_authored is False
+    g = ProjectGroup(name="x", first_activity="2026-01-01T00:00:00+00:00",
+                     last_activity="2026-01-01T00:00:00+00:00", total_sessions=1)
+    assert g.agentic_signals is None
+    g.agentic_signals = AgenticSignals(skills_authored=["foo"], mcp_servers_used=["browser"])
+    back = ProjectGroup(**g.model_dump(mode="json"))
+    assert back.agentic_signals.skills_authored == ["foo"]
+    assert back.agentic_signals.mcp_servers_used == ["browser"]
