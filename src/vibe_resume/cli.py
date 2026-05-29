@@ -389,6 +389,90 @@ def enrich(
 
 
 @cli.command()
+@click.option("--locale", default=None, help="Target locale")
+@click.option("--persona", default=None, help="Reviewer persona (single key)")
+@click.option("--tailor", default=None, help="JD file → adds present-but-omitted keyword suggestions")
+@click.option("--bar", type=float, default=0.8, help="Target score ratio (0.8 = grade B)")
+@click.option("--max-rounds", "max_rounds", type=int, default=6, help="Max iteration rounds")
+@click.option("--write", is_flag=True, default=False, help="Snapshot the winning config (default: dry-run)")
+@click.pass_context
+def iterate(ctx: click.Context, locale: str | None, persona: str | None, tailor: str | None,
+            bar: float, max_rounds: int, write: bool) -> None:
+    """Truth-preserving auto-iterate (#57): tighten the page budget (the only
+    deterministic truthful lever) to lift the review grade; stop at the bar or
+    honestly at the ceiling. Prints human-applied-only suggestions sourced from
+    the disclosed evidence — it NEVER rewrites bullets, invents a metric, or
+    inserts a human gate to chase points (see docs/PRINCIPLES.md)."""
+    from pathlib import Path
+
+    from vibe_resume.core.aggregator import load_groups
+    from vibe_resume.core.evidence import disclose_all, keyword_gap, unsurfaced_metrics
+    from vibe_resume.core.iterate import auto_iterate
+    from vibe_resume.core.review import (
+        _LOCALE_PAGE_TARGETS,
+        DEFAULT_PAGE_TARGET,
+        parse_jd_keywords,
+    )
+    from vibe_resume.core.review import review as _review
+    from vibe_resume.core.runner import run_render
+    from vibe_resume.render.i18n import get_locale, resolve_locale
+    from vibe_resume.render.renderer import _render_md
+
+    cfg = ctx.obj["config"]
+    locale_key = resolve_locale(locale or cfg.get("render", {}).get("locale"))
+    target = _LOCALE_PAGE_TARGETS.get(locale_key, DEFAULT_PAGE_TARGET)
+    lang = get_locale(locale_key).get("language")
+
+    def render_fn(b):
+        return _render_md(cfg, tailor, locale=locale_key, persona=persona, max_pages=b)[0]
+
+    def review_fn(md):
+        return _review(md, locale_key)
+
+    def suggestion_fn():
+        groups = load_groups(persona=persona, locale=locale_key)
+        evs = disclose_all(groups, lang=lang)
+        surfaced = {g.name: " ".join([g.summary or ""] + list(g.achievements or [])) for g in groups}
+        out: list[str] = []
+        for e in evs:
+            sb = surfaced.get(e.group, "")
+            um = unsurfaced_metrics(e, sb)
+            if um:
+                out.append(f"{e.group}: surface real metric(s) {', '.join(m.value for m in um[:6])} "
+                           "(present in activity, not in bullets — human-confirm)")
+            if e.has_human_gate and not any(h.term in sb.lower() for h in e.human_gate_evidence):
+                terms = ", ".join(sorted({h.term for h in e.human_gate_evidence}))
+                out.append(f"{e.group}: surface the real human gate ({terms}) the activity shows")
+        if tailor and Path(tailor).exists():
+            gap = keyword_gap(parse_jd_keywords(Path(tailor)), evs, " ".join(surfaced.values()))
+            if gap.present_but_omitted:
+                out.append("present-but-omitted JD keywords (backed — surface): "
+                           + ", ".join(gap.present_but_omitted))
+        return out
+
+    res = auto_iterate(render_fn, review_fn, page_target=target, bar=bar,
+                       max_rounds=max_rounds, suggestion_fn=suggestion_fn)
+
+    console.print(f"[cyan]auto-iterate[/cyan] locale={locale_key} bar={bar} (truth-preserving)")
+    for s in res.steps:
+        mark = "[green]★[/green]" if s.round == res.best_round else " "
+        console.print(f"  {mark} round {s.round}: {s.lever} → {s.total}/{s.max_total} ({s.grade})")
+    best = res.best
+    console.print(f"\nbest: round {res.best_round} ({best.grade if best else 'n/a'})  ·  reached bar: {res.reached_bar}")
+    console.print(f"[yellow]stop:[/yellow] {res.stop_reason}")
+    if res.suggestions:
+        console.print("\n[bold]Truthful suggestions (apply by hand — never auto-fabricated):[/bold]")
+        for s in res.suggestions:
+            console.print(f"  • {s}")
+    if write and best is not None:
+        run_render(cfg, fmt=cfg.get("render", {}).get("default_format", "md"),
+                   tailor=tailor, locale=locale_key, persona=persona, max_pages=best.max_pages)
+        console.print(f"[green]✓[/green] snapshotted winning config (max_pages={best.max_pages})")
+    else:
+        console.print("[dim](dry-run — pass --write to snapshot the winning config)[/dim]")
+
+
+@cli.command()
 @click.option("--format", "-f", default=None, help="md | docx | pdf | all")
 @click.option("--tailor", default=None, help="Path to job description .txt to tailor for")
 @click.option(
