@@ -4,6 +4,21 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.23.0] — 2026-05-30
+
+### Added
+
+- **`vibe-resume scan` — opt-in codebase scan per project** (#59). Activity says
+  *what the user did*; the code says *what the project is*. For each group with a
+  resolvable local `path`, the CLI gathers a **bounded, redacted** slice (README,
+  manifests, top-level tree — skips vendored/build dirs, caps files+bytes, drops
+  secret-bearing lines, runs profile redactors, honors `privacy.blocklist`) and
+  emits a per-project prompt for a **cheaper-model subagent** (one per project,
+  parallel) to summarize; `scan --ingest` persists structured grounding
+  (`{purpose, concrete_features, confirmed_tech, entrypoints}`) that enrich
+  injects (`CODEBASE_GROUNDING_BLOCK`). Describes **only what the code shows**
+  ("couldn't determine" is valid), never uploads code, never invents (P1).
+
 ## [0.22.1] — 2026-05-30
 
 ### Fixed

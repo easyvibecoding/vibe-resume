@@ -4,7 +4,7 @@ description: Generate a versioned, reviewer-scored résumé from the user's AI-c
 license: MIT
 compatibility: Requires Python 3.12+ and uv. Optional pandoc (PDF rendering) and claude CLI (LLM enrichment; falls back to rule-based). Works on macOS and Linux.
 metadata:
-  version: "0.22.1"
+  version: "0.23.0"
   author: easyvibecoding
   hermes:
     tags:
@@ -66,6 +66,7 @@ Invoke this skill whenever the user wants to **turn their AI-tool usage history 
 | Score with JD echo | `uv run vibe-resume review --jd data/imports/jd.txt` |
 | Score with persona lens | `uv run vibe-resume review --persona hr` — appends persona-specific review tips |
 | **Disclose real signals (self-mine)** | `uv run vibe-resume evidence --json` — per group: candidate metrics, backed terms, human-gate evidence, provenance. `--jd <file>` adds present-but-omitted vs genuinely-absent keywords. **Surface only what's disclosed — never invent.** |
+| **Ground in the code** | `uv run vibe-resume scan` → process each `*.scan.prompt.md` with a cheap-model subagent (one per project, parallel) → `uv run vibe-resume scan --ingest`. Grounds bullets in what the repo actually does. Opt-in; never uploads code, drops secrets. |
 | **Fit a page budget** | `uv run vibe-resume render --max-pages 2 --locale en_US` — tighten bullet density, not just `--top-n` |
 | **Standard variant set** | `uv run vibe-resume render --variants --locale en_US` — ATS (page-budgeted) + detailed, same cache |
 | **Truth-preserving auto-iterate** | `uv run vibe-resume iterate --locale en_US` — lift the grade via truthful levers, stop honestly at the ceiling, print human-applied suggestions (dry-run; `--write` to snapshot) |
