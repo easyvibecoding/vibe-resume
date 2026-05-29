@@ -69,12 +69,20 @@ def classify(groups: list[ProjectGroup], noise_globs: list[str]) -> list[Curatio
         else:
             # needs_decision: no identity proof (no remote/toplevel) but a
             # same-basename sibling exists → a human should confirm the merge.
+            # Self-exclude by IDENTITY, not name (#40): a same-named twin must
+            # not be dropped from the candidate set. Prefer a sibling that HAS
+            # a canonical_key as the anchor, so the no-proof copy folds into the
+            # proven repo group — and only the non-anchor of a pair is flagged.
             sib = None
             if g.canonical_key is None:
-                siblings = [s for s in by_base[_basename(g)] if s.name != g.name]
+                siblings = [s for s in by_base[_basename(g)] if s is not g]
                 if siblings:
-                    sib = max(siblings, key=lambda s: s.total_sessions)
-            if sib is not None and sib.total_sessions >= g.total_sessions and sib.name != g.name:
+                    sib = max(siblings, key=lambda s: (s.canonical_key is not None,
+                                                       s.total_sessions, s.name))
+            if sib is not None and (
+                (sib.canonical_key is not None)
+                or (sib.total_sessions, sib.name) > (g.total_sessions, g.name)
+            ):
                 tier, action, target = "needs_decision", "merge_into", sib.name
                 evidence = f"no remote proof; same basename as {sib.name}. CONFIRM?"
             elif len(g.merged_from) > 1:

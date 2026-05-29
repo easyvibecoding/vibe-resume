@@ -113,3 +113,19 @@ def test_apply_headless_no_record_applies_auto_only():
     record = headless_record([crm, tmp], DEFAULT_NOISE_GLOBS)
     out = apply_curation([crm, tmp], record)
     assert {g.name for g in out} == {"CRM"}       # noise auto-dropped, no merge_into
+
+
+def test_classify_needs_decision_same_name_no_remote_twin():
+    # #40: a no-remote copy that shares its NAME with a keyed twin must still
+    # surface as needs_decision → merge_into the keyed twin (self-exclude by
+    # identity, not name).
+    keyed = _g("X", path="/work/X", sessions=10, canonical_key="remote:github.com/acme/x",
+               merged_from=["/work/X"])
+    nokey = _g("X", path="/notes/X", sessions=3)   # same name, no remote
+    entries = classify([keyed, nokey], DEFAULT_NOISE_GLOBS)
+    nokey_entry = next(e for e in entries if e.sessions == 3)
+    keyed_entry = next(e for e in entries if e.sessions == 10)
+    assert nokey_entry.tier == "needs_decision"
+    assert nokey_entry.action == "merge_into"
+    assert nokey_entry.target == "X"             # folds into the keyed twin
+    assert keyed_entry.tier in ("keep", "auto_merge")   # keyed anchor is NOT flagged
