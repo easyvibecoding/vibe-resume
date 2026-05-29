@@ -322,6 +322,12 @@ def _build_prompt(
                 "spec → plan → tasks → implementation")
         if sig.tdd:
             sig_lines.append("practices test-driven development (failing test first)")
+        if sig.orchestration:
+            line = (f"designed multi-agent orchestration ({', '.join(sig.orchestration)}): "
+                    "e.g. fan-out → synthesize → adversarial-verify")
+            if "verify-pipeline" in sig.orchestration:
+                line += " (with a verification/judge stage)"
+            sig_lines.append(line)
         if sig_lines:
             body += AGENTIC_SIGNALS_BLOCK.format(lines="\n".join(f"- {x}" for x in sig_lines))
     if emphasis is not None and (emphasis.intent or emphasis.keywords or emphasis.bias_instruction):

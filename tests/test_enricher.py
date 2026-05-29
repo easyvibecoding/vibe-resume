@@ -193,3 +193,14 @@ def test_build_prompt_agentic_block_includes_sdd_tdd():
     assert "AGENTIC SIGNALS" in p
     assert "spec-driven development" in p
     assert "test-driven development" in p
+
+
+def test_build_prompt_agentic_block_includes_orchestration():
+    from vibe_resume.core.schema import AgenticSignals
+    g = _many_act_group(3)
+    g.agentic_signals = AgenticSignals(orchestration=["fan-out", "verify-pipeline"])
+    p = _build_prompt(g)
+    assert "AGENTIC SIGNALS" in p
+    assert "multi-agent orchestration" in p
+    assert "fan-out" in p and "verify-pipeline" in p
+    assert "verification" in p
