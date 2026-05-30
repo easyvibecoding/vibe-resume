@@ -4,6 +4,20 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.26.0] — 2026-05-30
+
+### Added
+
+- **`review` disclosure** (#63):
+  - **Newer-variant warning** — when `review` auto-selects by persona/locale, a
+    variant suffix (e.g. `_detailed`) could make the glob miss the file you just
+    rendered and silently score an older one. It now warns when a higher-versioned
+    same-locale render exists, naming it and pointing to `--file`.
+  - **`review --by-bullet`** — per-failing-bullet diagnostics (which check each
+    in-scope bullet missed: `no-metric` / `not-verb-first` / `ai-no-human-gate`),
+    pointing at `evidence` for truthful fixes. Turns a dead-end aggregate score
+    into an actionable gap list.
+
 ## [0.25.0] — 2026-05-30
 
 ### Added
