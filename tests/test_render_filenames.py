@@ -259,3 +259,31 @@ def test_variants_emit_ats_and_detailed_from_same_cache(tmp_path, monkeypatch):
     # ATS variant carries a page budget; detailed does not — same cache, different length
     assert {"top_n": 4, "max_pages": 2.0} in captured
     assert any(c["max_pages"] is None and c["top_n"] == 14 for c in captured)
+
+
+def test_render_draft_returns_dropped_pdf(tmp_path, monkeypatch):
+    """#66: render_draft reports a dropped requested format."""
+    from vibe_resume.render import renderer
+    monkeypatch.setattr(renderer, "_history_path", lambda cfg: tmp_path)
+    monkeypatch.setattr(renderer, "_render_md", lambda *a, **k: (
+        "# x\n", {"locale": {"_key": "en_US"}, "_tpl_name": "f.j2",
+                  "profile": {"summary": "s"}, "groups": []}))
+    monkeypatch.setattr(renderer, "snapshot", lambda *a, **k: None)
+    monkeypatch.setattr(renderer, "_render_pdf", lambda *a, **k: False)
+    dropped = renderer.render_draft({}, fmt="pdf", locale="en_US")
+    assert dropped == ["pdf"]
+
+
+def test_render_cli_exits_nonzero_on_dropped_format(monkeypatch):
+    """#66: CI/agent gating — dropped format → non-zero (unless --allow-partial)."""
+    from click.testing import CliRunner
+
+    import vibe_resume.core.runner as runner
+    from vibe_resume.cli import cli
+    monkeypatch.setattr(runner, "run_render", lambda *a, **k: ["pdf"])
+    r = CliRunner().invoke(cli, ["render", "-f", "pdf", "--locale", "en_US"], obj={"config": {}})
+    assert r.exit_code != 0
+    assert "dropped" in r.output.lower()
+    r2 = CliRunner().invoke(cli, ["render", "-f", "pdf", "--locale", "en_US", "--allow-partial"],
+                            obj={"config": {}})
+    assert r2.exit_code == 0

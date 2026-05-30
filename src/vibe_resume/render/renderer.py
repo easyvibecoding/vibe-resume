@@ -502,7 +502,10 @@ def render_draft(
     top_n: int | None = None,
     max_pages: float | None = None,
     variant: str | None = None,
-) -> None:
+) -> list[str]:
+    """Render + snapshot a version. Returns the list of *requested* formats that
+    were dropped (e.g. ["pdf"] when the PDF engine is missing) so callers can
+    exit non-zero (#66)."""
     hist = _history_path(cfg)
     version = _next_version(hist)
 
@@ -527,6 +530,7 @@ def render_draft(
     _want_pdf = "all" in fmt_set or "pdf" in fmt_set
 
     written = [md_path]
+    dropped: list[str] = []
     if _want_docx:
         docx_path = hist / f"resume_v{version:03d}{suffix}.docx"
         if locale_key == "ja_JP":
@@ -545,8 +549,9 @@ def render_draft(
             written.append(pdf_path)
             console.print(f"[green]✓[/green] {pdf_path.name}")
         else:
-            # #64: a requested format was dropped — surface it prominently, not as
-            # a buried line behind an exit-0 success.
+            # #64/#66: a requested format was dropped — surface it prominently and
+            # report it back so the caller can exit non-zero (CI/agent gating).
+            dropped.append("pdf")
             console.print(
                 f"[red]✗ PDF NOT produced for v{version:03d}{suffix}[/red] — md/docx may "
                 f"still have succeeded; run `vibe-resume doctor` for the PDF-engine fix."
@@ -560,3 +565,13 @@ def render_draft(
     sha = snapshot(cfg, written, msg)
     if sha:
         console.print(f"[cyan]snapshot[/cyan] {sha}")
+
+    # #66: structured per-format status so callers can parse / gate.
+    if _want_pdf or _want_docx:
+        parts = ["md ✓"]
+        if _want_docx:
+            parts.append("docx ✓")
+        if _want_pdf:
+            parts.append("pdf ✓" if "pdf" not in dropped else "pdf ✗ (engine missing)")
+        console.print(f"[dim]formats: {' · '.join(parts)}[/dim]")
+    return dropped

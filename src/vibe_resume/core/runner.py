@@ -198,8 +198,8 @@ def run_render(
     top_n: int | None = None,
     max_pages: float | None = None,
     variant: str | None = None,
-) -> None:
+) -> list[str]:
     from vibe_resume.render.renderer import render_draft
 
-    render_draft(cfg, fmt=fmt, tailor=tailor, locale=locale, persona=persona,
-                 top_n=top_n, max_pages=max_pages, variant=variant)
+    return render_draft(cfg, fmt=fmt, tailor=tailor, locale=locale, persona=persona,
+                        top_n=top_n, max_pages=max_pages, variant=variant) or []

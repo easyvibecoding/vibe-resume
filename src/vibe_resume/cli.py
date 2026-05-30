@@ -558,6 +558,8 @@ def iterate(ctx: click.Context, locale: str | None, persona: str | None, tailor:
 @click.option("--variants", "variants", is_flag=True, default=False,
               help="Emit the standard variant set per locale (ATS page-budgeted + detailed) "
                    "from the same enriched cache; files suffixed _ats/_detailed. (config.render.variants)")
+@click.option("--allow-partial", "allow_partial", is_flag=True, default=False,
+              help="Keep exit 0 even when a requested format is dropped (default: exit non-zero) — #66")
 @click.pass_context
 def render(
     ctx: click.Context,
@@ -570,6 +572,7 @@ def render(
     no_emphasis: bool,
     max_pages: float | None,
     variants: bool,
+    allow_partial: bool,
 ) -> None:
     """Render resume draft to selected format and snapshot a version."""
     from vibe_resume.core.personas import PERSONAS, list_persona_keys
@@ -604,6 +607,8 @@ def render(
     from vibe_resume.render.renderer import DEFAULT_VARIANTS
     variant_set = (cfg.get("render", {}).get("variants") or DEFAULT_VARIANTS) if variants else None
 
+    all_dropped: list[str] = []
+
     def _render_for(locale_key: str | None, formats: list[str]) -> None:
         for p_key in persona_keys:
             if p_key:
@@ -613,10 +618,10 @@ def render(
                     # All variants derive from the SAME enriched cache — they differ
                     # only in selection/length, never in claims (#55, P1.4).
                     for v in variant_set:
-                        run_render(cfg, fmt=f, tailor=tailor, locale=locale_key, persona=p_key,
-                                   top_n=v.get("top_n"), max_pages=v.get("max_pages"), variant=v.get("name"))
+                        all_dropped.extend(run_render(cfg, fmt=f, tailor=tailor, locale=locale_key, persona=p_key,
+                                           top_n=v.get("top_n"), max_pages=v.get("max_pages"), variant=v.get("name")))
                 else:
-                    run_render(cfg, fmt=f, tailor=tailor, locale=locale_key, persona=p_key, top_n=top_n, max_pages=max_pages)
+                    all_dropped.extend(run_render(cfg, fmt=f, tailor=tailor, locale=locale_key, persona=p_key, top_n=top_n, max_pages=max_pages))
 
     if all_locales:
         # If the user didn't pass --format, fan out over the configured list
@@ -630,6 +635,15 @@ def render(
             _render_for(key, formats)
     else:
         _render_for(locale, [fmt])
+
+    # #66: a requested format that wasn't produced must fail the command so CI /
+    # agents gating on exit code don't treat a missing artifact as success.
+    if all_dropped and not allow_partial:
+        uniq = ", ".join(sorted(set(all_dropped)))
+        raise click.ClickException(
+            f"requested format(s) dropped: {uniq} — see the PDF-engine hint above "
+            f"(`vibe-resume doctor`). Pass --allow-partial to keep exit 0."
+        )
 
 
 @cli.command("personas-compare")
