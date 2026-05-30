@@ -1566,6 +1566,354 @@ def company_audit(stale_days: int | None, only_stale: bool) -> None:
         )
 
 
+def _render_review_matrix(
+    cfg: dict,
+    *,
+    persona_keys: list[str | None],
+    locale_keys: list[str],
+    fmt_list: list[str],
+    tailor: str | None,
+    company: str | None,
+    level: str | None,
+    do_render: bool = True,
+    do_review: bool = True,
+) -> int:
+    """Render and/or review the persona×locale matrix; return files reviewed.
+
+    Shared by the gated run's render stage, the terminal G8 acceptance stage, and
+    --resume-from. Mirrors the existing Phase B render+review loop so behavior
+    stays identical (#71)."""
+    from vibe_resume.core.review import (
+        parse_jd_keywords,
+        resolve_resume_path,
+        review_file,
+        write_report,
+    )
+    from vibe_resume.core.runner import run_render
+
+    if do_render:
+        for loc in locale_keys:
+            for p in persona_keys:
+                run_render(cfg, fmt=",".join(fmt_list), tailor=tailor, locale=loc, persona=p)
+
+    reviewed = 0
+    if do_review:
+        hist = ROOT / (cfg.get("render", {}).get("output_dir") or "data/resume_history")
+        out_dir = ROOT / "data" / "reviews"
+        jd_kw = parse_jd_keywords(Path(tailor)) if tailor else None
+        for loc in locale_keys:
+            for p in persona_keys:
+                try:
+                    md_path = resolve_resume_path(hist, persona=p, locale=loc)
+                except (ValueError, FileNotFoundError) as e:
+                    console.print(f"  [yellow]skip review ({p or 'default'}/{loc}): {e}[/yellow]")
+                    continue
+                report = review_file(
+                    md_path, locale_key=loc,
+                    persona=p, company=company, level=level,
+                    jd_keywords=jd_kw,
+                )
+                write_report(report, out_dir)
+                reviewed += 1
+    return reviewed
+
+
+def _gate_pause(
+    gate, data_dir: Path, *, cfg: dict, locale: str | None, persona: str | None,
+    score: dict | None = None,
+) -> None:
+    """Emit the pending gate file and print the decide→`--continue` message (#71).
+
+    G5's context comes from the evidence disclosure layer filtered to
+    safe_to_surface metrics; emit_gate's assert_g5_safe still guards the write."""
+    from vibe_resume.core.gates import GATE_DEFS, emit_gate
+    from vibe_resume.core.run_gates import build_gate_context, gate_dir
+
+    gd = gate_dir(data_dir)
+    context = build_gate_context(
+        gate, cfg=cfg, locale=locale, persona=persona, score=score
+    )
+    path = emit_gate(gate, gd, context=context)
+    d = GATE_DEFS[gate]
+    rel = path.relative_to(ROOT) if path.is_relative_to(ROOT) else path
+    console.print(
+        f"\n[bold yellow]⏸ paused at {gate.value} ({d.short})[/bold yellow] — {d.description}"
+    )
+    console.print(f"  decision file: [cyan]{rel}[/cyan]  (choices: {', '.join(d.choices)})")
+    console.print(
+        "  [dim]fill in the `decision` field, then re-run "
+        "[/dim][cyan]`vibe-resume run --continue`[/cyan][dim] (same flags) to resume.[/dim]"
+    )
+
+
+def _run_gated(
+    cfg: dict,
+    data_dir: Path,
+    *,
+    active_gates: list,
+    do_continue: bool,
+    persona_keys: list[str | None],
+    locale_keys: list[str],
+    fmt_list: list[str],
+    tailor: str | None,
+    company: str | None,
+    level: str | None,
+    limit: int | None,
+    max_age_days: int,
+) -> None:
+    """Ledger-driven multi-stop gate machine (#71).
+
+    Walks gates in run order. On --continue, first INGESTS any newly-decided gate
+    files into the ledger (recording choice + timestamp). Then finds the first
+    active gate still without a decision and either PAUSES there (emit + stop) or,
+    if all decided, finishes the run (ingest enrich + render + review).
+    """
+    import time
+    from datetime import UTC, datetime
+
+    from vibe_resume.core.gates import (
+        Gate,
+        GateLedger,
+        read_gate_decision,
+    )
+    from vibe_resume.core.run_gates import (
+        FULLY_WIRED,
+        first_pending_gate,
+        gate_dir,
+        ledger_path,
+        record_active_set,
+    )
+    from vibe_resume.core.runner import (
+        run_aggregator,
+        run_enricher,
+        run_extractors,
+    )
+
+    lpath = ledger_path(data_dir)
+    ledger = GateLedger.load(lpath)
+
+    def now() -> str:  # clock lives at the CLI seam only; core stays clock-free
+        return datetime.now(UTC).isoformat()
+
+    # First (non-continue) invocation defines + persists the armed set.
+    if not do_continue:
+        record_active_set(ledger, active_gates, now())
+        ledger.save(lpath)
+        ids = ", ".join(g.value for g in active_gates)
+        wired = ", ".join(g.value for g in active_gates if g in FULLY_WIRED)
+        console.print(f"[cyan]Interactive Gate Mode[/cyan] armed: [bold]{ids}[/bold]")
+        console.print(f"[dim]  fully-wired: {wired or '(none)'}; others emit+record.[/dim]")
+
+    # On --continue: ingest decisions for any active gate whose file is now decided.
+    if do_continue:
+        for g in active_gates:
+            existing = ledger.get(g)
+            if existing is not None and existing.decision.get("choice"):
+                continue  # already recorded
+            gf, warnings = read_gate_decision(gate_dir(data_dir) / f"{g.value}.gate.json")
+            for w in warnings:
+                console.print(f"  [yellow]{w}[/yellow]")
+            if gf.decision and gf.decision.get("choice"):
+                decision = dict(gf.decision)
+                if existing is not None:
+                    # preserve the active-set marker if it lived on this gate
+                    decision = {**existing.decision, **decision}
+                ledger.record(g, decision, now())
+                console.print(
+                    f"  [green]recorded[/green] {g.value} → {gf.decision.get('choice')}"
+                )
+        ledger.save(lpath)
+
+    # Where to resume: first armed gate without a decision.
+    pending = first_pending_gate(active_gates, ledger)
+
+    # ── Run stages up to (and pausing at) the first pending gate ─────────────
+    # G1 freshness: run extract+aggregate unless reused.
+    g1_decided = ledger.get(Gate.G1_FRESHNESS)
+    if Gate.G1_FRESHNESS in active_gates:
+        if pending is Gate.G1_FRESHNESS:
+            _gate_pause(Gate.G1_FRESHNESS, data_dir, cfg=cfg,
+                        locale=locale_keys[0], persona=persona_keys[0])
+            return
+        # decided
+        if g1_decided and g1_decided.decision.get("choice") == "reuse":
+            console.print("[dim]G1=reuse → skipping extract+aggregate[/dim]")
+        else:
+            console.print("[cyan]G1=reextract → extract + aggregate[/cyan]")
+            run_extractors(cfg)
+            run_aggregator(cfg)
+    else:
+        # non-armed G1: current freshness-by-mtime behavior.
+        cache_marker = data_dir / "cache" / "_project_groups.json"
+        if not cache_marker.exists() or (time.time() - cache_marker.stat().st_mtime) > max_age_days * 86400:
+            run_extractors(cfg)
+            run_aggregator(cfg)
+
+    # G2 grouping: decision records top_n -> enrich limit, drop_noise.
+    g2_limit = limit
+    if Gate.G2_GROUPING in active_gates:
+        if pending is Gate.G2_GROUPING:
+            _gate_pause(Gate.G2_GROUPING, data_dir, cfg=cfg,
+                        locale=locale_keys[0], persona=persona_keys[0])
+            return
+        g2 = ledger.get(Gate.G2_GROUPING)
+        if g2 and g2.decision.get("choice") == "top_n":
+            top = g2.decision.get("top_n")
+            if isinstance(top, int):
+                g2_limit = top
+                console.print(f"[dim]G2=top_n → enrich limit {top}[/dim]")
+        elif g2 and g2.decision.get("choice") == "drop_noise":
+            console.print("[dim]G2=drop_noise → (curation applied upstream)[/dim]")
+
+    # G4 bullets == the existing enrich emit/process/continue checkpoint.
+    if Gate.G4_BULLETS in active_gates and pending is Gate.G4_BULLETS:
+        # Emit the enrich manifests (the bullets to process) THEN pause as G4.
+        n_cells = len(persona_keys) * len(locale_keys)
+        console.print(f"[cyan]emit {n_cells} enrich manifest(s) for G4 review[/cyan]")
+        for p in persona_keys:
+            for loc in locale_keys:
+                run_enricher(cfg, locale=loc, persona=p, tailor=tailor,
+                             level=level, company=company, limit=g2_limit)
+        _gate_pause(Gate.G4_BULLETS, data_dir, cfg=cfg,
+                    locale=locale_keys[0], persona=persona_keys[0])
+        return
+
+    # If we have not yet emitted enrich and G4 is not the pause, emit now so a
+    # later --continue can ingest. (Idempotent: re-emit keeps decided yaml.)
+    if not do_continue:
+        n_cells = len(persona_keys) * len(locale_keys)
+        console.print(f"[cyan]emit {n_cells} enrich manifest(s)[/cyan]")
+        for p in persona_keys:
+            for loc in locale_keys:
+                run_enricher(cfg, locale=loc, persona=p, tailor=tailor,
+                             level=level, company=company, limit=g2_limit)
+        console.print(
+            "\n[green]✓ stage emitted.[/green] Process the *.prompt.md files, then "
+            "[cyan]`vibe-resume run --continue`[/cyan] (same flags) to advance the gates."
+        )
+        return
+
+    # ── --continue path beyond G1/G2/G4 emit: render gates + acceptance ──────
+    # Ingest the processed enrich manifests once we are past the bullets stage.
+    console.print("[cyan]ingest enrich manifests[/cyan]")
+    run_enricher(cfg, ingest=True, ingest_all=True)
+
+    # G5/G6/G7 guard render.
+    for rg in (Gate.G5_METRICS, Gate.G6_REDACTION, Gate.G7_VARIANTS):
+        if rg in active_gates and pending is rg:
+            _gate_pause(rg, data_dir, cfg=cfg,
+                        locale=locale_keys[0], persona=persona_keys[0])
+            return
+
+    console.print("[cyan]render matrix[/cyan]")
+    _render_review_matrix(
+        cfg, persona_keys=persona_keys, locale_keys=locale_keys, fmt_list=fmt_list,
+        tailor=tailor, company=company, level=level, do_render=True, do_review=False,
+    )
+
+    # G8 acceptance — terminal: review first (feed score as context), then pause.
+    if Gate.G8_ACCEPTANCE in active_gates and pending is Gate.G8_ACCEPTANCE:
+        reviewed = _render_review_matrix(
+            cfg, persona_keys=persona_keys, locale_keys=locale_keys, fmt_list=fmt_list,
+            tailor=tailor, company=company, level=level, do_render=False, do_review=True,
+        )
+        _gate_pause(Gate.G8_ACCEPTANCE, data_dir, cfg=cfg,
+                    locale=locale_keys[0], persona=persona_keys[0],
+                    score={"reviewed": reviewed})
+        console.print(f"[dim]reviewed {reviewed} file(s); decide acceptance to finish.[/dim]")
+        return
+
+    reviewed = _render_review_matrix(
+        cfg, persona_keys=persona_keys, locale_keys=locale_keys, fmt_list=fmt_list,
+        tailor=tailor, company=company, level=level, do_render=False, do_review=True,
+    )
+    console.print(f"\n[green]✓ gated run complete.[/green] Reviewed {reviewed} file(s).")
+    console.print("[dim]run `vibe-resume trend` for the sparkline summary.[/dim]")
+
+
+def _run_resume_from(
+    cfg: dict,
+    resume_from: str,
+    data_dir: Path,
+    *,
+    persona_keys: list[str | None],
+    locale_keys: list[str],
+    fmt_list: list[str],
+    tailor: str | None,
+    company: str | None,
+    level: str | None,
+) -> None:
+    """--resume-from Gn: recompute only that gate's ordered suffix, then diff (#71)."""
+    from vibe_resume.core.gates import (
+        Gate,
+        GateLedger,
+        Stage,
+        resume_plan,
+    )
+    from vibe_resume.core.review import (
+        find_previous_review,
+        parse_jd_keywords,
+        resolve_resume_path,
+        review_file,
+        write_report,
+    )
+    from vibe_resume.core.run_gates import ledger_path
+    from vibe_resume.core.runner import (
+        run_aggregator,
+        run_enricher,
+        run_extractors,
+        run_render,
+    )
+
+    try:
+        gate = Gate(resume_from.upper())
+    except ValueError as e:
+        raise click.UsageError(
+            f"unknown gate '{resume_from}'. Use one of: {', '.join(g.value for g in Gate)}"
+        ) from e
+
+    ledger = GateLedger.load(ledger_path(data_dir))
+    plan = resume_plan(ledger, gate)
+    label = " → ".join(s.value for s in plan) if plan else "(terminal — nothing to recompute)"
+    console.print(f"[cyan]resume-from {gate.value}[/cyan] → recompute: [bold]{label}[/bold]")
+    if not plan:
+        return
+
+    stage_set = set(plan)
+    if Stage.EXTRACT in stage_set:
+        run_extractors(cfg)
+    if Stage.AGGREGATE in stage_set:
+        run_aggregator(cfg)
+    if Stage.ENRICH in stage_set:
+        run_enricher(cfg, ingest=True, ingest_all=True)
+    if Stage.RENDER in stage_set:
+        for loc in locale_keys:
+            for p in persona_keys:
+                run_render(cfg, fmt=",".join(fmt_list), tailor=tailor, locale=loc, persona=p)
+    if Stage.REVIEW not in stage_set:
+        console.print("[dim]plan stops before review — no scorecard diff.[/dim]")
+        return
+
+    # Review + automatic diff vs the previous review of the same source/locale.
+    hist = ROOT / (cfg.get("render", {}).get("output_dir") or "data/resume_history")
+    out_dir = ROOT / "data" / "reviews"
+    jd_kw = parse_jd_keywords(Path(tailor)) if tailor else None
+    for loc in locale_keys:
+        for p in persona_keys:
+            try:
+                md_path = resolve_resume_path(hist, persona=p, locale=loc)
+            except (ValueError, FileNotFoundError) as e:
+                console.print(f"  [yellow]skip review ({p or 'default'}/{loc}): {e}[/yellow]")
+                continue
+            report = review_file(
+                md_path, locale_key=loc, persona=p, company=company, level=level,
+                jd_keywords=jd_kw,
+            )
+            previous = find_previous_review(out_dir, report.source, report.locale)
+            write_report(report, out_dir, previous=previous)
+            console.print(report.as_markdown(previous=previous))
+
+
 @cli.command("run")
 @click.option("--personas", default=None,
               help="Comma-separated persona keys, or 'all'. Default: default (no persona).")
@@ -1581,6 +1929,16 @@ def company_audit(stale_days: int | None, only_stale: bool) -> None:
               help="If extract cache is older than this many days, run extract+aggregate first.")
 @click.option("--continue", "do_continue", is_flag=True, default=False,
               help="Skip Phase A (extract+aggregate+emit); resume with ingest+render+review+trend on existing manifests.")
+@click.option("--interactive", is_flag=True, default=False,
+              help="Interactive Gate Mode (#71): pause at the 'checkpoints' preset (G1,G2,G8) "
+                   "unless overridden by --preset/--gates. Writes a run ledger; resume with --continue.")
+@click.option("--preset", "preset", default=None,
+              help="Gate preset: autopilot | checkpoints | full_review. Implies interactive when non-autopilot.")
+@click.option("--gates", "gates_arg", default=None,
+              help="Explicit comma-separated gate set (e.g. G1,G5,G8). Overrides --preset/--interactive.")
+@click.option("--resume-from", "resume_from", default=None,
+              help="Re-run only the recompute suffix for a re-decided gate (e.g. G5 → render,review), "
+                   "then print a review-diff. Reads data/run_ledger.json.")
 @click.pass_context
 def run_cmd(
     ctx: click.Context,
@@ -1593,6 +1951,10 @@ def run_cmd(
     formats: str | None,
     max_age_days: int,
     do_continue: bool,
+    interactive: bool,
+    preset: str | None,
+    gates_arg: str | None,
+    resume_from: str | None,
 ) -> None:
     """Run the full pipeline (multi-persona × multi-locale) in one command.
 
@@ -1603,6 +1965,14 @@ def run_cmd(
     \b
     Phase B (--continue): ingest --all + render matrix + review matrix + trend.
     No auto-dispatch; the Agent SDK quota pool is never touched.
+
+    \b
+    Interactive Gate Mode (#71): --interactive / --preset / --gates arm a gate set
+    and the run becomes a ledger-driven multi-stop machine — it PAUSES before each
+    armed gate (emitting data/gates/<id>.gate.json), tells you to decide + re-run
+    --continue, and resumes at the first un-decided gate. --resume-from Gn re-runs
+    only that gate's recompute suffix and prints a review-diff. With NO gate flags
+    `run` behaves exactly as before (no ledger, no pauses).
     """
     import time
 
@@ -1640,6 +2010,41 @@ def run_cmd(
     )
 
     _warn_if_company_stale(company)
+
+    data_dir = ROOT / "data"
+
+    # ── Interactive Gate Mode resolution (#71) ───────────────────────────────
+    # autopilot preset is a no-op armed set, so an explicit `--preset autopilot`
+    # behaves like no gate flags (backward-compatible).
+    from vibe_resume.core.run_gates import resolve_active_gates
+
+    try:
+        active_gates = resolve_active_gates(
+            interactive=interactive, preset=preset, gates=gates_arg
+        )
+    except ValueError as e:
+        raise click.UsageError(str(e)) from e
+
+    # --resume-from is independent of the armed set: it replays a re-decided gate.
+    if resume_from:
+        _run_resume_from(
+            cfg, resume_from, data_dir,
+            persona_keys=persona_keys, locale_keys=locale_keys,
+            fmt_list=fmt_list, tailor=tailor, company=company, level=level,
+        )
+        return
+
+    gated = bool(active_gates)
+
+    if gated:
+        _run_gated(
+            cfg, data_dir,
+            active_gates=active_gates, do_continue=do_continue,
+            persona_keys=persona_keys, locale_keys=locale_keys,
+            fmt_list=fmt_list, tailor=tailor, company=company, level=level,
+            limit=limit, max_age_days=max_age_days,
+        )
+        return
 
     # ════════════════════════════════════════════════════════════════════════
     # Phase B — ingest + render + review + trend
@@ -1725,10 +2130,11 @@ def run_cmd(
 
 @cli.group()
 def gates() -> None:
-    """Interactive Gate Mode (#70): inspect the gates, presets, and replay plans.
+    """Interactive Gate Mode (#70/#71): inspect the gates, presets, and replay plans.
 
-    The gate model + ledger + invalidation graph land here; full per-gate
-    pause-and-continue wiring into `run` is the next phase."""
+    The gate model + ledger + invalidation graph land here; the per-gate
+    pause-and-continue state machine is wired into `vibe-resume run`
+    (`--interactive` / `--preset` / `--gates` / `--resume-from`)."""
 
 
 @gates.command("show")
