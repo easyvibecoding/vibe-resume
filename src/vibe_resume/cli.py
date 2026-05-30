@@ -1765,6 +1765,17 @@ def _run_gated(
         elif g2 and g2.decision.get("choice") == "drop_noise":
             console.print("[dim]G2=drop_noise → (curation applied upstream)[/dim]")
 
+    # G3 overwrite: profile ingest mode (clean vs remerge). It sits *before* the
+    # G4 enrich emit, so an armed-but-undecided G3 used to stall the path to G4 —
+    # the emit branch never fired, ingest found no jobs, and render fell back to
+    # raw aggregator output while reporting success (#74, silent failure). Pause
+    # here like G5/G6/G7 so full_review (the only preset that arms G3) records the
+    # decision instead of swallowing the enrich stage.
+    if Gate.G3_OVERWRITE in active_gates and pending is Gate.G3_OVERWRITE:
+        _gate_pause(Gate.G3_OVERWRITE, data_dir, cfg=cfg,
+                    locale=locale_keys[0], persona=persona_keys[0])
+        return
+
     # G4 bullets == the existing enrich emit/process/continue checkpoint.
     if Gate.G4_BULLETS in active_gates and pending is Gate.G4_BULLETS:
         # Emit the enrich manifests (the bullets to process) THEN pause as G4.

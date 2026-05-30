@@ -4,6 +4,23 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.32.3] — 2026-05-31
+
+### Fixed
+
+- **`run --preset full_review` skipped the enrich emit and rendered from raw
+  output while reporting success** (#74, silent failure). `full_review` is the
+  only preset that arms `G3` (overwrite), and `G3` sits *before* the `G4` enrich
+  emit but had no pause handler in the `run` state machine. After `G1`+`G2` were
+  decided, `first_pending_gate` returned `G3`, the `pending is G4` emit branch
+  never fired, ingest found no jobs, and render fell back to raw aggregator output
+  (no bullets) — then the run printed "gated run complete". Fixed by giving `G3`
+  an emit+pause branch (symmetric with `G5`/`G6`/`G7`) so `full_review` records
+  the overwrite decision and advances to the `G4` emit instead of swallowing it.
+  Added regression tests driving `full_review` G1→G2→continue (pauses at `G3`,
+  emits nothing, never claims completion) and G3-decided→continue (emits enrich,
+  pauses at `G4`). `GUARD_PHASE` now maps `G3 → "overwrite"`.
+
 ## [0.32.2] — 2026-05-31
 
 ### Fixed

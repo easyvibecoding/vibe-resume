@@ -52,12 +52,14 @@ LEDGER_NAME = "run_ledger.json"
 #   G7 variants   -> guards render
 #   G8 acceptance -> after review (terminal: accept / iterate / stop)
 #
-# G3 (overwrite) has no run-phase guard in the MVP matrix flow; it is emit-only
-# if ever armed and never pauses the matrix.
+# G3 (overwrite) guards profile ingest mode (clean vs remerge). It pauses *before*
+# the G4 enrich emit so an armed-but-undecided G3 cannot stall the path to G4
+# (#74). full_review is the only preset that arms it.
 
 GUARD_PHASE: dict[Gate, str] = {
     Gate.G1_FRESHNESS: "freshness",
     Gate.G2_GROUPING: "grouping",
+    Gate.G3_OVERWRITE: "overwrite",
     Gate.G4_BULLETS: "bullets",
     Gate.G5_METRICS: "render",
     Gate.G6_REDACTION: "render",

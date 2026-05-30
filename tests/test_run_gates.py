@@ -116,6 +116,56 @@ def test_continue_records_g1_decision_and_advances_to_g2(gated_root):
     assert g1["timestamp"]  # CLI stamped it
 
 
+# ---- full_review arms G3, which must pause (regression #74) -----------------
+
+
+def _decide(gated_root, gate_id, decision):
+    """Helper: write a decided gate file so the next --continue records it."""
+    gfp = gated_root / "data" / "gates" / f"{gate_id}.gate.json"
+    gf = json.loads(gfp.read_text())
+    gf["decision"] = decision
+    gf["status"] = "decided"
+    gfp.write_text(json.dumps(gf))
+
+
+def test_full_review_pauses_at_g3_after_g1_g2(gated_root):
+    """#74: full_review arms G3 (overwrite). After G1+G2 are decided the run
+    must PAUSE at G3 — not skip the enrich emit and render from raw output."""
+    args = ["run", "--preset", "full_review", "--locales", "en_US"]
+    # 1) initial → pause at G1
+    _invoke(args)
+    _decide(gated_root, "G1", {"choice": "reuse"})
+    # 2) continue → pause at G2
+    _invoke(args + ["--continue"])
+    _decide(gated_root, "G2", {"choice": "top_n", "top_n": 20})
+    # 3) continue → MUST pause at G3 (the bug rendered from raw + reported success)
+    result = _invoke(args + ["--continue"])
+    assert result.exit_code == 0, result.output
+    assert "paused at G3" in result.output, result.output
+    assert (gated_root / "data" / "gates" / "G3.gate.json").exists()
+    # the silent-failure tells: enrich must NOT have been emitted, nothing rendered,
+    # and the run must NOT claim completion.
+    assert "render matrix" not in result.output
+    assert "enrich manifest" not in result.output
+    assert "gated run complete" not in result.output
+
+
+def test_full_review_emits_enrich_and_pauses_at_g4_after_g3(gated_root):
+    """Once G3 is decided, the next --continue emits enrich + pauses at G4."""
+    args = ["run", "--preset", "full_review", "--locales", "en_US"]
+    _invoke(args)
+    _decide(gated_root, "G1", {"choice": "reuse"})
+    _invoke(args + ["--continue"])
+    _decide(gated_root, "G2", {"choice": "top_n", "top_n": 20})
+    _invoke(args + ["--continue"])  # pause at G3
+    _decide(gated_root, "G3", {"choice": "clean"})
+    result = _invoke(args + ["--continue"])
+    assert result.exit_code == 0, result.output
+    assert "enrich manifest" in result.output  # emit happened
+    assert "paused at G4" in result.output
+    assert "render matrix" not in result.output
+
+
 # ---- plain run unchanged ---------------------------------------------------
 
 
