@@ -175,7 +175,8 @@ def test_emit_gate_writes_pending_with_context_and_choices(tmp_path):
     data = json.loads(p.read_text())
     assert data["gate"] == "G5"
     assert data["status"] == "pending"
-    assert data["decision"] is None
+    assert data["decision"] == {"choice": None}   # #72: self-documenting scaffold, not bare null
+    assert "_hint" in data and "decision.choice" in data["_hint"]
     assert data["choices"] == list(GATE_DEFS[Gate.G5_METRICS].choices)
     assert data["context"]["candidates"][0]["value"] == "40%"
 
@@ -223,8 +224,33 @@ def test_read_gate_decision_invalid_choice_warns_but_returns(tmp_path):
 def test_read_gate_decision_undecided_warns(tmp_path):
     p = emit_gate(Gate.G6_REDACTION, tmp_path)
     out, warnings = read_gate_decision(p)
-    assert out.decision is None
+    # #72: pending scaffold is {"choice": None} (still undecided — null choice)
+    assert out.decision == {"choice": None}
+    assert not (out.decision or {}).get("choice")
     assert any("no decision" in w for w in warnings)
+
+
+def test_read_gate_decision_bare_string_accepted(tmp_path):
+    # #72: the obvious fill (bare string) is normalized instead of dropped to None
+    p = emit_gate(Gate.G1_FRESHNESS, tmp_path)
+    data = json.loads(p.read_text())
+    data["decision"] = "reuse"
+    p.write_text(json.dumps(data))
+    out, warnings = read_gate_decision(p)
+    assert out.decision == {"choice": "reuse"}
+    assert not any("no decision" in w for w in warnings)
+
+
+def test_read_gate_decision_wrong_shape_message(tmp_path):
+    # #72: a non-null wrong-shape decision says HOW to fix it, not "no decision"
+    p = emit_gate(Gate.G1_FRESHNESS, tmp_path)
+    data = json.loads(p.read_text())
+    data["decision"] = ["reuse"]   # list, not an object/string
+    p.write_text(json.dumps(data))
+    out, warnings = read_gate_decision(p)
+    assert out.decision is None
+    joined = " ".join(warnings)
+    assert "must be an object" in joined and "no decision filled in" not in joined
 
 
 # ---- G5 P1 fabrication guard (#70 item 6) ----------------------------------

@@ -369,6 +369,9 @@ class GateFile:
             "description": self.description,
             "choices": list(self.choices),
             "context": self.context,
+            # #72: the decision is an object — make its shape self-documenting so a
+            # filler doesn't guess. A bare string is also accepted (normalized).
+            "_hint": "set `decision.choice` to one of `choices` (a bare string is also accepted)",
             "decision": self.decision,
             "status": self.status,
         }
@@ -381,10 +384,24 @@ class GateFile:
             description=str(d.get("description", "")),
             choices=list(d.get("choices", [])),
             context=dict(d.get("context") or {}),
-            decision=(dict(d["decision"]) if isinstance(d.get("decision"), dict) else None),
+            decision=cls._coerce_decision(d.get("decision")),
             status=str(d.get("status", "pending")),
             version=int(d.get("version", 1)),
         )
+
+    @staticmethod
+    def _coerce_decision(raw: Any) -> dict[str, Any] | None:
+        """Normalize a filled decision to the ``{"choice": ...}`` object shape (#72).
+
+        Accepts the canonical object as-is, and — forgivingly — a **bare string**
+        shorthand (``"reuse"`` -> ``{"choice": "reuse"}``) so the obvious fill
+        works instead of being silently dropped to ``None``. Anything else
+        (list/number/empty) -> ``None`` (genuinely undecided)."""
+        if isinstance(raw, dict):
+            return dict(raw)
+        if isinstance(raw, str) and raw.strip():
+            return {"choice": raw.strip()}
+        return None
 
 
 def gate_file_path(out_dir: Path, gate: Gate) -> Path:
@@ -471,6 +488,9 @@ def emit_gate(
     gf = GateFile(
         gate=gate, short=d.short, description=d.description,
         choices=list(d.choices), context=dict(context or {}),
+        # #72: scaffold the decision SHAPE (not a bare null) so the filler sees
+        # exactly what to set. A null choice still reads as "not yet decided".
+        decision={"choice": None},
     )
     path.write_text(json.dumps(gf.as_dict(), indent=2, ensure_ascii=False), encoding="utf-8")
     return path
@@ -492,21 +512,33 @@ def read_gate_decision(path: Path) -> tuple[GateFile, list[str]]:
                         choices=[], status="pending"), warnings
 
     try:
-        gf = GateFile.from_dict(json.loads(path.read_text(encoding="utf-8")))
+        data = json.loads(path.read_text(encoding="utf-8"))
+        gf = GateFile.from_dict(data)
     except (json.JSONDecodeError, KeyError, ValueError) as e:
         warnings.append(f"{path.name}: unreadable gate file — {e}")
         return GateFile(gate=_gate_from_path(path), short="", description="",
                         choices=[], status="pending"), warnings
 
-    if gf.decision is None:
-        warnings.append(f"{gf.gate.value}: no decision filled in (status={gf.status})")
-    else:
-        choice = gf.decision.get("choice")
-        if choice is not None and gf.choices and choice not in gf.choices:
+    # #72: distinguish a genuinely-empty decision from a *wrong-shape* one (the
+    # bare string is already normalized by _coerce_decision, so anything still
+    # without a usable choice is either empty or malformed — say which).
+    raw = data.get("decision")
+    choice = gf.decision.get("choice") if isinstance(gf.decision, dict) else None
+    empty = raw is None or (isinstance(raw, dict) and not raw.get("choice"))
+    if not choice:
+        if empty:
+            warnings.append(f"{gf.gate.value}: no decision filled in (status={gf.status})")
+        else:
             warnings.append(
-                f"{gf.gate.value}: decision choice {choice!r} not in offered "
-                f"choices {gf.choices}"
+                f'{gf.gate.value}: decision must be an object like '
+                f'{{"choice": "<one of {gf.choices}>"}} (a bare string is also '
+                f"accepted); got {raw!r}"
             )
+    elif gf.choices and choice not in gf.choices:
+        warnings.append(
+            f"{gf.gate.value}: decision choice {choice!r} not in offered "
+            f"choices {gf.choices}"
+        )
     return gf, warnings
 
 
