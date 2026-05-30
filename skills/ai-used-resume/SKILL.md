@@ -4,7 +4,7 @@ description: Generate a versioned, reviewer-scored résumé from the user's AI-c
 license: MIT
 compatibility: Requires Python 3.12+ and uv. Optional pandoc (PDF rendering) and claude CLI (LLM enrichment; falls back to rule-based). Works on macOS and Linux.
 metadata:
-  version: "0.33.0"
+  version: "0.33.1"
   author: easyvibecoding
   hermes:
     tags:
@@ -70,6 +70,13 @@ Invoke this skill whenever the user wants to **turn their AI-tool usage history 
 | **Fit a page budget** | `uv run vibe-resume render --max-pages 2 --locale en_US` — tighten bullet density, not just `--top-n` |
 | **Standard variant set** | `uv run vibe-resume render --variants --locale en_US` — ATS (page-budgeted) + detailed, same cache |
 | **Truth-preserving auto-iterate** | `uv run vibe-resume iterate --locale en_US` — lift the grade via truthful levers, stop honestly at the ceiling, print human-applied suggestions (dry-run; `--write` to snapshot) |
+| **Explore the layout surface** | `uv run vibe-resume explore --locale en_US --top-n 4,6,8 --page-budget 1.5,2.0,2.5` — sweep the grid, review each cell, surface the **Pareto front** (score↑ / pages↓). Pure layout/selection — never rewrites bullets. `--write '6,2.0'` snapshots a cell. |
+| **Per-gap JD grounding** | `uv run vibe-resume jd-check --tailor data/imports/jd.txt --explain` — per missing keyword: `groundable` (with supporting activity snippets + refs) vs **honestly absent**. Advisory only; never auto-inserts. |
+| **Angle-biased candidate bullets** | `uv run vibe-resume enrich --candidates impact_first,breadth_first,depth_first --locale en_US` emits N framings per group; `uv run vibe-resume bullets-compare --locale en_US` shows them side by side to pick per group. Angle is a prompt prefix — anti-fabrication rules unchanged. |
+| **Persona compare with scores** | `uv run vibe-resume personas-compare --locale en_US --with-scores --tailor data/imports/jd.txt` — bullet diff **plus** a per-persona review-score table; highlights the best-JD-fit persona. |
+| **Branch a gate decision** | `uv run vibe-resume run --branch G2 --decision '{"choice":"top_n","top_n":8}'` forks the ledger, recomputes that gate's suffix, auto review-diffs vs the original. `run --branches` lists forks; `run --adopt <id>` promotes one. |
+| Curate groups (human-in-loop) | `uv run vibe-resume curate` — review/merge dupe groups, drop noise; `uv run vibe-resume emphasis 'foreground my security work'` sets a free-text bias for the next enrich. |
+| Compare two versions' scores | `uv run vibe-resume review-diff v001 v002 --jd data/imports/jd.txt` — per-check scorecard delta. |
 | Per-locale trend | `uv run vibe-resume trend --locale zh_TW` |
 
 | Locale quick map | |
@@ -203,6 +210,24 @@ Invoke this skill whenever the user wants to **turn their AI-tool usage history 
    suggestions. **The score is a proxy: never trade truthfulness or
    human-in-the-loop for points** — see [docs/PRINCIPLES.md](../../docs/PRINCIPLES.md).
 
+## Interactive Gate Mode (`run --interactive` / `--preset`)
+
+For a traceable human-in-the-loop run, `run` can pause at named gates instead of
+going end-to-end. Arm a gate set, decide each gate's emitted `*.gate.json`, then
+resume with `--continue`:
+
+```bash
+uv run vibe-resume run --preset full_review --locales en_US --tailor data/imports/jd.txt
+#   ⏸ pauses at the first armed gate, writing data/gates/<Gn>.gate.json
+#   edit that file's `decision` (set "choice"; G5 also takes a per-metric `pick`)
+uv run vibe-resume run --continue --preset full_review --locales en_US   # advances to the next gate
+```
+
+- **Presets:** `autopilot` (no gates — same as no flags) · `checkpoints` (G1, G2, G8 — the default for a bare `--interactive`) · `full_review` (all of G1–G8).
+- **Gates:** G1 freshness · G2 grouping/top_n · G3 overwrite mode · G4 bullets (the enrich emit) · G5 metrics · G6 redaction · G7 variants · G8 acceptance.
+- **Inspect/replan:** `uv run vibe-resume gates show` / `gates plan` show the armed set + each gate's recompute suffix. `run --resume-from G5` re-runs only that gate's suffix and prints a review-diff. `run --branch <Gn>` forks an alternative decision (see Quick Reference).
+- The run writes `data/run_ledger.json` so it is replayable; `--gates G1,G5,G8` arms an explicit set overriding the preset.
+
 ## Pitfalls
 
 The full catalogue of failure modes and their fixes — mixed-script
@@ -212,6 +237,7 @@ and the privacy rules around `profile.yaml` / `data/imports/` — lives
 in [references/troubleshooting.md](references/troubleshooting.md).
 
 - `personas-compare` requires `--locale` (the enriched cache split per-locale in 0.4.0); see CHANGELOG.
+- **Truthful-lever guarantees (don't misuse for points):** `explore` and `iterate` only change layout/selection — they NEVER rewrite a bullet or invent a metric. `jd-check --explain` is advisory: it shows where a keyword could be grounded but never inserts it. G5 metrics are opt-in per-metric (`confirm` + `pick`), and a pick is always intersected with `safe_to_surface`, so a secret/UI/hash fragment can't be woven even if picked. See [docs/PRINCIPLES.md](../../docs/PRINCIPLES.md).
 
 ## Verification
 

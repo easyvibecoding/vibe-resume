@@ -4,6 +4,23 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.33.1] — 2026-05-31
+
+### Documentation
+
+- **v0.33.0 exploration commands + Interactive Gate Mode were undocumented in
+  the canonical `SKILL.md` / `AGENTS.md`** (#81) — invisible to skill-discovery
+  hosts that never run `--help`. Added Quick Reference rows for `explore`,
+  `jd-check --explain`, `enrich --candidates` + `bullets-compare`,
+  `personas-compare --with-scores`, `run --branch/--branches/--adopt`, plus
+  `curate`/`emphasis`/`review-diff`; a new **Interactive Gate Mode** procedure
+  subsection (presets `autopilot`/`checkpoints`/`full_review`, the G1–G8 model,
+  the `run --interactive` → decide gate file → `run --continue` loop); and a
+  Pitfalls note on the truthful-lever guarantees. Mirrored into `AGENTS.md`.
+  A new `tests/test_skill_spec.py` drift guard asserts every top-level CLI
+  command (and the v0.33.0 sub-flags) appears in `SKILL.md`, so a future command
+  fails CI until documented.
+
 ## [0.33.0] — 2026-05-31
 
 ### Added — exploration & disclosure backlog

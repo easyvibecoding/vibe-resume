@@ -59,6 +59,18 @@ and follow its workflow. The CLI binary is `vibe-resume` (installed via
 `uv pip install -e ".[dev]"`); the same commands also work as
 `uv run python -m vibe_resume <command>`.
 
+Beyond the core `extract → aggregate → enrich → render → review → trend` flow,
+the SKILL.md Quick Reference also documents the exploration/disclosure commands:
+`explore` (sweep top_n × page_budget → Pareto front), `jd-check --explain`
+(groundable vs honest-gap per missing JD keyword), `enrich --candidates` +
+`bullets-compare` (angle-biased candidate bullet-sets), `personas-compare
+--with-scores`, and `run --branch/--branches/--adopt` (fork a gate decision and
+auto review-diff). For a traceable human-in-the-loop run, `run --interactive` /
+`--preset full_review` arms the G1–G8 Interactive Gate Mode (decide each
+`data/gates/<Gn>.gate.json`, then `run --continue`). All of these only surface
+real signals or change layout/selection — they never rewrite bullets or
+fabricate; see the SKILL.md Pitfalls and [docs/PRINCIPLES.md](docs/PRINCIPLES.md).
+
 ## For the human reading this file
 
 See the main [README](README.md) (or [繁體中文](README.zh-TW.md) /

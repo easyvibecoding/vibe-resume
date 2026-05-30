@@ -220,6 +220,41 @@ def test_references_dir_follows_spec(path: Path) -> None:
     )
 
 
+def test_every_cli_command_is_documented_in_skill_md() -> None:
+    """#81: every top-level CLI command must appear in the canonical SKILL.md so
+    skill-discovery hosts (which never run --help) can see it. New command lands
+    without a doc mention → this fails until SKILL.md is updated (drift guard)."""
+    from vibe_resume.cli import cli
+
+    text = (CANONICAL_SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+    # `completion` is shell-plumbing, not a résumé workflow step — exempt it.
+    exempt = {"completion"}
+    missing = sorted(
+        name for name in cli.commands
+        if name not in exempt and name not in text
+    )
+    assert not missing, (
+        f"CLI commands absent from skills/ai-used-resume/SKILL.md: {missing} — "
+        f"add a Quick Reference row (or section) so skill hosts can discover them (#81)"
+    )
+
+
+def test_v033_exploration_flags_documented_in_skill_md() -> None:
+    """#81: the v0.33.0 sub-flags + Interactive Gate Mode are the discoverability
+    gap that prompted this — assert the specific surfaces are present, not just
+    the bare command names."""
+    text = (CANONICAL_SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+    for needle in [
+        "--explain",            # jd-check --explain (#80)
+        "--candidates",         # enrich --candidates (#75)
+        "--with-scores",        # personas-compare --with-scores (#78)
+        "--branch",             # run --branch (#77)
+        "full_review",          # Interactive Gate Mode presets
+        "--preset",             # Gate Mode arming
+    ]:
+        assert needle in text, f"SKILL.md missing v0.33.0 surface: {needle!r} (#81)"
+
+
 # Markdown inline link: [text](target) — captures the target in group 1.
 # Excludes targets starting with http(s):// or #.
 _MD_LINK_RE = re.compile(r"\[[^\]]+\]\(((?!https?://|#)[^)]+)\)")
