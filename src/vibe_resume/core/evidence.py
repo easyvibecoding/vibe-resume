@@ -43,8 +43,13 @@ _KIND_RULES: list[tuple[str, re.Pattern[str]]] = [
     ("url_fragment", re.compile(r"(?i)https?://|%[0-9a-f]{2}|\burl\b|encoded|\.jsonl")),
     ("css_value", re.compile(r"(?i)max-width|min-width|width\s*:|height\s*:|\bpx\b|margin|padding|\bvh\b|\bvw\b|css|tailwind|rounded|flex")),
     ("model_spec", re.compile(r"(?i)\bcontext\b|opus|sonnet|haiku|gpt-|co-?author|token window|context window|參數|模型")),
-    ("ui_threshold", re.compile(r"(?i)threshold|confidence|信心|閾值|色|紅|橙|綠|黃|band|color|color-?cod")),
+    ("id_number", re.compile(r"#\s*\d|\bissue\s*\d|\bpull request\b|\bPR\s*#")),  # #67: PR/issue refs
+    # #67: threshold/range syntax (75-89%, <90%) is a UI band, not an outcome metric
+    ("ui_threshold", re.compile(r"(?i)threshold|confidence|信心|閾值|色|紅|橙|綠|黃|band|color|color-?cod|\d\s*[-–~]\s*\d+\s*%|[<>≤≥]\s*\d+\s*%")),
 ]
+# #67: a value whose numeric core is a 4-digit year is a date fragment, not a
+# metric — even when a stray unit is glued on (e.g. "2026 h").
+_YEAR_RE = re.compile(r"^(?:19|20)\d{2}\b")
 _PERF_RE = re.compile(
     r"(?i)reduc|cut|decreas|improv|faster|slower|latency|throughput|optimi|saved?|"
     r"speed|減少|優化|提升|壓縮|加速|節省|延遲|吞吐|降低"
@@ -59,6 +64,8 @@ def classify_metric(value: str, context: str, source_ref: str = "") -> tuple[str
     confidence ∈ {high (commit-confirmed), medium (mentioned), low}. Only a
     real_metric with non-low confidence is safe for the agent to surface."""
     ctx = context or ""
+    if _YEAR_RE.match(value.strip()):
+        return "date_fragment", "low", False
     for kind, rx in _KIND_RULES:
         if rx.search(ctx):
             return kind, "low", False

@@ -484,10 +484,17 @@ def iterate(ctx: click.Context, locale: str | None, persona: str | None, tailor:
         evs = disclose_all(groups, lang=lang)
         surfaced = {g.name: " ".join([g.summary or ""] + list(g.achievements or [])) for g in groups}
         out: list[str] = []
+        seen_metric: set[tuple[str, str]] = set()   # #67: dedup by (group, normalized value)
+        hidden = 0
         for e in evs:
             sb = surfaced.get(e.group, "")
+            hidden += sum(1 for m in e.candidate_metrics if not m.safe_to_surface)  # #67
             um = unsurfaced_metrics(e, sb)
             for m in um[:6]:
+                norm = m.value.replace(" ", "").lower()
+                if (e.group, norm) in seen_metric:
+                    continue
+                seen_metric.add((e.group, norm))
                 # #62: inline context + provenance + confidence so the agent can
                 # surface truthfully instead of blindly inserting a bare number.
                 ctx = m.context[:70] + ("…" if len(m.context) > 70 else "")
@@ -503,6 +510,9 @@ def iterate(ctx: click.Context, locale: str | None, persona: str | None, tailor:
             if gap.present_but_omitted:
                 out.append("present-but-omitted JD keywords (backed — surface): "
                            + ", ".join(gap.present_but_omitted))
+        if hidden:  # #67: collapse noise into one line instead of listing it
+            out.append(f"({hidden} low-confidence/noise metric token(s) hidden — "
+                       "run `vibe-resume evidence --json` to inspect)")
         return out
 
     res = auto_iterate(render_fn, review_fn, page_target=target, bar=bar,

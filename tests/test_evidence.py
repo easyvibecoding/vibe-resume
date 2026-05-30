@@ -176,3 +176,22 @@ def test_unsurfaced_metrics_drops_classified_noise():
     assert any("64" in v for v in safe_vals)            # real metric kept
     assert "100%" not in safe_vals                       # css noise dropped
     assert not any(v.strip() in {"90%", "89%", "75%"} for v in safe_vals)  # ui-threshold dropped
+
+
+# --- #67 classifier tightening (year / range-syntax / id-ref) ---------------
+
+def test_classify_year_fragment_not_real():
+    from vibe_resume.core.evidence import classify_metric
+    for v in ["2026", "2026 h", "2025"]:
+        kind, _, safe = classify_metric(v, "on 2026-03-16 shipped the thing")
+        assert kind == "date_fragment" and safe is False, v
+
+
+def test_classify_range_and_id_syntax():
+    from vibe_resume.core.evidence import classify_metric
+    assert classify_metric("89%", "color band 75-89% orange")[0] == "ui_threshold"
+    assert classify_metric("90%", "threshold <90% triggers")[0] == "ui_threshold"
+    assert classify_metric("26 d", "resolve #26 within deadline")[0] == "id_number"
+    # a clean perf metric still passes
+    k, c, safe = classify_metric("64%", "Docker image 減少 64%", "commit:x")
+    assert k == "real_metric" and safe is True
