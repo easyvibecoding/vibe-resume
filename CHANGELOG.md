@@ -4,6 +4,19 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.30.1] — 2026-05-30
+
+### Fixed
+
+- **Range-expressed real metrics no longer suppressed** (#69, regression from #67).
+  The blanket `X-Y%` → `ui_threshold` rule hid genuine range metrics like
+  "減少前置處理時間 30-40%" / "cut by 30-40%". Now only explicit band/threshold cues
+  (color words, 邊框/門檻, comparison operators `<`/`>`/`≥`) classify as
+  `ui_threshold`; a bare `X-Y%` range with an improvement verb or commit provenance
+  is a `real_metric`, and an ambiguous bare range is surfaced **with caution**
+  (low confidence) rather than hidden — a concealed true metric is costlier than a
+  low-confidence true positive the agent can vet.
+
 ## [0.30.0] — 2026-05-30
 
 ### Added
