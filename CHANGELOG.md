@@ -4,6 +4,21 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.0] — 2026-05-30
+
+### Added
+
+- **Context-based metric classification + grounded iterate suggestions** (#62, P0).
+  `iterate` previously surfaced bare metric tokens, forcing an agent to blindly
+  insert them (a fabrication risk) or run extra `evidence` calls to ground each.
+  `evidence.classify_metric` now uses each candidate's surrounding context to
+  separate a `real_metric` from noise (`ui_threshold` confidence-band %, `css_value`,
+  `model_spec` like "1M context", `url_fragment`) and grades a confidence tier
+  (commit-confirmed > mentioned). `unsurfaced_metrics` returns only
+  `safe_to_surface` candidates, and `iterate` inlines the value + context snippet
+  + provenance + `kind`/`confidence` per suggestion — turning the in-code
+  "never fabricate" guardrail into a signal the driving agent can see and act on.
+
 ## [0.24.1] — 2026-05-30
 
 ### Fixed
