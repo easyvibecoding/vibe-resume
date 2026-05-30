@@ -147,3 +147,32 @@ def test_impact_metric_classifier_units():
         assert _is_impact_metric(good), good
     for noise in ["2026", "03", "443", "10171", "404", "4302464412", "126"]:
         assert not _is_impact_metric(noise), noise
+
+
+# --- #62 context-based metric classification (anti-fabrication) -------------
+
+def test_classify_metric_separates_noise_from_real():
+    from vibe_resume.core.evidence import classify_metric
+    # noise — context reveals it's not a perf metric
+    assert classify_metric("89%", "信心閾值色帶 紅 90%+ / 橙 75-89%")[0] == "ui_threshold"
+    assert classify_metric("100%", "css max-width: 100%")[0] == "css_value"
+    assert classify_metric("1M", "Claude Opus (1M context) co-author")[0] == "model_spec"
+    assert classify_metric("96%", "fragment of https://x/%96%85 encoded url")[0] == "url_fragment"
+    for noise_ctx in ["信心閾值", "max-width: 100%", "1M context window"]:
+        _, _, safe = classify_metric("100%", noise_ctx)
+        assert safe is False
+    # real — commit-confirmed perf metric
+    kind, conf, safe = classify_metric("64%", "Docker image 優化(減少 64%)", "commit:abc")
+    assert kind == "real_metric" and conf == "high" and safe is True
+
+
+def test_unsurfaced_metrics_drops_classified_noise():
+    g = _group([_act(
+        "fault UI 信心閾值色帶 紅 90%+ 橙 75-89%; css max-width 100%; "
+        "Docker image 優化(減少 64%)", ref="commit:abc")])
+    ev = disclose_evidence(g)
+    from vibe_resume.core.evidence import unsurfaced_metrics
+    safe_vals = {m.value for m in unsurfaced_metrics(ev, surfaced_text="")}
+    assert any("64" in v for v in safe_vals)            # real metric kept
+    assert "100%" not in safe_vals                       # css noise dropped
+    assert not any(v.strip() in {"90%", "89%", "75%"} for v in safe_vals)  # ui-threshold dropped

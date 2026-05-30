@@ -35,11 +35,51 @@ def _snippet(text: str, around: str | None = None, width: int = _SNIPPET) -> str
     return t[:width] + ("…" if len(t) > width else "")
 
 
+# Context-based metric classification (#62): even an impact-shaped value (%/x)
+# can be noise — a UI threshold, CSS value, model-spec, or URL fragment. Classify
+# from the surrounding text so iterate surfaces ONLY genuine, surfaceable metrics
+# (turning the in-code "never fabricate" guardrail into a signal the agent sees).
+_KIND_RULES: list[tuple[str, re.Pattern[str]]] = [
+    ("url_fragment", re.compile(r"(?i)https?://|%[0-9a-f]{2}|\burl\b|encoded|\.jsonl")),
+    ("css_value", re.compile(r"(?i)max-width|min-width|width\s*:|height\s*:|\bpx\b|margin|padding|\bvh\b|\bvw\b|css|tailwind|rounded|flex")),
+    ("model_spec", re.compile(r"(?i)\bcontext\b|opus|sonnet|haiku|gpt-|co-?author|token window|context window|參數|模型")),
+    ("ui_threshold", re.compile(r"(?i)threshold|confidence|信心|閾值|色|紅|橙|綠|黃|band|color|color-?cod")),
+]
+_PERF_RE = re.compile(
+    r"(?i)reduc|cut|decreas|improv|faster|slower|latency|throughput|optimi|saved?|"
+    r"speed|減少|優化|提升|壓縮|加速|節省|延遲|吞吐|降低"
+)
+_COMMIT_RE = re.compile(r"(?i)commit|numstat|\bpr\b|pull request|diff")
+
+
+def classify_metric(value: str, context: str, source_ref: str = "") -> tuple[str, str, bool]:
+    """Return (kind, confidence, safe_to_surface) for a candidate metric (#62).
+
+    kind ∈ {real_metric, ui_threshold, css_value, model_spec, url_fragment};
+    confidence ∈ {high (commit-confirmed), medium (mentioned), low}. Only a
+    real_metric with non-low confidence is safe for the agent to surface."""
+    ctx = context or ""
+    for kind, rx in _KIND_RULES:
+        if rx.search(ctx):
+            return kind, "low", False
+    # genuine metric — grade confidence by provenance
+    if _COMMIT_RE.search(source_ref) or _COMMIT_RE.search(ctx):
+        conf = "high"
+    elif _PERF_RE.search(ctx):
+        conf = "medium"
+    else:
+        conf = "medium"
+    return "real_metric", conf, True
+
+
 @dataclass
 class MetricCandidate:
     value: str          # the literal quantity found, e.g. "40%", "2k", "3x"
     source_ref: str     # raw_ref / session for traceability
     context: str        # snippet of the activity it came from
+    kind: str = "real_metric"        # #62 classification
+    confidence: str = "medium"
+    safe_to_surface: bool = True
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -139,8 +179,10 @@ def disclose_evidence(
             key = (val, ref)
             if key not in seen_metric:
                 seen_metric.add(key)
-                metrics.append(MetricCandidate(value=val, source_ref=ref,
-                                               context=_snippet(summary, val)))
+                ctx = _snippet(summary, val)
+                kind, conf, safe = classify_metric(val, ctx, ref)
+                metrics.append(MetricCandidate(value=val, source_ref=ref, context=ctx,
+                                               kind=kind, confidence=conf, safe_to_surface=safe))
         # terms genuinely backed by the signal
         for t in list(a.tech_stack) + list(a.keywords):
             if t and t.lower() not in seen_term:
@@ -224,12 +266,15 @@ def unsurfaced_metrics(
     """Real metrics present in the activity but not yet in the bullets (#53).
 
     These are *suggestions a human confirms* — only numbers literally in the
-    signals, never invented or estimated (P1.1 guardrail)."""
+    signals, never invented or estimated (P1.1 guardrail). #62: only metrics
+    classified `safe_to_surface` (real_metric, non-low confidence) are returned;
+    UI thresholds / CSS / model-specs / URL fragments are filtered out so the
+    agent isn't handed noise that invites fabrication."""
     low = (surfaced_text or "").lower()
     out: list[MetricCandidate] = []
     seen: set[str] = set()
     for m in evidence.candidate_metrics:
-        if m.value.lower() in low or m.value in seen:
+        if not m.safe_to_surface or m.value.lower() in low or m.value in seen:
             continue
         seen.add(m.value)
         out.append(m)

@@ -487,9 +487,14 @@ def iterate(ctx: click.Context, locale: str | None, persona: str | None, tailor:
         for e in evs:
             sb = surfaced.get(e.group, "")
             um = unsurfaced_metrics(e, sb)
-            if um:
-                out.append(f"{e.group}: surface real metric(s) {', '.join(m.value for m in um[:6])} "
-                           "(present in activity, not in bullets — human-confirm)")
+            for m in um[:6]:
+                # #62: inline context + provenance + confidence so the agent can
+                # surface truthfully instead of blindly inserting a bare number.
+                ctx = m.context[:70] + ("…" if len(m.context) > 70 else "")
+                out.append(
+                    f'{e.group}: surface {m.value} — "{ctx}" @{m.source_ref or "?"} '
+                    f"(kind={m.kind}, confidence={m.confidence}; human-confirm)"
+                )
             if e.has_human_gate and not any(h.term in sb.lower() for h in e.human_gate_evidence):
                 terms = ", ".join(sorted({h.term for h in e.human_gate_evidence}))
                 out.append(f"{e.group}: surface the real human gate ({terms}) the activity shows")
