@@ -4,6 +4,26 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.31.0] — 2026-05-30
+
+### Added
+
+- **Interactive Gate Mode — core** (#70). The decision model behind making the
+  pipeline's silent choices confirmable + replayable (built on the #62–#69
+  disclosure work). `core/gates.py` provides: the 8 gates (G1 freshness … G8
+  acceptance) with presets (`autopilot` / `checkpoints` / `full_review`); a
+  gate→stage **invalidation graph** sliced from one `CANONICAL_ORDER` so a
+  recompute set is always a well-ordered suffix (e.g. changing G5 metrics
+  recomputes only `render → review`, keeping enrich); a clock-free **`GateLedger`**
+  (timestamp passed in) with `resume_plan` for replay-from-gate; and gate-file
+  emit/read mirroring the enrich manifest pattern. **P1 fabrication guard:**
+  emitting the G5 metrics gate calls `assert_g5_safe`, so a gate can *never* list a
+  non-`safe_to_surface` (invented/noise) metric — enforced in the core and in a
+  cross-cutting `tests/test_alignment_guardrails.py`. CLI: `vibe-resume gates show`
+  (gates + presets + blast-radius matrix) and `gates plan --changed Gn` (recompute
+  stages / `resume_plan`). Full per-gate pause-and-continue wiring into `run` is
+  the next phase.
+
 ## [0.30.1] — 2026-05-30
 
 ### Fixed
