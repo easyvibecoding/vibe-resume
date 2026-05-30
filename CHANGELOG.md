@@ -4,6 +4,25 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.1] — 2026-05-30
+
+### Fixed
+
+- **Corrected the #60 quota-pool framing + added real 429 mitigation** (#61).
+  #60 defaulted subagent fan-outs to Sonnet on the claim that Sonnet's pool
+  "protects the orchestrator budget" — but the 429s observed on wide fan-outs
+  were **per-minute rate limits tripped by uncapped concurrency**, which hit
+  regardless of tier or remaining weekly quota. (Sonnet *does* have a separate
+  **weekly** pool with more headroom, so the Sonnet default stays — the framing,
+  not the default, was the bug.) Fixes:
+  - `enricher._call_claude` now **retries on 429 with exponential backoff honoring
+    `retry-after`** — the actual fix for the failure mode.
+  - `core/agents.py` (docstring + `FANOUT_CONCURRENCY = 5`), `config.agents`, and
+    the `scan` next-step hint are corrected: tier choice selects *which weekly
+    pool* you draw from; **capping concurrency + backoff** — not tier choice — is
+    what prevents 429s. Process fan-outs in small batches.
+  - Purely operational; truthfulness/human-in-the-loop untouched (#51).
+
 ## [0.24.0] — 2026-05-30
 
 ### Added
