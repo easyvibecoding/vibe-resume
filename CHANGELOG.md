@@ -4,6 +4,23 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.28.0] — 2026-05-30
+
+### Fixed
+
+- **`project_metrics` was a silent no-op everywhere; per-locale template
+  capabilities now disclosed** (#65). The `g.metrics` / Impact block lived only in
+  the fallback `resume.md.j2`, but every locale (including en_US) has a specific
+  template that's selected instead — so hand-supplied `project_metrics` rendered
+  on no locale. Fixes:
+  - The Impact block is added to `resume.en_US.md.j2`, restoring the documented
+    hand-supply path on the en_US family.
+  - `render/template_caps.py` + `doctor` disclose a **capability matrix** (which
+    locales render a metrics/Impact line).
+  - `render` **warns on a no-op config** — when `project_metrics` is set but the
+    active locale's template won't render it, telling you to weave numbers into the
+    bullets instead. No more undiscoverable capability cliff between locales.
+
 ## [0.27.0] — 2026-05-30
 
 ### Added
