@@ -4,6 +4,18 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.30.0] — 2026-05-30
+
+### Added
+
+- **`review --max-pages` page-budget tolerance** (#68). The page-count check
+  scored against a fixed per-locale target with no override, permanently capping
+  an intentionally-detailed résumé at 2/10 and making the *detailed* variant
+  grade lower than the *condensed* one even when it carried strictly more truthful
+  signal. `review --max-pages <float>` (mirroring `render --max-pages`) now scores
+  page-count against the budget the user actually chose, falling back to
+  `config.render.page_budget` so review and render agree on "too long" by default.
+
 ## [0.29.0] — 2026-05-30
 
 ### Changed
