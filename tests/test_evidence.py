@@ -221,3 +221,70 @@ def test_real_ui_threshold_still_suppressed():
     for ctx in ["橙色邊框 (75-89%): 異常", "綠色 (45-74%)", "threshold <45% triggers"]:
         kind, _, safe = classify_metric("45%", ctx)
         assert kind == "ui_threshold" and safe is False, ctx
+
+
+# ---- #79: harden the classifier against secret/hash/ANSI/path/prompt noise ---
+
+
+def test_secret_key_fragment_never_surfaced():
+    """#79 (security): a value sliced from an API key must NOT be safe_to_surface.
+    `487B` came from `CWA-BF1B60DA-2A68-487B-…` and was woven as a real metric."""
+    from vibe_resume.core.evidence import classify_metric
+    for value, ctx in [
+        ("487B", "fragment of an API key CWA-BF1B60DA-2A68-487B-9F2C"),
+        ("12k", "sk-proj-12k4n8 redacted token"),
+        ("40d", "ghp_40dEXAMPLE classic PAT"),
+        ("39A", "AIzaSy39A...Bk google key"),
+        ("60d", "uuid BF1B60DA-2A68-487B-9F2C-A1B2C3D4E5F6"),
+    ]:
+        kind, _, safe = classify_metric(value, ctx)
+        assert kind == "secret_fragment" and safe is False, (value, ctx)
+
+
+def test_hash_digest_context_not_real():
+    """#79: `256 h` came from the string `SHA-256` — a hash spec, not hours."""
+    from vibe_resume.core.evidence import classify_metric
+    for value, ctx in [("256 h", "verified via SHA-256 checksum"),
+                       ("5 d", "md5 digest of the blob"),
+                       ("1 h", "git object hash sha1")]:
+        kind, _, safe = classify_metric(value, ctx)
+        assert kind == "hash_digest" and safe is False, (value, ctx)
+
+
+def test_ansi_and_stacktrace_markers_not_real():
+    """#79: ANSI colour codes / stack-trace line markers are not metrics."""
+    from vibe_resume.core.evidence import classify_metric
+    for value, ctx in [("0m", "\x1b[0m reset colour code"),
+                       ("4m", "[4m underline ansi sequence"),
+                       ("42 d", "Traceback line 42 in module")]:
+        kind, _, safe = classify_metric(value, ctx)
+        assert kind == "ansi_marker" and safe is False, (value, ctx)
+
+
+def test_path_uuid_fragment_not_real():
+    """#79: `4d`/`8d` were fragments of `~/.claude/image-cache/<uuid>` paths."""
+    from vibe_resume.core.evidence import classify_metric
+    for value, ctx in [("4d", "~/.claude/image-cache/a4d3e2f1-... file"),
+                       ("8d", "/var/cache/8d9e0f1a2b3c4d5e path")]:
+        kind, _, safe = classify_metric(value, ctx)
+        assert kind == "path_fragment" and safe is False, (value, ctx)
+
+
+def test_enricher_prompt_template_self_reference_not_real():
+    """#79: `40%` lifted from the enricher's OWN prompt template text
+    (`寫「以 Claude Code …壓縮約 40%」`) is self-reference, not the user's metric."""
+    from vibe_resume.core.evidence import classify_metric
+    for ctx in ["寫「以 Claude Code 壓縮約 40% context」",
+                "e.g. reduced cost by 40% (example bullet)",
+                "範例:提升效能 40%"]:
+        kind, _, safe = classify_metric("40%", ctx)
+        assert kind == "prompt_example" and safe is False, ctx
+
+
+def test_genuine_metric_unaffected_by_hardening():
+    """The hardening must not hide a real, plainly-stated achievement metric."""
+    from vibe_resume.core.evidence import classify_metric
+    kind, conf, safe = classify_metric("40%", "壓縮資料前置處理約 40%", "commit:abc")
+    assert kind == "real_metric" and safe is True and conf == "high"
+    k2, _, s2 = classify_metric("2k", "handled 2k requests per second")
+    assert k2 == "real_metric" and s2 is True

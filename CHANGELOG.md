@@ -4,6 +4,30 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.32.4] — 2026-05-31
+
+### Fixed
+
+- **G5 evidence classifier surfaced secret-key fragments and other noise as
+  real metrics** (#79, part 1 — classifier hardening). The metric classifier
+  now marks `safe_to_surface: false` for five additional noise contexts so they
+  can never be woven into a résumé:
+  - **secret/key fragments** — `487B` lifted from `CWA-BF1B60DA-2A68-487B-…`
+    (also `sk-`, `ghp_`, `gho_`, `github_pat_`, `AIza…`, `x-access-token`,
+    `bearer`, and dash-delimited hex/UUID groups). This is a genuine
+    privacy/secret-leak fix, not just noise reduction.
+  - **hash digests** — `256 h` from `SHA-256` (`md5`, `sha1`, `digest`,
+    `checksum`, `hash`).
+  - **ANSI / stack-trace markers** — `0m`/`4m` from colour codes, `line 42`.
+  - **path / UUID fragments** — `4d`/`8d` from `~/.claude/image-cache/<uuid>`.
+  - **enricher prompt-template self-reference** — `40%` lifted from the
+    enricher's own template text (`寫「…壓縮約 40%」`, `e.g. …`, `範例:…`).
+
+  Genuine plainly-stated metrics (`壓縮資料前置處理約 40%`, `handled 2k req/s`)
+  are unaffected. Part 2 of #79 (per-metric pick-list selection at G5) remains
+  open. New rules ordered ahead of the existing kind rules; 6 regression tests
+  added.
+
 ## [0.32.3] — 2026-05-31
 
 ### Fixed

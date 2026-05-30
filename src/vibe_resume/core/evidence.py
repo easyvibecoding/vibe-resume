@@ -40,6 +40,22 @@ def _snippet(text: str, around: str | None = None, width: int = _SNIPPET) -> str
 # from the surrounding text so iterate surfaces ONLY genuine, surfaceable metrics
 # (turning the in-code "never fabricate" guardrail into a signal the agent sees).
 _KIND_RULES: list[tuple[str, re.Pattern[str]]] = [
+    # #79 (security/privacy): a value sliced from a secret/key or a UUID hex-group
+    # must never surface — e.g. `487B` from `CWA-BF1B60DA-2A68-487B-…`. Match the
+    # common key prefixes plus the dash-delimited hex-group (UUID/key) shape.
+    ("secret_fragment", re.compile(
+        r"(?i)\bCWA-|\bsk-[a-z0-9]|\bghp_|\bgho_|\bgithub_pat_|AIza[0-9A-Za-z_-]"
+        r"|x-access-token|api[_-]?key|secret|bearer\s|"
+        r"[0-9A-Fa-f]{4,}-[0-9A-Fa-f]{2,}-[0-9A-Fa-f]{2,}")),
+    # #79: hash/digest context — `256 h` is from `SHA-256`, not hours.
+    ("hash_digest", re.compile(r"(?i)\bsha-?\d{1,3}\b|\bmd5\b|\bsha1\b|\bdigest\b|\bchecksum\b|\bhash\b")),
+    # #79: ANSI colour codes / stack-trace line markers (`0m`/`4m`, `line 42`).
+    ("ansi_marker", re.compile(r"(?i)\x1b\[|\[[0-9;]+m\b|traceback|stack\s*trace|\bline\s+\d+\b")),
+    # #79: path/UUID fragments (`4d`/`8d` from `~/.claude/image-cache/<uuid>`).
+    ("path_fragment", re.compile(r"(?i)image-cache|/\.?cache/|~/\.|/var/|/tmp/|[0-9a-f]{8}-[0-9a-f]{4}-")),
+    # #79: the enricher's OWN prompt-template text (self-reference like
+    # `寫「…壓縮約 40%」`, `e.g. …`, `範例:…`) — an example, not the user's metric.
+    ("prompt_example", re.compile(r"(?i)寫「|填「|填入|占位|placeholder|範例|示例|例如|\be\.g\.|for example|such as")),
     ("url_fragment", re.compile(r"(?i)https?://|%[0-9a-f]{2}|\burl\b|encoded|\.jsonl")),
     ("css_value", re.compile(r"(?i)max-width|min-width|width\s*:|height\s*:|\bpx\b|margin|padding|\bvh\b|\bvw\b|css|tailwind|rounded|flex")),
     ("model_spec", re.compile(r"(?i)\bcontext\b|opus|sonnet|haiku|gpt-|co-?author|token window|context window|參數|模型")),
