@@ -4,6 +4,19 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.0] — 2026-05-30
+
+### Changed
+
+- **`iterate` now consumes #62's metric classification** (#67). It dedups
+  suggestions by `(group, normalized value)` and collapses the non-`safe_to_surface`
+  candidates into a single `(N low-confidence/noise tokens hidden — run evidence
+  --json)` line instead of listing noise the agent has to hand-filter. The
+  classifier is also tightened: a 4-digit-year value — even with a stray glued
+  unit like `2026 h` — is a `date_fragment`; threshold/range syntax (`75-89%`,
+  `<90%`) is `ui_threshold`; `#<n>` / issue / PR refs are `id_number`. Fewer noise
+  tokens reach the driving agent as "safe to surface."
+
 ## [0.28.1] — 2026-05-30
 
 ### Fixed
