@@ -4,6 +4,20 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.27.0] — 2026-05-30
+
+### Added
+
+- **Stage-state + failure disclosure** (#64):
+  - **`status` per-stage freshness** — shows extract / aggregate / enrich / render
+    ages + a verdict ("enrich is newer than aggregate — reuse it" vs "re-run
+    enrich"), so the costliest re-run decision no longer needs `ls -lt`.
+  - **`doctor` PDF-engine preflight** — checks pandoc + xelatex and, when xelatex
+    is installed but off PATH, discloses the exact fix (`PATH="/Library/TeX/texbin:$PATH"`).
+  - **`render` no longer fails PDF silently** — a dropped PDF now surfaces the
+    xelatex fix hint and an explicit `✗ PDF NOT produced` line instead of a buried
+    warning behind an exit-0 success.
+
 ## [0.26.0] — 2026-05-30
 
 ### Added
