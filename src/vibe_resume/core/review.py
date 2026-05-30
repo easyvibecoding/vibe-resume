@@ -458,7 +458,7 @@ def estimate_pages(md: str) -> float:
     return eff / 45.0
 
 
-def _check_page_estimate(md: str, locale_meta: dict[str, Any]) -> Score:
+def _check_page_estimate(md: str, locale_meta: dict[str, Any], target_override: float | None = None) -> Score:
     """Approximate page count from non-blank line + char totals.
 
     Calibration: ~45 'effective' non-blank lines per US Letter / A4 page at
@@ -466,7 +466,11 @@ def _check_page_estimate(md: str, locale_meta: dict[str, Any]) -> Score:
     paragraphs. CJK pages fit slightly fewer characters; we still use line
     count because heading + bullet density dominates.
     """
-    target = _LOCALE_PAGE_TARGETS.get(locale_meta.get("_key"), DEFAULT_PAGE_TARGET)
+    # #68: a user who deliberately wants a detailed résumé can override the fixed
+    # per-locale target (mirrors render --max-pages) so the page-count score is
+    # judged against the budget they actually chose.
+    target = target_override if target_override else _LOCALE_PAGE_TARGETS.get(
+        locale_meta.get("_key"), DEFAULT_PAGE_TARGET)
     pages_est = estimate_pages(md)
     if pages_est <= target:
         pts = 10
@@ -697,6 +701,7 @@ def review(
     jd_keywords: list[str] | None = None,
     company: Any = None,
     persona: Any = None,
+    page_target: float | None = None,
 ) -> ReviewReport:
     canon = resolve_locale(locale_key)
     loc = get_locale(canon)
@@ -708,7 +713,7 @@ def review(
         _check_density(md_text, loc),
         _check_red_flags(md_text, loc),
         _check_contact_line(md_text),
-        _check_page_estimate(md_text, loc),
+        _check_page_estimate(md_text, loc, page_target),
     ]
     if company is not None:
         # Company-specific coverage lands at the bottom of the scorecard so
@@ -805,6 +810,7 @@ def review_file(
     persona: str | None = None,
     company: str | None = None,
     level: str | None = None,
+    page_target: float | None = None,
 ) -> ReviewReport:
     text = Path(md_path).read_text(encoding="utf-8")
     # infer locale from filename if not given: resume_v007.md → en_US; resume_v010_zh_TW.md → zh_TW
@@ -825,6 +831,7 @@ def review_file(
         jd_keywords=jd_keywords,
         company=c,
         persona=p,
+        page_target=page_target,
     )
     if p is not None:
         report.persona = p.key

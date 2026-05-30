@@ -373,3 +373,27 @@ def test_per_bullet_diagnostics_flags_missed_checks():
     assert "no-metric" in ai
     # the metric'd bullet ("Reduced latency 40%") is not flagged for no-metric
     assert not any(d["missed"] == ["no-metric"] and "40%" in d["text"] for d in diags)
+
+
+# --- #68 review --max-pages tolerance ---------------------------------------
+
+_LONG_MD = "# Dev\n\n## Experience\n" + "\n".join(
+    f"- Built feature {i} reducing latency {i}%" for i in range(120)
+)
+
+
+def test_page_target_override_raises_score():
+    from vibe_resume.core.review import review
+    strict = review(_LONG_MD, "en_US")
+    lenient = review(_LONG_MD, "en_US", page_target=10.0)
+    s_strict = next(s for s in strict.scores if s.name == "Page count")
+    s_lenient = next(s for s in lenient.scores if s.name == "Page count")
+    assert s_lenient.score > s_strict.score          # bigger budget → fairer page score
+    assert "10" in " ".join(s_lenient.notes)          # judged against the chosen budget
+
+
+def test_page_target_none_keeps_locale_default():
+    from vibe_resume.core.review import review
+    a = next(s for s in review(_LONG_MD, "en_US").scores if s.name == "Page count")
+    b = next(s for s in review(_LONG_MD, "en_US", page_target=None).scores if s.name == "Page count")
+    assert a.score == b.score   # None override == fixed locale target (back-compat)

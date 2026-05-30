@@ -854,6 +854,9 @@ def status(ctx: click.Context, enriched: bool, pending: bool, show_all: bool) ->
 )
 @click.option("--by-bullet", "by_bullet", is_flag=True, default=False,
               help="Disclose per-failing-bullet diagnostics (which check each missed) — #63")
+@click.option("--max-pages", "max_pages", type=float, default=None,
+              help="Score page-count against this budget instead of the fixed locale target "
+                   "(mirrors render --max-pages; falls back to config.render.page_budget) — #68")
 @click.pass_context
 def review(
     ctx: click.Context,
@@ -866,6 +869,7 @@ def review(
     company: str | None,
     level: str | None,
     by_bullet: bool,
+    max_pages: float | None,
 ) -> None:
     """Score a rendered resume against the 8-point reviewer checklist."""
     from vibe_resume.core.review import (
@@ -900,6 +904,8 @@ def review(
 
     _warn_if_company_stale(company)
     jd_keywords = parse_jd_keywords(Path(jd)) if jd else None
+    # #68: review and render agree on "too long" — explicit flag, else config.render.page_budget.
+    page_target = max_pages or ctx.obj["config"].get("render", {}).get("page_budget")
     report = review_file(
         md_path,
         locale_key=locale,
@@ -907,6 +913,7 @@ def review(
         persona=persona,
         company=company,
         level=level,
+        page_target=page_target,
     )
     out_dir = ROOT / "data" / "reviews"
     previous = find_previous_review(out_dir, report.source, report.locale) if diff else None
