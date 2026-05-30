@@ -469,6 +469,11 @@ def _render_pdf(md_path: Path, out_path: Path) -> bool:
     if r.returncode != 0:
         # fall back to weasyprint via HTML
         console.print(f"[yellow]pandoc xelatex failed:[/yellow] {r.stderr[:200]}")
+        # #64: xelatex installed-but-off-PATH is the common cause — disclose the fix.
+        if not shutil.which("xelatex"):
+            from vibe_resume.core.preflight import pdf_engine_status
+            _, hint = pdf_engine_status()
+            console.print(f"[yellow]  ↳ {hint}[/yellow]")
         cmd = ["pandoc", str(md_path), "-o", str(out_path)]
         r = subprocess.run(cmd, capture_output=True, text=True)
         if r.returncode != 0:
@@ -528,6 +533,13 @@ def render_draft(
         if _render_pdf(md_path, pdf_path):
             written.append(pdf_path)
             console.print(f"[green]✓[/green] {pdf_path.name}")
+        else:
+            # #64: a requested format was dropped — surface it prominently, not as
+            # a buried line behind an exit-0 success.
+            console.print(
+                f"[red]✗ PDF NOT produced for v{version:03d}{suffix}[/red] — md/docx may "
+                f"still have succeeded; run `vibe-resume doctor` for the PDF-engine fix."
+            )
 
     msg = f"resume v{version} ({fmt}, {locale_key})"
     if tailor:

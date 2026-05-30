@@ -790,6 +790,17 @@ def status(ctx: click.Context, enriched: bool, pending: bool, show_all: bool) ->
                 table.add_row(f.stem, f.name, str(n))
         console.print(table)
 
+    if show_raw:
+        # #64: per-stage freshness so an agent can decide whether to re-run the
+        # expensive enrich without shelling out to `ls -lt`.
+        from vibe_resume.core.preflight import freshness_verdict, stage_freshness
+        stages = stage_freshness(ROOT)
+        line = "  ·  ".join(
+            f"{s['stage']} {s['age']}" if s["age"] else f"{s['stage']} —" for s in stages
+        )
+        console.print(f"\n[bold]Stage freshness[/bold]\n  {line}")
+        console.print(f"  [cyan]→ {freshness_verdict(stages)}[/cyan]")
+
     if enriched or show_all:
         _status_enriched(cache_dir)
     if pending or show_all:
@@ -1747,6 +1758,13 @@ def doctor(ctx: click.Context) -> None:
     console.print(
         f"[dim]·[/dim] claude CLI: {'found' if shutil.which('claude') else 'not found (--mode subprocess unavailable; default prompt mode unaffected)'}"
     )
+
+    # PDF-engine preflight (#64): xelatex is the pandoc PDF engine; if it's
+    # installed but not on PATH, render -f pdf silently drops the PDF. Disclose
+    # the exact resolution rather than letting it fail mid-run.
+    from vibe_resume.core.preflight import pdf_engine_status
+    ok, msg = pdf_engine_status()
+    console.print(f"[{'green' if ok else 'yellow'}]{'✓' if ok else '⚠'}[/] {msg}")
 
 
 @cli.command("jd-check")
