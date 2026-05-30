@@ -1723,6 +1723,73 @@ def run_cmd(
     )
 
 
+@cli.group()
+def gates() -> None:
+    """Interactive Gate Mode (#70): inspect the gates, presets, and replay plans.
+
+    The gate model + ledger + invalidation graph land here; full per-gate
+    pause-and-continue wiring into `run` is the next phase."""
+
+
+@gates.command("show")
+def gates_show() -> None:
+    """List the 8 gates with their recompute blast-radius + the presets."""
+    from rich.table import Table
+
+    from vibe_resume.core.gates import (
+        GATE_DEFS,
+        PRESETS,
+        Gate,
+        invalidated_stages,
+    )
+
+    t = Table(title="Interactive gates (#70)")
+    t.add_column("Gate")
+    t.add_column("What")
+    t.add_column("On change → recompute")
+    for g in Gate:
+        d = GATE_DEFS[g]
+        stages = invalidated_stages(g)
+        recompute = " → ".join(s.value for s in stages) if stages else "[dim](terminal)[/dim]"
+        t.add_row(f"{g.value} {d.short}", d.description, recompute)
+    console.print(t)
+    console.print("\n[bold]Presets[/bold]")
+    for name, gs in PRESETS.items():
+        ids = ", ".join(g.value for g in gs) or "(none)"
+        console.print(f"  {name}: {ids}")
+
+
+@gates.command("plan")
+@click.option("--changed", "changed", required=True, help="Gate whose decision changed (e.g. G5)")
+@click.option("--ledger", "ledger_path", default=None,
+              help="Optional run_ledger.json — replay unions later recorded gates")
+def gates_plan(changed: str, ledger_path: str | None) -> None:
+    """Show the ordered stages to recompute when a gate's decision changes."""
+    from vibe_resume.core.gates import (
+        Gate,
+        GateLedger,
+        invalidated_stages,
+        resume_plan,
+    )
+
+    try:
+        gate = Gate(changed.upper())
+    except ValueError as e:
+        raise click.UsageError(
+            f"unknown gate '{changed}'. Use one of: {', '.join(g.value for g in Gate)}"
+        ) from e
+
+    if ledger_path and Path(ledger_path).exists():
+        ledger = GateLedger.load(Path(ledger_path))
+        stages = resume_plan(ledger, gate)
+        src = f"resume_plan (ledger {ledger_path})"
+    else:
+        stages = invalidated_stages(gate)
+        src = "single-gate invalidation"
+    label = " → ".join(s.value for s in stages) if stages else "(terminal — stop/iterate, no recompute)"
+    console.print(f"[cyan]{gate.value}[/cyan] changed → recompute: [bold]{label}[/bold]  [dim]({src})[/dim]")
+
+
 @cli.command()
 @click.pass_context
 def doctor(ctx: click.Context) -> None:
