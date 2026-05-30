@@ -4,6 +4,20 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.32.2] — 2026-05-31
+
+### Fixed
+
+- **`claude_code_archive` extractor crash → silent data loss** (#73). It reused
+  `claude_code._process_session` but still called it with the old 2-arg signature
+  after that function grew to 6 args (`sample_n`/`per_chars`/`capture_args`/
+  `git_cache`). Per-extractor failure isolation masked the `TypeError` as silent
+  data loss — newly-archived sessions were never re-ingested and `status` kept the
+  stale count. Fixed by mirroring `claude_code.extract`'s session-config read +
+  per-run git cache and passing the full signature. Added archive-extractor tests
+  (happy-path + missing-path) so future signature drift fails at CI, not at a
+  user's `extract`.
+
 ## [0.32.1] — 2026-05-30
 
 ### Fixed
