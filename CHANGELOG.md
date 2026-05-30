@@ -4,6 +4,28 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.32.0] — 2026-05-30
+
+### Added
+
+- **Interactive Gate Mode — wired into `run`** (#71, Phase 2 of #70). The tested
+  gate core is now a usable flow:
+  - `run --interactive` / `--preset <autopilot|checkpoints|full_review>` /
+    `--gates G1,G2,...` arm a gate set (default `checkpoints` = G1/G2/G8),
+    persisted to `data/run_ledger.json`.
+  - A **ledger-driven multi-stop pause**: before a stage an armed-undecided gate
+    guards, `run` emits a `*.gate.json` (decision context from the #62–#69
+    disclosure) and **stops**; `run --continue` reads the decision, records it,
+    and advances to the next gate. Fully-wired apply: G1 (reuse vs re-extract),
+    G2 (top-N → enrich limit, drop-noise), G8 (terminal acceptance); G3–G7
+    emit+record (MVP).
+  - `run --resume-from Gn` → `resume_plan` → re-runs **only** the affected stage
+    suffix (e.g. G5 → `render → review`), then prints an automatic review-diff.
+  - **Backward compatible**: with no gate flags (or `--preset autopilot`), `run`
+    and `run --continue` behave exactly as before — no ledger, no pauses. The G5
+    fabrication guard (`assert_g5_safe`) stays active on the run path, with the
+    gate context filtered to `safe_to_surface` metrics only.
+
 ## [0.31.0] — 2026-05-30
 
 ### Added
