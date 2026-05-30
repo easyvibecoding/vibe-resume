@@ -422,6 +422,7 @@ def scan(ctx: click.Context, ingest_: bool, subagent_model: str | None) -> None:
         profile = _yaml.safe_load(pf.read_text(encoding="utf-8")) or {}
     redactors = [_re.compile(p) for p in derive_profile_redactors(profile)]
 
+    from vibe_resume.core.agents import FANOUT_CONCURRENCY
     model = resolve_subagent_model(ctx.obj["config"], command="scan", explicit=subagent_model)
     groups = load_groups()
     _dir, emitted, skipped = emit_scan_jobs(groups, jobs_dir, redactors)
@@ -429,9 +430,11 @@ def scan(ctx: click.Context, ingest_: bool, subagent_model: str | None) -> None:
                   f"({skipped} group(s) skipped — no resolvable local path)")
     console.print(
         f"[cyan]Next:[/cyan] in this session, process each *.scan.prompt.md with "
-        f"[bold]{model}[/bold] subagents (one per project, in parallel — quota-isolated "
-        f"from the orchestrator, #60) → write *.scan.yaml next to it, then run "
-        f"`uv run vibe-resume scan --ingest`."
+        f"[bold]{model}[/bold] subagents → write *.scan.yaml next to it, then run "
+        f"`uv run vibe-resume scan --ingest`.\n"
+        f"[dim]Process in batches of ~{FANOUT_CONCURRENCY} concurrent with backoff on "
+        f"429 (honor retry-after) — uncapped concurrency, not the tier, is what causes "
+        f"rate-limit failures (#61).[/dim]"
     )
 
 

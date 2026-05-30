@@ -1,24 +1,34 @@
-"""Subagent model-tier policy (#60) — quota-pool isolation across fan-outs.
+"""Subagent model-tier policy (#60) + fan-out concurrency guidance (#61).
 
-Any tool-spawned subagent fan-out (codebase scan #59, subprocess enrich,
-score-driven iterate #57, future parallel passes) should pick its model tier by
-**quota-pool isolation + sufficiency**, not a hardcoded "cheapest":
+Tool-spawned subagent fan-outs (codebase scan #59, subprocess enrich, future
+parallel passes) pick a model tier, defaulting to **Sonnet**:
 
-- Orchestrator on **Opus** → subagents on **Sonnet** (separate, far-cheaper pool;
-  more than capable for these summarize/rewrite tasks) — protects the Opus budget.
-- Session already on **Sonnet** → keep Sonnet (no downgrade).
-- **Haiku** only when the task is trivial and minimum cost is explicitly chosen.
+- Sonnet has its own **weekly quota pool** (since 2025-11-24, distinct from Opus,
+  with more headroom), so an Opus session benefits from drawing fan-out work from
+  the Sonnet weekly pool. That is a real, verified reason to default to Sonnet.
+- Session already on Sonnet → keep Sonnet. **Haiku** only when explicitly chosen.
 
-The CLI can't reliably introspect the orchestrator's live tier, so the safe
-default sub-tier is **Sonnet** (covers Opus→Sonnet and Sonnet→Sonnet; Haiku is
-opt-in). Purely operational (#51 untouched — it changes *which model* does
-grounded work, never *what* may be claimed).
+**Important correction (#61):** tier choice picks *which weekly pool* you draw
+from — it does **NOT** grant rate-limit isolation. The 429s seen on wide fan-outs
+were **per-minute rate limits (RPM/ITPM/OTPM) tripped by uncapped concurrency**,
+which hit regardless of tier or remaining weekly quota. The real mitigation is
+**capping concurrency + exponential backoff honoring `retry-after`**, not the tier
+choice. Process fan-outs in small batches (`FANOUT_CONCURRENCY`).
+
+Purely operational (#51 untouched — it changes *which model* / *how many at once*,
+never *what* may be claimed).
 """
 from __future__ import annotations
 
 from typing import Any
 
 DEFAULT_SUBAGENT_MODEL = "sonnet"
+
+# Recommended max concurrent subagents per fan-out batch (#61). Uncapped
+# concurrency — not the tier — is what trips per-minute 429s; process scan/enrich
+# fan-outs in batches this size with backoff. Mirrors Anthropic's guidance to
+# lower CLAUDE_CODE_MAX_TOOL_USE_CONCURRENCY for high-volume runs.
+FANOUT_CONCURRENCY = 5
 
 
 def resolve_subagent_model(

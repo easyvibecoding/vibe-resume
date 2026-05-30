@@ -179,10 +179,13 @@ research:
   # surface a refresh hint once that cache ages past the built-in 180-day threshold.
   enabled: false
 
-# Subagent model tier for tool-spawned fan-outs (#60). Default sonnet — a
-# quota-isolated, capable sub-tier so an Opus orchestrator's budget isn't
-# exhausted by a large scan/enrich fan-out. Per-command override via
-# `scan.subagent_model` / `enrich.subagent_model`, or the --subagent-model flag.
+# Subagent model tier for tool-spawned fan-outs (#60). Default sonnet — Sonnet
+# has its own weekly quota pool (more headroom than Opus), so fan-out work draws
+# from a different weekly pool. NOTE (#61): tier choice picks *which weekly pool*,
+# it does NOT grant rate-limit isolation — the 429s on wide fan-outs are per-minute
+# limits tripped by concurrency. The real fix is batching + backoff (the built-in
+# subprocess path retries on 429 honoring retry-after; cap session fan-outs to ~5
+# concurrent). Per-command override via `scan.subagent_model` or --subagent-model.
 agents:
   subagent_model: "sonnet"   # opus | sonnet | haiku (haiku only when explicitly chosen)
 

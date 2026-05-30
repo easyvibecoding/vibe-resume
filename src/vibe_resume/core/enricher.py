@@ -6,8 +6,10 @@ If `claude` is missing, fall back to a naive rule-based summary.
 """
 from __future__ import annotations
 
+import re
 import shutil
 import subprocess
+import time
 from pathlib import Path
 from typing import Any, Literal
 
@@ -417,26 +419,45 @@ def _build_prompt(
     return body
 
 
-def _call_claude(prompt: str, timeout: int = 180, model: str | None = None) -> str | None:
+# Per-minute rate limits (429), tripped by concurrency, are the real cause of
+# fan-out failures — NOT the model tier or weekly quota (#61). Retry with
+# exponential backoff honoring `retry-after`; the consuming session must also
+# cap concurrency (see agents.FANOUT_CONCURRENCY).
+_RATE_LIMIT_RE = re.compile(r"(?i)\b(429|rate[ _-]?limit)\b")
+_RETRY_AFTER_RE = re.compile(r"(?i)retry[- ]?after['\"]?\s*[:=]?\s*(\d+)")
+
+
+def _call_claude(
+    prompt: str, timeout: int = 180, model: str | None = None, retries: int = 4
+) -> str | None:
     if not shutil.which("claude"):
         return None
     cmd = ["claude", "-p", prompt, "--output-format", "text"]
     if model:
         cmd += ["--model", model]
-    try:
-        r = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-        )
-    except (FileNotFoundError, subprocess.TimeoutExpired, subprocess.SubprocessError) as e:
-        console.print(f"  [yellow]claude call failed:[/yellow] {e}")
+    delay = 2.0
+    for attempt in range(retries + 1):
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        except (FileNotFoundError, subprocess.TimeoutExpired, subprocess.SubprocessError) as e:
+            console.print(f"  [yellow]claude call failed:[/yellow] {e}")
+            return None
+        if r.returncode == 0:
+            return r.stdout.strip()
+        stderr = r.stderr or ""
+        if attempt < retries and _RATE_LIMIT_RE.search(stderr):
+            m = _RETRY_AFTER_RE.search(stderr)
+            wait = float(m.group(1)) if m else delay
+            console.print(
+                f"  [yellow]rate-limited (429) — backing off {wait:.0f}s "
+                f"(attempt {attempt + 1}/{retries})[/yellow]"
+            )
+            time.sleep(wait)
+            delay = min(delay * 2, 60.0)
+            continue
+        console.print(f"  [yellow]claude exit {r.returncode}:[/yellow] {stderr[:200]}")
         return None
-    if r.returncode != 0:
-        console.print(f"  [yellow]claude exit {r.returncode}:[/yellow] {r.stderr[:200]}")
-        return None
-    return r.stdout.strip()
+    return None
 
 
 def _parse_yaml(s: str) -> dict[str, Any] | None:

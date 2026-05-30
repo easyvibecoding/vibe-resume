@@ -38,3 +38,53 @@ def test_call_claude_passes_model(monkeypatch):
     # no model → no --model flag
     en._call_claude("hi")
     assert "--model" not in captured["cmd"]
+
+
+# --- #61 rate-limit backoff/retry in the subprocess fan-out path -------------
+
+def _fake_run_factory(seq):
+    """Return a subprocess.run stub yielding the given (returncode, stdout, stderr) sequence."""
+    calls = {"n": 0}
+
+    class _R:
+        def __init__(self, rc, out, err):
+            self.returncode = rc
+            self.stdout = out
+            self.stderr = err
+
+    def _run(cmd, **k):
+        rc, out, err = seq[min(calls["n"], len(seq) - 1)]
+        calls["n"] += 1
+        return _R(rc, out, err)
+
+    return _run, calls
+
+
+def test_call_claude_retries_on_429_then_succeeds(monkeypatch):
+    import vibe_resume.core.enricher as en
+    monkeypatch.setattr(en.shutil, "which", lambda _: "/usr/bin/claude")
+    monkeypatch.setattr(en.time, "sleep", lambda *_: None)  # no real waiting
+    run, calls = _fake_run_factory([
+        (1, "", "Error: 429 rate_limit; retry-after: 1"),
+        (1, "", "rate limit exceeded"),
+        (0, "done", ""),
+    ])
+    monkeypatch.setattr(en.subprocess, "run", run)
+    assert en._call_claude("p", retries=4) == "done"
+    assert calls["n"] == 3   # two 429 retries, then success
+
+
+def test_call_claude_no_retry_on_non_rate_error(monkeypatch):
+    import vibe_resume.core.enricher as en
+    monkeypatch.setattr(en.shutil, "which", lambda _: "/usr/bin/claude")
+    slept = {"n": 0}
+    monkeypatch.setattr(en.time, "sleep", lambda *_: slept.__setitem__("n", slept["n"] + 1))
+    run, calls = _fake_run_factory([(1, "", "Error: invalid prompt")])
+    monkeypatch.setattr(en.subprocess, "run", run)
+    assert en._call_claude("p", retries=4) is None
+    assert calls["n"] == 1 and slept["n"] == 0   # no retry, no backoff
+
+
+def test_fanout_concurrency_constant():
+    from vibe_resume.core.agents import FANOUT_CONCURRENCY
+    assert 1 <= FANOUT_CONCURRENCY <= 8
