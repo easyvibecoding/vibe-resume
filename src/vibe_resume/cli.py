@@ -1766,6 +1766,19 @@ def doctor(ctx: click.Context) -> None:
     ok, msg = pdf_engine_status()
     console.print(f"[{'green' if ok else 'yellow'}]{'✓' if ok else '⚠'}[/] {msg}")
 
+    # Per-locale template capability matrix (#65) — discloses where project_metrics
+    # renders (a metrics/Impact line) vs is a silent no-op.
+    from vibe_resume.render.template_caps import capability_matrix
+    matrix = capability_matrix()
+    metrics_locales = sorted(k for k, caps in matrix.items() if "metrics" in caps)
+    no_metrics = sorted(k for k, caps in matrix.items() if "metrics" not in caps)
+    console.print(
+        f"[dim]·[/dim] template metrics/Impact line: rendered in "
+        f"[green]{', '.join(metrics_locales) or 'none'}[/green]; NOT in "
+        f"[yellow]{', '.join(no_metrics) or 'none'}[/yellow] "
+        f"(there, weave numbers into bullets — project_metrics is a no-op)"
+    )
+
 
 @cli.command("jd-check")
 @click.option("--tailor", required=True, help="Path to JD .txt to check coverage against.")

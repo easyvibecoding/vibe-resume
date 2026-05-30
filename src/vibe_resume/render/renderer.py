@@ -230,6 +230,17 @@ def _render_md(cfg: dict[str, Any], tailor: str | None, locale: str | None = Non
             f"Run `vibe-resume enrich --locale {locale_key}` then "
             f"`--ingest --locale {locale_key}`.[/yellow]"
         )
+    # #65: project_metrics → group.metrics is a silent no-op on locales whose
+    # template doesn't render a metrics line. Disclose it instead of failing silent.
+    if any(g.metrics for g in groups):
+        from vibe_resume.render.template_caps import renders_metrics
+        if not renders_metrics(locale_key):
+            console.print(
+                f"[yellow]⚠ project_metrics set, but the {locale_key} template renders no "
+                f"metrics/Impact line — those numbers won't appear. Weave them into the "
+                f"achievement bullets instead (the en_US template does render them).[/yellow]"
+            )
+
     raw_groups = [g.model_dump(mode="json") for g in groups]
 
     skills: set[str] = set()
