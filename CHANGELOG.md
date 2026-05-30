@@ -4,6 +4,18 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.28.1] — 2026-05-30
+
+### Fixed
+
+- **`render` now exits non-zero when a requested format is dropped** (#66,
+  follow-up to #64). The PDF-skip warning existed but the command still returned
+  exit 0, so CI/Makefiles/agents gating on the exit code treated a missing PDF as
+  success. `render_draft` now reports dropped formats and the `render` command
+  fails when any requested format wasn't produced; `--allow-partial` opts back
+  into best-effort exit 0, and a structured `formats: md ✓ · pdf ✗` tail line lets
+  callers parse per-format status.
+
 ## [0.28.0] — 2026-05-30
 
 ### Fixed
