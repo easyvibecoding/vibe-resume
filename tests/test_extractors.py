@@ -104,6 +104,29 @@ def test_claude_code_missing_path(tmp_path: Path) -> None:
     assert acts == []
 
 
+def test_claude_code_archive_happy_path(claude_projects: Path) -> None:
+    """#73: the archive extractor reuses claude_code._process_session and must
+    pass the full 6-arg signature — a 2-arg call crashes (silent data loss)."""
+    from vibe_resume.extractors.local import claude_code_archive
+
+    acts = claude_code_archive.extract(
+        {"extractors": {"claude_code_archive": {"path": str(claude_projects)}}}
+    )
+    assert len(acts) == 1
+    a = acts[0]
+    assert a.user_prompts_count == 2 and a.tool_calls_count == 2
+    assert a.session_id == "abc-123" and a.project == "/Users/test/proj"
+
+
+def test_claude_code_archive_missing_path(tmp_path: Path) -> None:
+    from vibe_resume.extractors.local import claude_code_archive
+
+    acts = claude_code_archive.extract(
+        {"extractors": {"claude_code_archive": {"path": str(tmp_path / "nope")}}}
+    )
+    assert acts == []
+
+
 # ─────────────────────────────── codex ────────────────────────────────────────
 
 
