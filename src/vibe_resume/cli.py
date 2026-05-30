@@ -342,6 +342,9 @@ def research(ctx: click.Context, ingest_: bool, status_: bool) -> None:
 )
 @click.option("--no-emphasis", "no_emphasis", is_flag=True, default=False,
               help="Ignore _emphasis.yaml for this run")
+@click.option("--candidates", default=None,
+              help="Comma list of angle biases (impact_first,breadth_first,depth_first) or 'all'. "
+                   "Emits per-angle prompt variants per group for side-by-side `bullets-compare` (#75).")
 @click.pass_context
 def enrich(
     ctx: click.Context,
@@ -361,6 +364,7 @@ def enrich(
     all_ready: bool,
     ingest_all: bool,
     no_emphasis: bool,
+    candidates: str | None,
 ) -> None:
     """Generate per-group résumé bullets via Claude Code session (default) or claude -p subprocess."""
     from vibe_resume.core.runner import run_enricher
@@ -368,6 +372,11 @@ def enrich(
     if no_emphasis:
         ctx.obj["config"].setdefault("emphasis", {})["enabled"] = False
     _warn_if_company_stale(company)
+    cand_list: list[str] | None = None
+    if candidates:
+        from vibe_resume.core.candidates import CANDIDATE_ANGLES
+        cand_list = (list(CANDIDATE_ANGLES) if candidates.strip().lower() == "all"
+                     else [a.strip() for a in candidates.split(",") if a.strip()])
     run_enricher(
         ctx.obj["config"],
         limit=limit,
@@ -385,6 +394,7 @@ def enrich(
         clean=clean,
         status=status,
         all_ready=all_ready,
+        candidates=cand_list,
     )
 
 
@@ -669,8 +679,13 @@ def render(
     required=True,
     help="Locale of the enriched cache to compare (e.g. en_US). Required after 0.4.0 since enriched cache is per-locale.",
 )
+@click.option("--with-scores", "with_scores", is_flag=True, default=False,
+              help="Also render+review each persona for this locale and show a JD-fit score table (#78).")
+@click.option("--tailor", default=None,
+              help="JD .txt to tailor + score against (drives keyword-echo in --with-scores).")
 @click.pass_context
-def personas_compare(ctx: click.Context, personas_arg: str | None, limit: int, locale: str) -> None:
+def personas_compare(ctx: click.Context, personas_arg: str | None, limit: int, locale: str,
+                     with_scores: bool, tailor: str | None) -> None:
     """Side-by-side diff of persona outputs for the top project groups.
 
     Reads the per-persona cache files written by `enrich --persona <key>` and
@@ -734,6 +749,40 @@ def personas_compare(ctx: click.Context, personas_arg: str | None, limit: int, l
                 out.print(f"    [italic]{summary[:160]}[/italic]")
             for ach in (match.get("achievements") or [])[:4]:
                 out.print(f"    • {ach}")
+
+    # #78: optional per-persona JD-fit score table (render+review each persona).
+    if with_scores:
+        from rich.table import Table as _ScoreT
+
+        from vibe_resume.core.persona_compare import compare_personas
+        from vibe_resume.core.review import parse_jd_keywords
+        from vibe_resume.core.review import review as _review
+        from vibe_resume.render.renderer import _render_md
+
+        cfg = ctx.obj["config"]
+        jd_keywords = parse_jd_keywords(Path(tailor)) if tailor and Path(tailor).exists() else None
+
+        def score_fn(persona: str):
+            md = _render_md(cfg, tailor, locale=locale, persona=persona)[0]
+            return _review(md, locale, jd_keywords=jd_keywords)
+
+        comp = compare_personas(persona_groups, limit=limit, score_fn=score_fn)
+        if comp.scores:
+            col_keys = ["top-fold", "numbers-per-bullet", "keyword-echo", "page-count", "ai-proficiency"]
+            st = _ScoreT(title=f"Persona JD-fit — {locale}")
+            st.add_column("persona", style="magenta")
+            st.add_column("total", justify="right")
+            st.add_column("grade", justify="center")
+            for ck in col_keys:
+                st.add_column(ck, justify="right")
+            for row in comp.scores:
+                marker = " ★" if row.persona == comp.best_persona else ""
+                st.add_row(f"{row.persona}{marker}", f"{row.total}/{row.max_total}", row.grade,
+                           *[str(row.columns.get(ck, "—")) for ck in col_keys])
+            out.print()
+            out.print(st)
+            if comp.best_persona:
+                out.print(f"[bold green]Best JD fit: {comp.best_persona}[/bold green]")
 
 
 def _status_enriched(cache_dir: Path) -> None:
@@ -1842,6 +1891,68 @@ def _run_gated(
     console.print("[dim]run `vibe-resume trend` for the sparkline summary.[/dim]")
 
 
+def _run_branch(
+    cfg: dict,
+    branch_gate: str,
+    branch_decision: str | None,
+    data_dir: Path,
+    *,
+    persona_keys: list[str | None],
+    locale_keys: list[str],
+    fmt_list: list[str],
+    tailor: str | None,
+    company: str | None,
+    level: str | None,
+) -> None:
+    """--branch Gn --decision <json>: fork the ledger, apply the alternative
+    decision, recompute that gate's suffix, then auto review-diff vs the original (#77).
+
+    The render bumps a new résumé version in history; the auto-diff compares it
+    against the immediately-previous version (the original framing). The fork's
+    decisions are preserved in data/run_ledger.branch-<id>.json for traceability,
+    and `run --adopt <id>` promotes the winner."""
+    import json as _json
+    from datetime import UTC, datetime
+
+    from vibe_resume.core.gates import Gate, GateLedger
+    from vibe_resume.core.run_branch import branch_id_for, branch_ledger_path, fork_ledger
+    from vibe_resume.core.run_gates import ledger_path
+
+    try:
+        gate = Gate(branch_gate.upper())
+    except ValueError as e:
+        raise click.UsageError(
+            f"unknown gate '{branch_gate}'. Use one of: {', '.join(g.value for g in Gate)}"
+        ) from e
+    if not branch_decision:
+        raise click.UsageError("--branch requires --decision '<json>' (e.g. '{\"choice\":\"top_n\",\"top_n\":8}').")
+    try:
+        decision = _json.loads(branch_decision)
+        if not isinstance(decision, dict) or "choice" not in decision:
+            raise ValueError("decision must be a JSON object with a 'choice' key")
+    except (ValueError, _json.JSONDecodeError) as e:
+        raise click.UsageError(f"bad --decision JSON: {e}") from e
+
+    base = GateLedger.load(ledger_path(data_dir))
+    now = datetime.now(UTC).isoformat()
+    forked = fork_ledger(base, gate, decision, now)
+    bid = branch_id_for(gate, decision)
+    bpath = branch_ledger_path(data_dir, bid)
+    forked.save(bpath)
+    console.print(f"[cyan]branch[/cyan] [bold]{bid}[/bold] forked at {gate.value} → "
+                  f"{decision.get('choice')} (saved {bpath.name}; original ledger intact)")
+
+    # Recompute only this gate's suffix on the forked ledger, then diff.
+    _run_resume_from(
+        cfg, branch_gate, data_dir,
+        persona_keys=persona_keys, locale_keys=locale_keys,
+        fmt_list=fmt_list, tailor=tailor, company=company, level=level,
+        ledger_override=forked,
+    )
+    console.print(f"[dim]branch {bid}: the diff above is branch-vs-original. "
+                  f"`run --adopt {bid}` to keep it, or `run --branches` to list forks.[/dim]")
+
+
 def _run_resume_from(
     cfg: dict,
     resume_from: str,
@@ -1853,8 +1964,12 @@ def _run_resume_from(
     tailor: str | None,
     company: str | None,
     level: str | None,
+    ledger_override: object | None = None,
 ) -> None:
-    """--resume-from Gn: recompute only that gate's ordered suffix, then diff (#71)."""
+    """--resume-from Gn: recompute only that gate's ordered suffix, then diff (#71).
+
+    ``ledger_override`` (#77) lets a forked branch ledger drive the recompute
+    instead of the on-disk main ledger."""
     from vibe_resume.core.gates import (
         Gate,
         GateLedger,
@@ -1883,7 +1998,7 @@ def _run_resume_from(
             f"unknown gate '{resume_from}'. Use one of: {', '.join(g.value for g in Gate)}"
         ) from e
 
-    ledger = GateLedger.load(ledger_path(data_dir))
+    ledger = ledger_override if ledger_override is not None else GateLedger.load(ledger_path(data_dir))
     plan = resume_plan(ledger, gate)
     label = " → ".join(s.value for s in plan) if plan else "(terminal — nothing to recompute)"
     console.print(f"[cyan]resume-from {gate.value}[/cyan] → recompute: [bold]{label}[/bold]")
@@ -1950,6 +2065,15 @@ def _run_resume_from(
 @click.option("--resume-from", "resume_from", default=None,
               help="Re-run only the recompute suffix for a re-decided gate (e.g. G5 → render,review), "
                    "then print a review-diff. Reads data/run_ledger.json.")
+@click.option("--branch", "branch_gate", default=None,
+              help="Fork the ledger: try an alternative --decision at this gate (e.g. G2), re-run "
+                   "only its recompute suffix, then auto review-diff vs the original (#77).")
+@click.option("--decision", "branch_decision", default=None,
+              help="JSON decision for --branch, e.g. '{\"choice\":\"top_n\",\"top_n\":8}'.")
+@click.option("--branches", "list_branches_flag", is_flag=True, default=False,
+              help="List existing ledger branches and exit (#77).")
+@click.option("--adopt", "adopt_branch_id", default=None,
+              help="Promote a branch ledger to be the main ledger, then exit (#77).")
 @click.pass_context
 def run_cmd(
     ctx: click.Context,
@@ -1966,6 +2090,10 @@ def run_cmd(
     preset: str | None,
     gates_arg: str | None,
     resume_from: str | None,
+    branch_gate: str | None,
+    branch_decision: str | None,
+    list_branches_flag: bool,
+    adopt_branch_id: str | None,
 ) -> None:
     """Run the full pipeline (multi-persona × multi-locale) in one command.
 
@@ -2035,6 +2163,36 @@ def run_cmd(
         )
     except ValueError as e:
         raise click.UsageError(str(e)) from e
+
+    # ── Branch exploration (#77): list / adopt / fork-and-diff ───────────────
+    if list_branches_flag:
+        from vibe_resume.core.run_branch import list_branch_ids
+        ids = list_branch_ids(data_dir)
+        if not ids:
+            console.print("[dim]no branches yet — fork one with `run --branch Gn --decision '...'`.[/dim]")
+        else:
+            console.print("[bold]ledger branches:[/bold]")
+            for bid in ids:
+                console.print(f"  • {bid}")
+        return
+
+    if adopt_branch_id:
+        from vibe_resume.core.run_branch import adopt_branch
+        from vibe_resume.core.run_gates import ledger_path
+        try:
+            adopt_branch(data_dir, adopt_branch_id, main_path=ledger_path(data_dir))
+        except FileNotFoundError as e:
+            raise click.UsageError(str(e)) from e
+        console.print(f"[green]✓[/green] adopted branch [bold]{adopt_branch_id}[/bold] as the main ledger.")
+        return
+
+    if branch_gate:
+        _run_branch(
+            cfg, branch_gate, branch_decision, data_dir,
+            persona_keys=persona_keys, locale_keys=locale_keys,
+            fmt_list=fmt_list, tailor=tailor, company=company, level=level,
+        )
+        return
 
     # --resume-from is independent of the armed set: it replays a re-decided gate.
     if resume_from:
@@ -2300,8 +2458,12 @@ def doctor(ctx: click.Context) -> None:
 @click.option("--persona", default=None, help="Narrow to a persona's cache.")
 @click.option("--locale", default=None, help="Narrow to a locale's cache.")
 @click.option("--threshold", type=int, default=None, help="Only show keywords below this %% coverage.")
+@click.option("--explain", "--grounding", "explain_", is_flag=True, default=False,
+              help="For each MISSING keyword, classify it (groundable/absent) and show the "
+                   "closest raw-activity evidence. Advisory only — never inserts (#80).")
 @click.pass_context
-def jd_check(ctx: click.Context, tailor: str, persona: str | None, locale: str | None, threshold: int | None) -> None:
+def jd_check(ctx: click.Context, tailor: str, persona: str | None, locale: str | None,
+             threshold: int | None, explain_: bool) -> None:
     """Report how well enriched bullets cover the JD's extracted keywords."""
     from vibe_resume.core.aggregator import load_groups
     from vibe_resume.core.review import parse_jd_keywords
@@ -2351,6 +2513,40 @@ def jd_check(ctx: click.Context, tailor: str, persona: str | None, locale: str |
         f"{len(keywords) - surfaced} missing."
     )
 
+    if explain_:
+        from vibe_resume.core.jd_explain import explain_jd_gaps
+        surfaced_text = " ".join(
+            (g.summary or "") + " " + " ".join(g.achievements or [])
+            + " " + " ".join(g.tech_stack or [])
+            for g in groups
+        )
+        explanations = explain_jd_gaps(keywords, groups, surfaced_text, lang=locale_key)
+        et = Table(title="JD keyword grounding (advisory — never auto-inserted)")
+        et.add_column("Keyword")
+        et.add_column("Status")
+        et.add_column("Closest evidence")
+        et.add_column("Ref")
+        _style = {"surfaced": "green", "groundable": "yellow", "absent": "dim"}
+        any_gap = False
+        for e in explanations:
+            if e.status == "surfaced":
+                continue  # already in the résumé — nothing to ground
+            any_gap = True
+            status = f"[{_style.get(e.status, 'white')}]{e.status}[/]"
+            if e.matches:
+                first = True
+                for m in e.matches:
+                    et.add_row(e.keyword if first else "", status if first else "",
+                               m.snippet, f"{m.source}:{m.ref}" if m.ref else m.source)
+                    first = False
+            else:
+                et.add_row(e.keyword, status, "— honest gap —", "")
+        console.print()
+        if any_gap:
+            console.print(et)
+        else:
+            console.print("[green]every JD keyword is already surfaced — no gaps to ground.[/green]")
+
 
 @cli.command("review-diff")
 @click.argument("va")
@@ -2393,6 +2589,127 @@ def review_diff(ctx: click.Context, va: str, vb: str, jd: str | None) -> None:
     tdstr = "—" if total_delta == 0 else (f"+{total_delta}" if total_delta > 0 else str(total_delta))
     t.add_row("TOTAL", f"{ra.total}/{ra.max_total}", f"{rb.total}/{rb.max_total}", tdstr)
     console.print(t)
+
+
+@cli.command()
+@click.option("--locale", default=None, help="Target locale")
+@click.option("--persona", default=None, help="Persona cache to render from")
+@click.option("--tailor", default=None, help="JD file (keyword-echo scoring)")
+@click.option("--top-n", "top_n_csv", default="4,6,8", help="Comma list of top_n values to sweep")
+@click.option("--page-budget", "budget_csv", default="1.5,2.0,2.5", help="Comma list of page budgets to sweep")
+@click.option("--write", "write_cell", default=None,
+              help="Snapshot one cell as 'top_n,page_budget' (e.g. '6,2.0'); default dry-run")
+@click.pass_context
+def explore(ctx: click.Context, locale: str | None, persona: str | None, tailor: str | None,
+            top_n_csv: str, budget_csv: str, write_cell: str | None) -> None:
+    """Sweep a top_n × page_budget grid (#76), render+review each cell, and surface
+    the Pareto-best configs (score↑, pages↓). Pure layout/selection — NEVER rewrites
+    bullets (same truthful guarantee as `iterate`)."""
+    from vibe_resume.core.explore import explore_grid
+    from vibe_resume.core.review import estimate_pages
+    from vibe_resume.core.review import review as _review
+    from vibe_resume.core.runner import run_render
+    from vibe_resume.render.i18n import resolve_locale
+    from vibe_resume.render.renderer import _render_md
+
+    cfg = ctx.obj["config"]
+    locale_key = resolve_locale(locale or cfg.get("render", {}).get("locale"))
+    top_ns = [int(x) for x in top_n_csv.split(",") if x.strip()]
+    budgets = [float(x) for x in budget_csv.split(",") if x.strip()]
+
+    def render_fn(top_n: int, budget: float) -> str:
+        return _render_md(cfg, tailor, locale=locale_key, persona=persona,
+                          top_n=top_n, max_pages=budget)[0]
+
+    def review_fn(md: str):
+        rep = _review(md, locale_key)
+        return rep.total, rep.max_total, rep.grade, estimate_pages(md)
+
+    res = explore_grid(top_ns, budgets, render_fn=render_fn, review_fn=review_fn)
+    console.print(f"[cyan]explore[/cyan] locale={locale_key} grid={len(top_ns)}×{len(budgets)} (truth-preserving)")
+
+    table = Table(title="score surface")
+    for col in ("top_n", "page_budget", "score", "grade", "est_pages", "pareto"):
+        table.add_column(col)
+    for top_n, budget, score, grade, est_pages, on_front in res.grid_table_rows():
+        mark = "[green]★[/green]" if on_front else ""
+        table.add_row(str(top_n), f"{budget}", score, grade, f"{est_pages}", mark)
+    console.print(table)
+
+    console.print("\n[bold]Pareto front (not dominated on score↑ / pages↓):[/bold]")
+    for c in res.pareto_front:
+        console.print(f"  ★ top_n={c.top_n} budget={c.page_budget} → "
+                      f"{c.total}/{c.max_total} ({c.grade}) · ~{c.est_pages:.1f}p")
+
+    if write_cell:
+        wt, wb = write_cell.split(",")
+        run_render(cfg, fmt=cfg.get("render", {}).get("default_format", "md"),
+                   tailor=tailor, locale=locale_key, persona=persona,
+                   top_n=int(wt), max_pages=float(wb))
+        console.print(f"[green]✓[/green] snapshotted cell top_n={int(wt)} page_budget={float(wb)}")
+    else:
+        console.print("[dim](dry-run — pass --write 'top_n,budget' to snapshot a cell)[/dim]")
+
+
+@cli.command("bullets-compare")
+@click.option("--locale", required=True, help="Locale of the candidate cache to compare.")
+@click.option("--persona", default=None, help="Persona whose candidate variants to compare.")
+@click.option("--limit", "-n", type=int, default=3, help="Show top-N project groups (default: 3)")
+@click.pass_context
+def bullets_compare(ctx: click.Context, locale: str, persona: str | None, limit: int) -> None:
+    """Side-by-side view of angle-biased candidate bullet-sets per group (#75).
+
+    Reads candidate variants written by `enrich --candidates <angles>` and prints
+    each group's impact/breadth/depth framings so you can pick the best per group."""
+    import yaml as _yaml
+
+    from vibe_resume.core.candidates import compare_rows
+    from vibe_resume.core.enrich_jobs import EnrichJobManifest
+
+    cand_root = ROOT / "data" / "enrich_jobs" / "_candidates"
+    if not cand_root.exists():
+        raise click.UsageError(
+            f"no candidate cache at {cand_root}. Run "
+            f"`vibe-resume enrich --candidates all --locale {locale}` first, process the "
+            f"emitted *.prompt.md files, then re-run bullets-compare."
+        )
+    sub = persona or "default"
+    # _candidates/<angle>/<persona>/<locale>/manifest.json + NNN_slug.yaml
+    by_group: dict[str, list[dict]] = {}
+    for angle_dir in sorted(p for p in cand_root.iterdir() if p.is_dir()):
+        jobs_dir = angle_dir / sub / locale
+        manifest = jobs_dir / "manifest.json"
+        if not manifest.exists():
+            continue
+        try:
+            man = EnrichJobManifest.model_validate_json(manifest.read_text())
+        except Exception:
+            continue
+        for entry in man.groups:
+            yaml_path = jobs_dir / entry.output_path
+            bullets: list[str] = []
+            if yaml_path.exists():
+                try:
+                    parsed = _yaml.safe_load(yaml_path.read_text(encoding="utf-8")) or {}
+                    bullets = list(parsed.get("achievements") or [])
+                except _yaml.YAMLError:
+                    bullets = ["(unparseable yaml)"]
+            else:
+                bullets = ["(not yet processed — run the session on this angle's *.prompt.md)"]
+            by_group.setdefault(entry.name, []).append(
+                {"angle": angle_dir.name, "bullets": bullets}
+            )
+    if not by_group:
+        raise click.UsageError(
+            f"no candidate variants found under {cand_root}/<angle>/{sub}/{locale}/."
+        )
+
+    for row in compare_rows(by_group, limit=limit):
+        console.print(f"\n[bold cyan]── {row.name} ──[/bold cyan]")
+        for cand in row.candidates:
+            console.print(f"  [bold magenta]{cand['angle']}[/bold magenta]")
+            for b in (cand.get("bullets") or [])[:4]:
+                console.print(f"    • {b}")
 
 
 if __name__ == "__main__":

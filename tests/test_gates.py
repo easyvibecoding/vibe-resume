@@ -175,7 +175,8 @@ def test_emit_gate_writes_pending_with_context_and_choices(tmp_path):
     data = json.loads(p.read_text())
     assert data["gate"] == "G5"
     assert data["status"] == "pending"
-    assert data["decision"] == {"choice": None}   # #72: self-documenting scaffold, not bare null
+    # #72 self-documenting scaffold; #79 part 2 adds an empty `pick` for G5.
+    assert data["decision"] == {"choice": None, "pick": []}
     assert "_hint" in data and "decision.choice" in data["_hint"]
     assert data["choices"] == list(GATE_DEFS[Gate.G5_METRICS].choices)
     assert data["context"]["candidates"][0]["value"] == "40%"
@@ -281,6 +282,47 @@ def test_emit_g5_succeeds_with_only_safe_candidates(tmp_path):
     assert data["gate"] == "G5"
     assert data["status"] == "pending"
     assert g5_safe_metric_values(ctx) == {"40%", "3x", "2k"}
+
+
+def test_g5_emit_scaffolds_pick_list(tmp_path):
+    """#79 part 2: a G5 gate scaffolds an empty `pick` so the filler can select
+    per-metric (empty pick + confirm == weave all safe, the conservative legacy)."""
+    ctx = {"groups": [{"candidate_metrics": [{"value": "40%", "safe_to_surface": True}]}]}
+    p = emit_gate(Gate.G5_METRICS, tmp_path, context=ctx)
+    data = json.loads(p.read_text())
+    assert data["decision"] == {"choice": None, "pick": []}
+
+
+def test_g5_selected_metrics_per_metric_pick():
+    """#79 part 2: the G5 decision can record which candidates to weave."""
+    from vibe_resume.core.gates import g5_selected_metrics
+    ctx = {"groups": [{"candidate_metrics": [
+        {"value": "2.0x→1.5x", "safe_to_surface": True},
+        {"value": "7s", "safe_to_surface": True},
+        {"value": "40%", "safe_to_surface": True},
+    ]}]}
+    # skip / undecided → conservative empty
+    assert g5_selected_metrics({"choice": "skip"}, ctx) == set()
+    assert g5_selected_metrics(None, ctx) == set()
+    # confirm without pick → all safe (legacy all-or-nothing)
+    assert g5_selected_metrics({"choice": "confirm"}, ctx) == {"2.0x→1.5x", "7s", "40%"}
+    # confirm WITH pick → only the chosen subset
+    picked = {"choice": "confirm", "pick": [{"group": "CRM", "value": "2.0x→1.5x"}]}
+    assert g5_selected_metrics(picked, ctx) == {"2.0x→1.5x"}
+
+
+def test_g5_selected_metrics_pick_cannot_smuggle_unsafe_value():
+    """P1: even an explicit pick is intersected with safe values — a pick of an
+    unsafe/unlisted value can never be woven."""
+    from vibe_resume.core.gates import g5_selected_metrics
+    ctx = {"groups": [{"candidate_metrics": [
+        {"value": "40%", "safe_to_surface": True},
+        {"value": "487B", "safe_to_surface": False},   # secret fragment (#79 part1)
+    ]}]}
+    picked = {"choice": "confirm", "pick": [
+        {"value": "40%"}, {"value": "487B"}, {"value": "99%"},  # unsafe + unlisted dropped
+    ]}
+    assert g5_selected_metrics(picked, ctx) == {"40%"}
 
 
 def test_non_g5_emit_unaffected_by_unsafe_looking_context(tmp_path):

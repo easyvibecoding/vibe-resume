@@ -296,6 +296,7 @@ def _build_prompt(
     max_activities: int = 12,
     char_budget: int = 200,
     emphasis: EmphasisRecord | None = None,
+    angle: str | None = None,
 ) -> str:
     raw_lines: list[str] = []
     for a in g.activities[:max_activities]:
@@ -416,6 +417,12 @@ def _build_prompt(
         )
     if emphasis is not None and (emphasis.intent or emphasis.keywords or emphasis.bias_instruction):
         body += emphasis_block(emphasis)
+    # #75: candidate angle bias fires LAST so its lead-framing hint (impact /
+    # breadth / depth) is the final instruction the model reads. It is a prefix
+    # only — the never-fabricate rule in every block above still binds.
+    if angle is not None:
+        from vibe_resume.core.candidates import angle_block
+        body += angle_block(angle)
     return body
 
 
@@ -574,6 +581,7 @@ def enrich_groups(
     clean: bool = False,
     status: bool = False,
     all_ready: bool = False,
+    candidates: list[str] | None = None,
 ) -> None:
     """Run the enrich stage in one of three modes.
 
@@ -616,6 +624,32 @@ def enrich_groups(
         label_list = ", ".join(k for k in persona_keys if k)
         console.print(f"[cyan]multi-persona run:[/cyan] {label_list}")
 
+    # #75: candidate mode — emit angle-biased prompt variants per group into
+    # data/enrich_jobs/_candidates/<angle>/<persona>/<locale>/, so the session can
+    # process each framing and `bullets-compare` shows them side by side.
+    if candidates:
+        from vibe_resume.core.candidates import CANDIDATE_ANGLES
+        bad = [a for a in candidates if a not in CANDIDATE_ANGLES]
+        if bad:
+            console.print(f"[red]unknown angle(s) {bad}; known: {', '.join(CANDIDATE_ANGLES)}[/red]")
+            return
+        cand_root = ENRICH_JOBS_DIR / "_candidates"
+        for p_key in persona_keys:
+            for angle in candidates:
+                _do_emit(
+                    cfg, p_key, locale_key, tailor, company, level, limit,
+                    tailor_keywords_override=tailor_keywords_override,
+                    tailor_keywords_cap=tailor_keywords_cap,
+                    tailor_keywords_strict=tailor_keywords_strict,
+                    clean=clean, angle=angle, out_root=cand_root / angle,
+                )
+        console.print(
+            f"\n[cyan]Next:[/cyan] process the *.prompt.md under "
+            f"data/enrich_jobs/_candidates/<angle>/, then "
+            f"[cyan]`vibe-resume bullets-compare --locale {locale_key}`[/cyan] to pick per group."
+        )
+        return
+
     for p_key in persona_keys:
         if len(persona_keys) > 1:
             console.print(f"\n[bold cyan]── persona: {p_key} ──[/bold cyan]")
@@ -638,7 +672,8 @@ def enrich_groups(
 
 def _do_emit(cfg, persona, locale_key, tailor, company, level, limit,
              *, tailor_keywords_override=None, tailor_keywords_cap=12,
-             tailor_keywords_strict=False, clean=False) -> None:
+             tailor_keywords_strict=False, clean=False,
+             angle=None, out_root=None) -> None:
     import hashlib
     from datetime import UTC, datetime
 
@@ -680,7 +715,7 @@ def _do_emit(cfg, persona, locale_key, tailor, company, level, limit,
 
     _enr = cfg.get("enrich", {})
     jobs_dir = emit_jobs(
-        groups, ENRICH_JOBS_DIR,
+        groups, out_root or ENRICH_JOBS_DIR,
         persona=persona, locale=locale_key,
         tailor_keywords=tailor_keywords,
         company=company, level=level, limit=limit,
@@ -689,7 +724,12 @@ def _do_emit(cfg, persona, locale_key, tailor, company, level, limit,
         input_activities=int(_enr.get("input_activities", 12)),
         input_char_budget=int(_enr.get("input_char_budget", 200)),
         emphasis=load_emphasis(cfg),
+        angle=angle,
     )
+    if angle:
+        n = len(groups[:limit]) if limit else len(groups)
+        console.print(f"[green]✓[/green] [magenta]{angle}[/magenta] candidate: wrote {n} prompts to {jobs_dir}")
+        return
     persona_arg = f" --persona {persona}" if persona else ""
     n = len(groups[:limit]) if limit else len(groups)
     console.print(f"[green]✓[/green] wrote {n} prompts to {jobs_dir}")

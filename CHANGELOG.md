@@ -4,6 +4,43 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.33.0] — 2026-05-31
+
+### Added — exploration & disclosure backlog
+
+The unifying design principle (per the project goal): give the agent **disclosure
+capability to self-mine what it needs to see**, and turn single-shot choices into
+visible explorations. None of these rewrite bullets or fabricate — they surface
+real signals and let the human pick.
+
+- **`jd-check --explain`** (#80). For each MISSING JD keyword, classify it
+  `groundable` (real supporting snippets exist in the activity — shown with source
+  refs) vs `absent` ("honest gap — leave it"). Reuses the evidence-disclosure layer;
+  advisory only, never auto-inserts. New `core/jd_explain.py`.
+- **`explore` command** (#76). Sweeps a `top_n × page_budget` grid, renders+reviews
+  each cell, and surfaces the **Pareto front** (configs not dominated on score↑ /
+  pages↓) so the layout sweet-spot is found deliberately instead of by hand. Pure
+  layout/selection — same truthful-lever guarantee as `iterate`. New `core/explore.py`.
+- **`personas-compare --with-scores`** (#78). Joins the per-group bullet diff with a
+  per-persona review-score table for the same locale + JD, and highlights the persona
+  that maximizes JD fit — turning persona choice from an up-front guess into a
+  data-driven comparison. New `core/persona_compare.py`.
+- **`run --branch <Gn> --decision <json>` + `--branches` + `--adopt`** (#77). Forks
+  the gate ledger to a named branch (original kept intact), applies the alternative
+  decision, recomputes only that gate's invalidation suffix, and auto review-diffs the
+  branch vs the original — making the gate flow a tree instead of a line. New
+  `core/run_branch.py` (pure, deterministic branch ids; no clock/RNG).
+- **`enrich --candidates <angles>` + `bullets-compare`** (#75). Generates N
+  angle-biased candidate bullet-sets per group (`impact_first` / `breadth_first` /
+  `depth_first` — each a prompt PREFIX; the anti-fabrication rules are untouched) and
+  shows them side by side so the user picks the best framing per group. New
+  `core/candidates.py`; the angle threads through `enricher._build_prompt` → `emit_jobs`.
+- **G5 per-metric selection** (#79 part 2). The G5 metrics gate is no longer
+  all-or-nothing: the decision records `pick: [{group, value}]` to weave a SUBSET, and
+  the gate file scaffolds an empty `pick`. `g5_selected_metrics` always intersects the
+  pick with `safe_to_surface` values, so a pick can never smuggle an unsafe/unlisted
+  value past the P1 guard (closes #79; part 1 shipped in 0.32.4).
+
 ## [0.32.4] — 2026-05-31
 
 ### Fixed

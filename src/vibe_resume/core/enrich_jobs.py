@@ -79,6 +79,7 @@ def emit_jobs(
     input_activities: int = 12,
     input_char_budget: int = 200,
     emphasis: EmphasisRecord | None = None,
+    angle: str | None = None,
 ) -> Path:
     """Write manifest.json + N *.prompt.md files for the session to process.
 
@@ -138,6 +139,7 @@ def emit_jobs(
             max_activities=input_activities,
             char_budget=input_char_budget,
             emphasis=emphasis,
+            angle=angle,
         )
         (jobs_dir / prompt_name).write_text(prompt_body, encoding="utf-8")
 

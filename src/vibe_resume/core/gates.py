@@ -431,6 +431,31 @@ def g5_safe_metric_values(context: dict[str, Any]) -> set[str]:
     return out
 
 
+def g5_selected_metrics(
+    decision: dict[str, Any] | None, context: dict[str, Any]
+) -> set[str]:
+    """Resolve which safe metric values a G5 decision elects to weave (#79 part 2).
+
+    Per-metric selection layered over the binary confirm/skip:
+    - ``choice == "skip"`` or no/undecided decision  -> ``set()`` (conservative).
+    - ``choice == "confirm"`` with no ``pick``        -> ALL safe values (the legacy
+      all-or-nothing confirm).
+    - ``choice == "confirm"`` with ``pick: [{"group":.., "value":..}, ...]`` -> only
+      the picked values.
+
+    The result is ALWAYS intersected with :func:`g5_safe_metric_values` so a pick can
+    never smuggle an unsafe / unlisted value past the P1 guard — picking ``"487B"``
+    (a secret fragment) or an absent value simply drops it."""
+    safe = g5_safe_metric_values(context)
+    if not decision or decision.get("choice") != "confirm":
+        return set()
+    pick = decision.get("pick")
+    if not pick:
+        return set(safe)
+    chosen = {str(p.get("value")) for p in pick if isinstance(p, dict)}
+    return chosen & safe
+
+
 def assert_g5_safe(context: dict[str, Any]) -> None:
     """P1 guard: a G5 gate context may surface ONLY ``safe_to_surface`` real
     metrics from the evidence disclosure layer (#70).
@@ -485,12 +510,18 @@ def emit_gate(
             pass  # unreadable -> overwrite fresh
 
     d = GATE_DEFS[gate]
+    # #72: scaffold the decision SHAPE (not a bare null) so the filler sees exactly
+    # what to set. A null choice still reads as "not yet decided".
+    scaffold: dict[str, Any] = {"choice": None}
+    # #79 part 2: G5 also scaffolds an empty `pick` list — fill it with
+    # {"group":.., "value":..} entries to weave a SUBSET; leave [] (with
+    # choice="confirm") to weave all safe candidates (the conservative legacy).
+    if gate is Gate.G5_METRICS:
+        scaffold["pick"] = []
     gf = GateFile(
         gate=gate, short=d.short, description=d.description,
         choices=list(d.choices), context=dict(context or {}),
-        # #72: scaffold the decision SHAPE (not a bare null) so the filler sees
-        # exactly what to set. A null choice still reads as "not yet decided".
-        decision={"choice": None},
+        decision=scaffold,
     )
     path.write_text(json.dumps(gf.as_dict(), indent=2, ensure_ascii=False), encoding="utf-8")
     return path

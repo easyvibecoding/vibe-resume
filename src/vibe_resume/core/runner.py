@@ -172,6 +172,7 @@ def run_enricher(
     clean: bool = False,
     status: bool = False,
     all_ready: bool = False,
+    candidates: list[str] | None = None,
 ) -> None:
     from vibe_resume.core.enricher import enrich_groups
 
@@ -186,6 +187,7 @@ def run_enricher(
         clean=clean,
         status=status,
         all_ready=all_ready,
+        candidates=candidates,
     )
 
 
