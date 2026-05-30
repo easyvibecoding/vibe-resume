@@ -4,6 +4,19 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.32.1] — 2026-05-30
+
+### Fixed
+
+- **Self-documenting gate-file decisions** (#72). The emitted `*.gate.json` showed
+  `"decision": null` with no shape hint, and the obvious fill (`"decision": "reuse"`)
+  was silently coerced to `None` and mislabeled *"no decision filled in"* — stalling
+  the documented happy path. Now the gate-file scaffolds `"decision": {"choice": null}`
+  plus a `_hint`; a **bare string is accepted** and normalized to `{"choice": "reuse"}`;
+  and `read_gate_decision` distinguishes a genuinely-empty decision from a wrong-shape
+  one (`decision must be an object like {"choice": ...}; got [...]`). The engine was
+  already correct — only the affordance is fixed.
+
 ## [0.32.0] — 2026-05-30
 
 ### Added
