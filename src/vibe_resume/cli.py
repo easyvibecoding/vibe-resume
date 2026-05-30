@@ -817,6 +817,8 @@ def status(ctx: click.Context, enriched: bool, pending: bool, show_all: bool) ->
     default=None,
     help="Career level key: new_grad / junior / mid / senior / staff_plus / research_scientist — appends level-specific pitfalls.",
 )
+@click.option("--by-bullet", "by_bullet", is_flag=True, default=False,
+              help="Disclose per-failing-bullet diagnostics (which check each missed) — #63")
 @click.pass_context
 def review(
     ctx: click.Context,
@@ -828,10 +830,12 @@ def review(
     persona: str | None,
     company: str | None,
     level: str | None,
+    by_bullet: bool,
 ) -> None:
     """Score a rendered resume against the 8-point reviewer checklist."""
     from vibe_resume.core.review import (
         find_previous_review,
+        newer_variant_hint,
         parse_jd_keywords,
         resolve_resume_path,
         review_file,
@@ -852,6 +856,12 @@ def review(
         console.print(
             f"[dim]→ scoring {md_path.name} (matched persona={persona or '*'}, locale={locale or '*'})[/dim]"
         )
+        # #63: a variant suffix (e.g. _detailed) can make the glob miss the file
+        # the user just rendered — disclose when a newer same-locale render exists.
+        if locale:
+            hint = newer_variant_hint(hist_dir, md_path, locale)
+            if hint:
+                console.print(f"[yellow]⚠ {hint}[/yellow]")
 
     _warn_if_company_stale(company)
     jd_keywords = parse_jd_keywords(Path(jd)) if jd else None
@@ -869,6 +879,22 @@ def review(
 
     console.print(report.as_markdown(previous=previous))
     console.print(f"[cyan]wrote[/cyan] {md_out.relative_to(ROOT)}  ·  {json_out.relative_to(ROOT)}")
+
+    if by_bullet:
+        from vibe_resume.core.review import per_bullet_diagnostics
+        from vibe_resume.core.rubric import load_rubric
+        from vibe_resume.render.i18n import get_locale, resolve_locale
+        loc = get_locale(resolve_locale(report.locale))
+        diags = per_bullet_diagnostics(md_path.read_text(encoding="utf-8"), loc,
+                                       load_rubric(), loc.get("language"))
+        console.print(f"\n[bold]Per-bullet gaps[/bold] ({len(diags)} failing):")
+        for d in diags[:40]:
+            txt = d["text"][:60] + ("…" if len(d["text"]) > 60 else "")
+            console.print(f'  L{d["line"]} [{", ".join(d["missed"])}] — "{txt}"')
+        console.print(
+            "[dim]Fix truthfully: run `vibe-resume evidence --jd <jd>` for real metrics/"
+            "keywords/human-gates available per group — never invent (docs/PRINCIPLES.md).[/dim]"
+        )
 
 
 @cli.command()

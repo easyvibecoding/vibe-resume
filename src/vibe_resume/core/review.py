@@ -642,6 +642,51 @@ def _check_ai_red_flags(md: str, rubric: Any, lang: str | None = None) -> Score:
     return Score("AI framing red flags", pts, 10, notes)
 
 
+# -- disclosure helpers (#63) ------------------------------------------------
+
+def newer_variant_hint(hist_dir: Path, chosen: Path, locale_key: str) -> str | None:
+    """Warn when a higher-versioned résumé for the same locale exists but wasn't
+    auto-selected — the variant suffix (e.g. `_detailed`) can make the
+    persona/locale glob miss the file the user just rendered (#63)."""
+    m = re.search(r"resume_v(\d+)", chosen.name)
+    if not m:
+        return None
+    cur = int(m.group(1))
+    newer = sorted(
+        p.name for p in hist_dir.glob(f"resume_v*_{locale_key}*.md")
+        if (mm := re.search(r"resume_v(\d+)", p.name)) and int(mm.group(1)) > cur
+    )
+    if newer:
+        return (f"a newer {locale_key} render exists ({', '.join(newer)}) — scoring "
+                f"{chosen.name}; pass --file to target the newer one")
+    return None
+
+
+def per_bullet_diagnostics(
+    md: str, locale_meta: dict[str, Any], rubric: Any, lang: str | None = None
+) -> list[dict[str, Any]]:
+    """Per-failing-bullet diagnostics (#63): which check each in-scope bullet
+    missed, so an aggregate score becomes an actionable gap list."""
+    bullets = _bullets_in_scope(md)
+    ai_lines = {ln for ln, _ in _ai_bullets(md, rubric)}
+    gates = _gate_terms(rubric, lang)
+    style = locale_meta.get("style")
+    out: list[dict[str, Any]] = []
+    for ln, b in bullets:
+        missed: list[str] = []
+        if _count_metrics(b) == 0:
+            missed.append("no-metric")
+        if style == "xyz":
+            first = re.split(r"[\s,—\-:]", b.strip(), 1)[0].lower().strip("*_`")
+            if first not in XYZ_VERBS:
+                missed.append("not-verb-first")
+        if ln in ai_lines and not any(g in b.lower() for g in gates):
+            missed.append("ai-no-human-gate")
+        if missed:
+            out.append({"line": ln, "text": b, "missed": missed})
+    return out
+
+
 # -- public API --------------------------------------------------------------
 
 def review(

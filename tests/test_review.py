@@ -339,3 +339,37 @@ def test_agentic_persona_encodes_human_gate_with_guardrail():
     assert "only when" in bias or "and only when" in bias
     assert "boilerplate" in bias
     assert "honest" in bias
+
+
+# --- #63 review disclosure: newer-variant hint + per-bullet diagnostics ------
+
+def test_newer_variant_hint(tmp_path):
+    from vibe_resume.core.review import newer_variant_hint
+    for n in ["resume_v040_zh_TW_agentic.md", "resume_v042_zh_TW_agentic_detailed.md"]:
+        (tmp_path / n).write_text("# x", encoding="utf-8")
+    chosen = tmp_path / "resume_v040_zh_TW_agentic.md"
+    hint = newer_variant_hint(tmp_path, chosen, "zh_TW")
+    assert hint and "v042" in hint and "--file" in hint
+    # no newer → no hint
+    assert newer_variant_hint(tmp_path, tmp_path / "resume_v042_zh_TW_agentic_detailed.md", "zh_TW") is None
+
+
+def test_per_bullet_diagnostics_flags_missed_checks():
+    from vibe_resume.core.review import per_bullet_diagnostics
+    from vibe_resume.core.rubric import load_rubric
+    from vibe_resume.render.i18n import get_locale
+    md = """# Dev
+
+## Experience
+- Built a thing
+- Reduced latency 40% via caching
+- Used Claude Code to ship features
+"""
+    diags = per_bullet_diagnostics(md, get_locale("en_US"), load_rubric(), "en")
+    by_line = {d["line"]: d["missed"] for d in diags}
+    assert any("no-metric" in m for m in by_line.values())  # "Built a thing"
+    # the AI name-drop bullet missed both metric and human-gate
+    ai = next(m for m in by_line.values() if "ai-no-human-gate" in m)
+    assert "no-metric" in ai
+    # the metric'd bullet ("Reduced latency 40%") is not flagged for no-metric
+    assert not any(d["missed"] == ["no-metric"] and "40%" in d["text"] for d in diags)
