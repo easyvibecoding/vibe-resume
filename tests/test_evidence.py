@@ -195,3 +195,29 @@ def test_classify_range_and_id_syntax():
     # a clean perf metric still passes
     k, c, safe = classify_metric("64%", "Docker image 減少 64%", "commit:x")
     assert k == "real_metric" and safe is True
+
+
+# --- #69 range-expressed real metrics not suppressed as ui_threshold --------
+
+def test_range_with_improvement_verb_is_real_metric():
+    from vibe_resume.core.evidence import classify_metric
+    # the exact regression from #69: "減少前置處理時間 30-40%"
+    kind, _, safe = classify_metric("40%", "優化資料處理效能，減少前置處理時間 30-40%")
+    assert kind == "real_metric" and safe is True
+    # English improvement verb too
+    k2, _, s2 = classify_metric("40%", "cut preprocessing time 30-40%")
+    assert k2 == "real_metric" and s2 is True
+
+
+def test_bare_range_surfaced_with_caution_not_hidden():
+    from vibe_resume.core.evidence import classify_metric
+    # ambiguous bare range — no improvement verb / band cue / commit ref
+    kind, conf, safe = classify_metric("40%", "observed 30-40% across the board")
+    assert kind == "real_metric" and safe is True and conf == "low"  # surface-with-caution
+
+
+def test_real_ui_threshold_still_suppressed():
+    from vibe_resume.core.evidence import classify_metric
+    for ctx in ["橙色邊框 (75-89%): 異常", "綠色 (45-74%)", "threshold <45% triggers"]:
+        kind, _, safe = classify_metric("45%", ctx)
+        assert kind == "ui_threshold" and safe is False, ctx

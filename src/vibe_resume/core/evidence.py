@@ -44,12 +44,15 @@ _KIND_RULES: list[tuple[str, re.Pattern[str]]] = [
     ("css_value", re.compile(r"(?i)max-width|min-width|width\s*:|height\s*:|\bpx\b|margin|padding|\bvh\b|\bvw\b|css|tailwind|rounded|flex")),
     ("model_spec", re.compile(r"(?i)\bcontext\b|opus|sonnet|haiku|gpt-|co-?author|token window|context window|參數|模型")),
     ("id_number", re.compile(r"#\s*\d|\bissue\s*\d|\bpull request\b|\bPR\s*#")),  # #67: PR/issue refs
-    # #67: threshold/range syntax (75-89%, <90%) is a UI band, not an outcome metric
-    ("ui_threshold", re.compile(r"(?i)threshold|confidence|信心|閾值|色|紅|橙|綠|黃|band|color|color-?cod|\d\s*[-–~]\s*\d+\s*%|[<>≤≥]\s*\d+\s*%")),
+    # #67/#69: explicit band/threshold cues (color words, 邊框/門檻, comparison ops)
+    # are UI thresholds — but a BARE X-Y% range is NOT (handled below, #69).
+    ("ui_threshold", re.compile(r"(?i)threshold|confidence|信心|閾值|門檻|邊框|色|紅|橙|綠|黃|band|color|color-?cod|[<>≤≥]\s*\d+\s*%")),
 ]
 # #67: a value whose numeric core is a 4-digit year is a date fragment, not a
 # metric — even when a stray unit is glued on (e.g. "2026 h").
 _YEAR_RE = re.compile(r"^(?:19|20)\d{2}\b")
+# #69: a bare X-Y% range (no band/threshold cue) is a range-expressed metric.
+_RANGE_RE = re.compile(r"\d\s*[-–~]\s*\d+\s*%")
 _PERF_RE = re.compile(
     r"(?i)reduc|cut|decreas|improv|faster|slower|latency|throughput|optimi|saved?|"
     r"speed|減少|優化|提升|壓縮|加速|節省|延遲|吞吐|降低"
@@ -69,13 +72,16 @@ def classify_metric(value: str, context: str, source_ref: str = "") -> tuple[str
     for kind, rx in _KIND_RULES:
         if rx.search(ctx):
             return kind, "low", False
+    committed = _COMMIT_RE.search(source_ref) or _COMMIT_RE.search(ctx)
+    # #69: a bare X-Y% range with no improvement verb and no commit provenance is
+    # ambiguous — surface it WITH CAUTION (low confidence) rather than hiding it.
+    # A hidden true metric is costlier than a low-confidence true positive the
+    # agent can vet. (With an improvement verb / commit it falls through to a
+    # higher-confidence real_metric below.)
+    if _RANGE_RE.search(ctx) and not _PERF_RE.search(ctx) and not committed:
+        return "real_metric", "low", True
     # genuine metric — grade confidence by provenance
-    if _COMMIT_RE.search(source_ref) or _COMMIT_RE.search(ctx):
-        conf = "high"
-    elif _PERF_RE.search(ctx):
-        conf = "medium"
-    else:
-        conf = "medium"
+    conf = "high" if committed else "medium"
     return "real_metric", conf, True
 
 
