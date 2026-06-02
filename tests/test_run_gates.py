@@ -255,6 +255,39 @@ def test_run_state_machine_readable():
     assert isinstance(g7["recompute_suffix"], list)
 
 
+# ---- #94: G4 not armed → emit when no jobs, not silent un-enriched render ---
+
+
+def test_g4_not_armed_emits_when_no_jobs_instead_of_rendering_raw(gated_root, monkeypatch):
+    import vibe_resume.core.curate as curate_mod
+    import vibe_resume.core.runner as runner_mod
+    from vibe_resume.core.gates import Gate, GateLedger
+    from vibe_resume.core.run_gates import ledger_path
+
+    monkeypatch.setattr(curate_mod, "CURATION_YAML",
+                        gated_root / "data" / "cache" / "_nope.yaml")
+    calls = {"enrich": 0, "render": 0}
+    monkeypatch.setattr(runner_mod, "run_enricher",
+                        lambda cfg, **kw: calls.__setitem__("enrich", calls["enrich"] + 1))
+    monkeypatch.setattr(runner_mod, "run_render",
+                        lambda cfg, **kw: calls.__setitem__("render", calls["render"] + 1) or [])
+    # fresh cache so G1=reextract doesn't re-extract; G1+G2 decided, pending G7.
+    (gated_root / "data" / "cache" / "_project_groups.json").write_text("[]")
+    led = GateLedger()
+    led.record(Gate.G1_FRESHNESS,
+               {"choice": "reuse", "__active_set__": ["G1", "G2", "G7", "G8"]}, "T1")
+    led.record(Gate.G2_GROUPING, {"choice": "top_n", "top_n": 18}, "T2")
+    led.save(ledger_path(gated_root / "data"))
+
+    result = _invoke(["run", "--continue", "--gates", "G1,G2,G7,G8", "--locales", "en_US"])
+    assert result.exit_code == 0, result.output
+    # emitted (not silently ingested-empty + rendered raw)
+    assert "no enrich jobs" in result.output and "emitting" in result.output
+    assert calls["enrich"] >= 1          # emit happened
+    assert calls["render"] == 0          # did NOT render un-enriched groups
+    assert "render matrix" not in result.output
+
+
 # ---- plain run unchanged ---------------------------------------------------
 
 

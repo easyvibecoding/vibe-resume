@@ -969,12 +969,19 @@ def review(
     hist_dir = ROOT / (ctx.obj["config"].get("render", {}).get("output_dir") or "data/resume_history")
     _warn_if_company_stale(company)
     jd_keywords = parse_jd_keywords(Path(jd)) if jd else None
-    # #68: review and render agree on "too long" — explicit flag, else config.render.page_budget.
-    page_target = max_pages or ctx.obj["config"].get("render", {}).get("page_budget")
+    from vibe_resume.core.review import resolve_page_target
+    _render_cfg = ctx.obj["config"].get("render", {})
+    _cfg_budget = _render_cfg.get("page_budget")
+    _cfg_variants = _render_cfg.get("variants")
 
     def _score(p: Path):
+        # #68: review/render agree on "too long" — explicit --max-pages, else
+        # config budget. #95: a `_detailed` file gets a detailed-appropriate
+        # budget (it's uncapped at render) instead of the fixed ATS/locale target.
+        pt, _note = resolve_page_target(p.name, locale, max_pages=max_pages,
+                                        config_page_budget=_cfg_budget, config_variants=_cfg_variants)
         return review_file(p, locale_key=locale, jd_keywords=jd_keywords,
-                           persona=persona, company=company, level=level, page_target=page_target)
+                           persona=persona, company=company, level=level, page_target=pt)
 
     # #91: score every rendered variant for this persona/locale in one call.
     if variants:
@@ -1031,6 +1038,11 @@ def review(
     except ValueError:
         pass
     console.print(f"[cyan]Scored:[/cyan] {disp}")
+    # #95: disclose when a non-ATS page budget was used (detailed variant).
+    _, _budget_note = resolve_page_target(md_path.name, locale, max_pages=max_pages,
+                                          config_page_budget=_cfg_budget, config_variants=_cfg_variants)
+    if _budget_note:
+        console.print(f"[dim]ℹ {_budget_note}[/dim]")
     if (persona or locale) and not (version or file_) and locale:
         # #63: disclose when a newer same-locale render exists than the one matched.
         hint = newer_variant_hint(hist_dir, md_path, locale)
@@ -1958,6 +1970,30 @@ def _run_gated(
         return
 
     # ── --continue path beyond G1/G2/G4 emit: render gates + acceptance ──────
+    # #94: the enrich EMIT only fires when G4 is the pending gate. If G4 is NOT
+    # armed (e.g. --gates G1,G2,G7,G8), --continue used to skip emit, ingest
+    # nothing, and render UN-ENRICHED groups — silently. Guard: when G4 is not
+    # armed and no enrich manifest exists yet for the matrix cells, emit now and
+    # stop with the process-then-continue message instead of rendering raw.
+    jobs_root = data_dir / "enrich_jobs"
+    have_jobs = any(
+        (jobs_root / (p or "default") / loc / "manifest.json").exists()
+        for p in persona_keys for loc in locale_keys
+    )
+    if Gate.G4_BULLETS not in active_gates and not have_jobs:
+        n_cells = len(persona_keys) * len(locale_keys)
+        console.print(f"[yellow]⚠ no enrich jobs and G4 not armed → emitting {n_cells} "
+                      f"manifest(s) now so render isn't built from un-enriched groups (#94)[/yellow]")
+        for p in persona_keys:
+            for loc in locale_keys:
+                run_enricher(cfg, locale=loc, persona=p, tailor=tailor,
+                             level=level, company=company, limit=g2_limit)
+        console.print(
+            "\n[green]✓ stage emitted.[/green] Process the *.prompt.md files, then "
+            "[cyan]`vibe-resume run --continue`[/cyan] (same flags) to ingest + render."
+        )
+        return
+
     # Ingest the processed enrich manifests once we are past the bullets stage.
     console.print("[cyan]ingest enrich manifests[/cyan]")
     run_enricher(cfg, ingest=True, ingest_all=True)

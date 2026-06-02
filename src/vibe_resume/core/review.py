@@ -825,6 +825,53 @@ def resolve_resume_path(
 #: Variant suffixes a render can emit (#55); "base" == no suffix.
 _KNOWN_VARIANTS = ("ats", "detailed")
 
+#: How much longer the detailed variant is allowed to be than the locale target
+#: when no explicit budget is configured (#95). Detailed is uncapped at render
+#: (#88) — scoring it against the fixed ATS/locale target misrepresents it.
+_DETAILED_BUDGET_FACTOR = 2.5
+
+
+def resolve_page_target(
+    md_name: str,
+    locale_key: str | None,
+    *,
+    max_pages: float | None,
+    config_page_budget: float | None,
+    config_variants: list[dict] | None,
+) -> tuple[float | None, str | None]:
+    """Pick the page budget `review` scores against, variant-aware (#95).
+
+    Returns ``(page_target, note)``. Precedence:
+    1. explicit ``--max-pages`` → use it (no note).
+    2. a ``_detailed`` variant with no explicit budget → a *detailed* budget
+       (the configured ``config.render.variants`` detailed ``max_pages`` if set,
+       else ``locale_target × _DETAILED_BUDGET_FACTOR``) + a transparency note,
+       so an intentionally-comprehensive résumé isn't pinned to a misleading C.
+    3. otherwise → ``config_page_budget`` (may be None → ``review_file`` applies
+       the fixed locale target, unchanged behavior for ats/base)."""
+    if max_pages is not None:
+        return max_pages, None
+    name = str(md_name)
+    if name.endswith("_detailed.md"):
+        configured = next(
+            (v.get("max_pages") for v in (config_variants or [])
+             if v.get("name") == "detailed" and v.get("max_pages")),
+            None,
+        )
+        if configured is not None:
+            return float(configured), (
+                f"detailed variant scored against the configured detailed budget "
+                f"(≤{float(configured)} pages)"
+            )
+        base = _LOCALE_PAGE_TARGETS.get(resolve_locale(locale_key), DEFAULT_PAGE_TARGET)
+        target = round(base * _DETAILED_BUDGET_FACTOR, 1)
+        return target, (
+            f"detailed variant scored against a detailed budget (≤{target} pages, "
+            f"{_DETAILED_BUDGET_FACTOR}× the {resolve_locale(locale_key)} target) — "
+            f"the detailed variant is uncapped by design; pass --max-pages to override"
+        )
+    return config_page_budget, None
+
 
 def resolve_variant_paths(
     hist_dir: Path, *, persona: str | None = None, locale: str | None = None

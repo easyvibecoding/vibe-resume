@@ -4,6 +4,35 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.35.0] — 2026-06-02
+
+### Fixed
+
+- **Gate-mode `run --continue` silently rendered UN-enriched groups when G4
+  wasn't armed** (#94, silent-corruption class). The enrich emit only fired when
+  the pending gate was G4; arming e.g. `--gates G1,G2,G7,G8` skipped emit, ingested
+  nothing, and rendered raw/curated groups (a contentless résumé) with no error.
+  Now, on `--continue` with G4 not armed and no enrich manifest present, the run
+  **emits the manifests and stops** with a process-then-continue message instead
+  of rendering un-enriched.
+- **`review` scored the `_detailed` variant against the fixed locale page budget
+  → misleading C / "Page 2/10"** (#95). #88 made the detailed variant uncapped at
+  render, but `review` still judged it against the ATS/locale target (≤2.0). Now a
+  `_detailed` file is scored against a detailed-appropriate budget — the configured
+  `config.render.variants` detailed `max_pages` if set, else 2.5× the locale target
+  — and the budget used is disclosed in the header. `--max-pages` still overrides.
+  Applies per-file, so `review --variants` scores each variant on its own budget.
+
+### Added
+
+- **Remote-less local dirs are now matched against the same-named remote repo at
+  `curate`** (#93, residual of #37). A working dir with no git remote
+  (`canonical_key: None`) whose basename **uniquely** matches the repo basename of
+  a remote-keyed group (e.g. local `vibecoding` ↔ a repo `…/vibecoding`) is
+  surfaced as a `needs_decision` `merge_into` suggestion — never a silent
+  auto-merge (basename collisions are possible; 0 or >1 matches → left as-is, and
+  `auto_drop` precedence is preserved).
+
 ## [0.34.1] — 2026-06-02
 
 ### Fixed

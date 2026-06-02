@@ -52,12 +52,30 @@ def _basename(g: ProjectGroup) -> str:
     return (g.path or g.name).rstrip("/").split("/")[-1].lower()
 
 
+def _repo_basename(g: ProjectGroup) -> str:
+    """Repo basename of a remote-keyed group: the LAST segment of its
+    `canonical_key` (e.g. `remote:github-acme/acme/vibecoding` → `vibecoding`),
+    lowercased. Falls back to the dir `_basename` if the key has no `/`."""
+    key = g.canonical_key or ""
+    if "/" in key:
+        return key.rstrip("/").split("/")[-1].lower()
+    return _basename(g)
+
+
 def classify(groups: list[ProjectGroup], noise_globs: list[str]) -> list[CurationEntry]:
     """Assign each group a tier + suggested action. Precedence:
     auto_drop > needs_decision > auto_merge > keep."""
     by_base: dict[str, list[ProjectGroup]] = defaultdict(list)
     for g in groups:
         by_base[_basename(g)].append(g)
+
+    # #93 (residual of #37): index remote-keyed groups by their REPO basename so
+    # a remote-less working dir can be matched to the proven repo for the SAME
+    # product even when their canonical_key never collides.
+    remote_by_repo_base: dict[str, list[ProjectGroup]] = defaultdict(list)
+    for g in groups:
+        if g.canonical_key is not None:
+            remote_by_repo_base[_repo_basename(g)].append(g)
 
     entries: list[CurationEntry] = []
     for g in groups:
@@ -92,6 +110,24 @@ def classify(groups: list[ProjectGroup], noise_globs: list[str]) -> list[Curatio
             elif len(g.merged_from) > 1:
                 tier, action = "auto_merge", "keep"
                 evidence = g.merge_evidence
+
+            # #93: a remote-less working dir folds into a remote-keyed group for
+            # the SAME product when its dir basename UNIQUELY matches that group's
+            # repo basename. A suggestion for the human (basename collisions are
+            # possible) — only applied if nothing stronger already classified it,
+            # and never as a silent auto-merge. auto_drop already short-circuited
+            # in the outer branch, so precedence is preserved.
+            if g.canonical_key is None and tier == "keep":
+                cands = [
+                    s for s in remote_by_repo_base.get(_basename(g), []) if s is not g
+                ]
+                if len(cands) == 1:
+                    anchor = cands[0]
+                    tier, action, target = "needs_decision", "merge_into", anchor.name
+                    evidence = (
+                        f"no remote; dir basename '{_basename(g)}' matches the repo "
+                        f"basename of {anchor.name} ({anchor.canonical_key}). CONFIRM?"
+                    )
 
         entries.append(CurationEntry(
             name=g.name, canonical_key=g.canonical_key, sessions=g.total_sessions,

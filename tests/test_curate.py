@@ -131,6 +131,84 @@ def test_classify_needs_decision_same_name_no_remote_twin():
     assert keyed_entry.tier in ("keep", "auto_merge")   # keyed anchor is NOT flagged
 
 
+# ---- #93 (residual of #37): match a remote-less working dir to a remote-keyed
+# group by comparing the dir basename against the remote repo basename ---------
+
+
+def test_classify_remoteless_matches_remote_repo_basename():
+    # The exact repro: group A is remote-keyed and its GitHub repo is named
+    # `vibecoding` (last segment of the canonical_key). Group B is a remote-less
+    # local dir literally named `vibecoding`. Same product → B should be flagged
+    # to merge into A (a human suggestion, not a silent auto-merge).
+    a = _g(
+        "easyvibecoding",
+        path="/Users/me/sideProject/easyvibecoding",
+        sessions=185,
+        canonical_key="remote:github-easyvibecoding/easyvibecoding/vibecoding",
+    )
+    b = _g("vibecoding", path="/Users/me/sideProject/vibecoding", sessions=14)
+    entries = {e.name: e for e in classify([a, b], DEFAULT_NOISE_GLOBS)}
+    assert entries["vibecoding"].tier == "needs_decision"
+    assert entries["vibecoding"].action == "merge_into"
+    assert entries["vibecoding"].target == "easyvibecoding"
+    assert entries["vibecoding"].evidence  # explains the basename match
+    # the remote-keyed anchor itself is untouched
+    assert entries["easyvibecoding"].tier == "keep"
+
+
+def test_classify_remoteless_no_remote_basename_match_is_kept():
+    # A remote-less group whose basename matches no remote repo basename stays
+    # as it would have been (keep).
+    a = _g(
+        "alpha",
+        path="/Users/me/alpha",
+        sessions=10,
+        canonical_key="remote:github.com/me/alpha",
+    )
+    b = _g("lonely", path="/Users/me/lonely", sessions=2)  # no remote, no match
+    entries = {e.name: e for e in classify([a, b], DEFAULT_NOISE_GLOBS)}
+    assert entries["lonely"].tier == "keep"
+    assert entries["lonely"].action == "keep"
+    assert entries["lonely"].target is None
+
+
+def test_classify_remoteless_ambiguous_basename_match_not_decided():
+    # Two remote-keyed groups whose repo basename both equal the remote-less
+    # group's basename → ambiguous, do NOT auto-decide.
+    a = _g(
+        "acme",
+        path="/work/acme",
+        sessions=10,
+        canonical_key="remote:github.com/me/widget",
+    )
+    b = _g(
+        "globex",
+        path="/side/globex",
+        sessions=8,
+        canonical_key="remote:github.com/you/widget",
+    )
+    c = _g("widget", path="/notes/widget", sessions=3)  # remote-less, basename `widget`
+    entries = {e.name: e for e in classify([a, b, c], DEFAULT_NOISE_GLOBS)}
+    assert entries["widget"].tier == "keep"  # ambiguous → unchanged
+    assert entries["widget"].action == "keep"
+    assert entries["widget"].target is None
+
+
+def test_classify_remoteless_noise_glob_still_auto_drops():
+    # Precedence preserved: a noise-glob drop must win even if the basename
+    # would otherwise match a remote repo basename.
+    a = _g(
+        "real",
+        path="/work/real",
+        sessions=10,
+        canonical_key="remote:github.com/me/vibecoding",
+    )
+    b = _g("vibecoding", path="/Users/me/tmp/vibecoding", sessions=2)  # noise path
+    entries = {e.name: e for e in classify([a, b], DEFAULT_NOISE_GLOBS)}
+    assert entries["vibecoding"].tier == "auto_drop"
+    assert entries["vibecoding"].action == "drop"
+
+
 def _g_acts(name, path, sessions, canonical_key=None):
     from vibe_resume.core.schema import Activity, Source
     acts = [Activity(source=Source.GIT, session_id=f"{name}-{i}",

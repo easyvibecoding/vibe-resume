@@ -125,3 +125,35 @@ def test_resolve_variant_paths_keys_by_variant(tmp_path: Path) -> None:
 def test_resolve_variant_paths_empty_when_none(tmp_path: Path) -> None:
     from vibe_resume.core.review import resolve_variant_paths
     assert resolve_variant_paths(tmp_path, persona="hr", locale="en_US") == {}
+
+
+# ---- #95: detailed variant must not be scored against the fixed ATS budget ---
+
+
+def test_resolve_page_target_detailed_variant_gets_detailed_budget() -> None:
+    from vibe_resume.core.review import resolve_page_target
+    # explicit --max-pages always wins
+    pt, note = resolve_page_target("resume_v021_zh_TW_agentic_detailed.md", "zh_TW",
+                                   max_pages=4.5, config_page_budget=None, config_variants=None)
+    assert pt == 4.5 and note is None
+    # detailed variant, no --max-pages → a detailed budget (> the fixed locale 2.0) + a note
+    pt2, note2 = resolve_page_target("resume_v021_zh_TW_agentic_detailed.md", "zh_TW",
+                                     max_pages=None, config_page_budget=None, config_variants=None)
+    assert pt2 is not None and pt2 > 2.0
+    assert note2 and "detailed" in note2.lower()
+    # configured detailed budget wins over the default factor
+    pt3, _ = resolve_page_target("resume_v021_zh_TW_agentic_detailed.md", "zh_TW",
+                                 max_pages=None, config_page_budget=None,
+                                 config_variants=[{"name": "detailed", "max_pages": 3.0}])
+    assert pt3 == 3.0
+
+
+def test_resolve_page_target_ats_and_base_unchanged() -> None:
+    from vibe_resume.core.review import resolve_page_target
+    # ats / base: keep existing behavior — explicit budget else config else locale target (None)
+    pt, note = resolve_page_target("resume_v010_zh_TW_agentic_ats.md", "zh_TW",
+                                   max_pages=None, config_page_budget=None, config_variants=None)
+    assert pt is None and note is None      # → review_file applies the locale target
+    pt2, _ = resolve_page_target("resume_v009_zh_TW_agentic.md", "zh_TW",
+                                 max_pages=None, config_page_budget=1.5, config_variants=None)
+    assert pt2 == 1.5
