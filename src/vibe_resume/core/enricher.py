@@ -114,6 +114,21 @@ AI_PROFICIENCY_BLOCK = (
     "grounded in the activity above.\n"
 )
 
+# #89: the evidence layer (core.evidence) can mine the human-gate phrasing and
+# already-verified safe metrics literally present in this group's activity record.
+# Surface them so a faithful first-pass enrich grounds AI-proficiency framing in
+# them WITHOUT the manual evidence→re-edit loop. Framed as factual/verified, with
+# the never-fabricate rule restated: only pair a tool with a human gate when a
+# disclosed gate term shows it, and only surface the safe metrics listed here.
+EVIDENCE_DISCLOSURE_BLOCK = (
+    "\n\nEVIDENCE DISCLOSURE (#89 — factual signals already verified from this "
+    "group's activity record; ground bullets in these and nothing beyond them):\n"
+    "{lines}\n"
+    "- Only pair an AI tool with a human quality gate when a disclosed gate term "
+    "above shows it; only surface a metric that appears above (already vetted as "
+    "safe). Never invent a gate or a number that isn't disclosed here.\n"
+)
+
 INSTALLED_TOOLKIT_BLOCK = (
     "\n\nNOTE: This group is the candidate's *installed / curated* agentic "
     "toolkit (plugins, Agent Skills, MCP servers), not project work. Frame it "
@@ -415,6 +430,21 @@ def _build_prompt(
                 or "tool name-drop with no verification; raw-volume bragging"
             ),
         )
+    # #89: inject the evidence-layer disclosures (human gates + safe metrics
+    # literally present in this group's activity) as a factual GROUND block, so a
+    # faithful first-pass enrich need not trigger a manual evidence→re-edit loop.
+    from vibe_resume.core.evidence import disclose_evidence
+    ev = disclose_evidence(g, rubric=None, lang=meta.get("language"))
+    safe_metrics = [m for m in ev.candidate_metrics if m.safe_to_surface]
+    if ev.human_gate_evidence or safe_metrics:
+        ev_lines: list[str] = []
+        for h in ev.human_gate_evidence[:6]:
+            ref = f" @{h.source_ref}" if h.source_ref else ""
+            ev_lines.append(f'- human gate: "{h.term}"{ref}')
+        for m in safe_metrics[:6]:
+            ref = f" @{m.source_ref}" if m.source_ref else ""
+            ev_lines.append(f"- metric: {m.value}{ref} (confidence={m.confidence})")
+        body += EVIDENCE_DISCLOSURE_BLOCK.format(lines="\n".join(ev_lines))
     if emphasis is not None and (emphasis.intent or emphasis.keywords or emphasis.bias_instruction):
         body += emphasis_block(emphasis)
     # #75: candidate angle bias fires LAST so its lead-framing hint (impact /

@@ -166,6 +166,95 @@ def test_full_review_emits_enrich_and_pauses_at_g4_after_g3(gated_root):
     assert "render matrix" not in result.output
 
 
+# ---- #83: don't replay extract on every --continue when cache is fresh ------
+
+
+def test_g1_reextract_skips_extract_when_cache_fresh(gated_root, monkeypatch):
+    import vibe_resume.core.curate as curate_mod
+    import vibe_resume.core.runner as runner_mod
+    from vibe_resume.core.gates import Gate, GateLedger
+    from vibe_resume.core.run_gates import ledger_path
+
+    # neutralize the #85 re-apply hook (no curation file in this scenario)
+    monkeypatch.setattr(curate_mod, "CURATION_YAML",
+                        gated_root / "data" / "cache" / "_nope.yaml")
+    calls = {"extract": 0, "aggregate": 0}
+    monkeypatch.setattr(runner_mod, "run_extractors",
+                        lambda cfg, **kw: calls.__setitem__("extract", calls["extract"] + 1))
+    monkeypatch.setattr(runner_mod, "run_aggregator",
+                        lambda cfg: calls.__setitem__("aggregate", calls["aggregate"] + 1))
+    # a FRESH extract cache marker (mtime = now)
+    (gated_root / "data" / "cache" / "_project_groups.json").write_text("[]")
+    led = GateLedger()
+    led.record(Gate.G1_FRESHNESS,
+               {"choice": "reextract", "__active_set__": ["G1", "G2", "G8"]}, "T1")
+    led.save(ledger_path(gated_root / "data"))
+
+    result = _invoke(["run", "--continue", "--preset", "checkpoints", "--locales", "en_US"])
+    assert result.exit_code == 0, result.output
+    assert calls["extract"] == 0, "fresh cache → extract must be skipped on replay (#83)"
+    assert calls["aggregate"] == 1, "aggregate (cheap) still re-runs"
+
+
+# ---- #85: gate recompute re-applies curation after aggregate ----------------
+
+
+def test_recompute_reapplies_curation_after_aggregate(gated_root, monkeypatch):
+    import vibe_resume.core.curate as curate_mod
+    from vibe_resume.core.gates import Gate, GateLedger
+    from vibe_resume.core.run_gates import ledger_path
+
+    cur_yaml = gated_root / "data" / "cache" / "_curation.yaml"
+    cur_yaml.write_text("version: 1\ngenerated_at: t\ngroups: []\n")
+    monkeypatch.setattr(curate_mod, "CURATION_YAML", cur_yaml)
+    applied = {"n": 0}
+
+    def spy_run_curate(cfg, *, apply, now):
+        if apply:
+            applied["n"] += 1
+        return "stub-curated"
+
+    monkeypatch.setattr(curate_mod, "run_curate", spy_run_curate)
+    # no fresh cache marker → reextract branch runs extract+aggregate → reapply fires
+    led = GateLedger()
+    led.record(Gate.G1_FRESHNESS,
+               {"choice": "reextract", "__active_set__": ["G1", "G2", "G8"]}, "T1")
+    led.save(ledger_path(gated_root / "data"))
+
+    result = _invoke(["run", "--continue", "--preset", "checkpoints", "--locales", "en_US"])
+    assert result.exit_code == 0, result.output
+    assert applied["n"] >= 1, "curation must be re-applied after the recompute aggregate (#85)"
+
+
+# ---- #90: machine-readable run state ---------------------------------------
+
+
+def test_run_state_machine_readable():
+    """#90: an agent must be able to read armed/wired/decision/pending/recompute
+    deterministically instead of parsing prose."""
+    from vibe_resume.core.gates import Gate, GateLedger
+    from vibe_resume.core.run_gates import run_state
+
+    led = GateLedger()
+    led.record(Gate.G1_FRESHNESS, {"choice": "reextract"}, "T1")
+    armed = [Gate.G1_FRESHNESS, Gate.G2_GROUPING, Gate.G7_VARIANTS, Gate.G8_ACCEPTANCE]
+    st = run_state(armed, led)
+
+    assert st["armed"] == ["G1", "G2", "G7", "G8"]
+    # G7 is emit-only (not fully wired); G1/G2/G8 are fully wired
+    assert set(st["fully_wired"]) == {"G1", "G2", "G8"}
+    assert st["emit_only"] == ["G7"]
+    # first undecided armed gate
+    assert st["pending"] == "G2"
+    g1 = st["gates"]["G1"]
+    assert g1["decided"] is True and g1["decision"]["choice"] == "reextract"
+    assert g1["fully_wired"] is True
+    g7 = st["gates"]["G7"]
+    assert g7["decided"] is False and g7["fully_wired"] is False
+    # recompute suffix is a list of stage names (machine-readable, not prose)
+    assert isinstance(g7["recompute_suffix"], list)
+
+
 # ---- plain run unchanged ---------------------------------------------------
 
 

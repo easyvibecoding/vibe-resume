@@ -31,7 +31,11 @@ class CurationEntry(BaseModel):
     name: str
     canonical_key: str | None = None
     sessions: int
-    tier: Literal["auto_merge", "auto_drop", "needs_decision", "keep"]
+    # #87: `tier` is an informational classification; `action` is the operative
+    # field `apply_curation` executes. Keep `tier` a free `str` so a human edit
+    # that introduces a custom tier (e.g. `manual_drop`) doesn't fail validation
+    # and silently drop the whole edited record back to the auto-only fallback.
+    tier: str
     action: Literal["keep", "merge_into", "drop"]
     target: str | None = None
     evidence: str | None = None
@@ -211,6 +215,58 @@ def _load_raw_groups() -> list[ProjectGroup]:
     if not GROUPS_PATH.exists():
         return []
     return [ProjectGroup(**g) for g in orjson.loads(GROUPS_PATH.read_bytes())]
+
+
+def set_action(record: CurationRecord, name: str, action: str, target: str | None = None) -> bool:
+    """Set an entry's `action` (and `target`) by group name (#87 CLI verbs).
+
+    Matches on `name` then `canonical_key`. Returns True if an entry was updated,
+    False if no entry matched (so the CLI can report an unknown group instead of
+    silently no-op'ing). The `tier` is left as-is — `action` is authoritative."""
+    for e in record.groups:
+        if e.name == name or e.canonical_key == name:
+            e.action = action
+            if action == "merge_into":
+                e.target = target
+            elif action != "merge_into":
+                e.target = None
+            return True
+    return False
+
+
+def run_curate_verbs(
+    drops: tuple[str, ...] = (),
+    merges: tuple[str, ...] = (),
+    keeps: tuple[str, ...] = (),
+) -> str:
+    """Apply `--drop/--merge/--keep` verbs to the existing `_curation.yaml` (#87).
+
+    Each `merge` is `SRC:DST`. Edits the record in place and re-saves so an agent
+    never hand-edits YAML. Requires a prior `curate` emit. Unknown group names are
+    reported, not silently ignored."""
+    rec = _load_prior(CURATION_YAML)
+    if rec is None:
+        return f"no {CURATION_YAML.name} — run `vibe-resume curate` first to emit it"
+    applied: list[str] = []
+    unknown: list[str] = []
+    for name in keeps:
+        (applied if set_action(rec, name, "keep") else unknown).append(name)
+    for name in drops:
+        (applied if set_action(rec, name, "drop") else unknown).append(name)
+    for spec in merges:
+        if ":" not in spec:
+            unknown.append(f"{spec} (expected SRC:DST)")
+            continue
+        src, dst = (s.strip() for s in spec.split(":", 1))
+        (applied if set_action(rec, src, "merge_into", target=dst) else unknown).append(src)
+    CURATION_YAML.write_text(
+        yaml.safe_dump(rec.model_dump(), sort_keys=False, allow_unicode=True)
+    )
+    parts = [f"updated {len(applied)} entr{'y' if len(applied) == 1 else 'ies'}: {', '.join(applied)}"] if applied else []
+    if unknown:
+        parts.append(f"[no match: {', '.join(unknown)}]")
+    parts.append(f"→ run `vibe-resume curate --apply` to execute into {CURATED_PATH.name}")
+    return " ".join(parts)
 
 
 def run_curate(cfg: dict[str, Any], *, apply: bool, now: str) -> str:

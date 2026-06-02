@@ -749,6 +749,18 @@ def review(
     )
 
 
+_VERSION_RE = re.compile(r"resume_v(\d+)")
+
+
+def _version_of(path: Path) -> int:
+    """Parse the zero-padded version number out of a resume filename (#86).
+
+    Used to pick the highest-VERSION file regardless of variant suffix, instead of
+    relying on lexical order (which a `_detailed`/`_ats` suffix can perturb)."""
+    m = _VERSION_RE.search(path.name)
+    return int(m.group(1)) if m else -1
+
+
 def resolve_resume_path(
     hist_dir: Path,
     *,
@@ -781,19 +793,26 @@ def resolve_resume_path(
         return matches[0]
 
     if persona or locale:
-        # Build glob: resume_v*_<locale>[_<persona>].md or resume_v*_*<persona>.md etc.
+        # #63/#86: variant renders carry an `_ats` / `_detailed` suffix BETWEEN the
+        # persona and `.md`, so a strict `..._{persona}.md` glob misses the freshly
+        # rendered variant and falls back to the stale non-suffixed file. Allow a
+        # trailing suffix (the `*` also matches empty) and pick by VERSION number,
+        # not lexical order, so v011_…_detailed beats v003_… (no suffix).
         if persona and locale:
-            pattern = f"resume_v*_{locale}_{persona}.md"
+            patterns = [f"resume_v*_{locale}_{persona}*.md"]
         elif locale:
-            pattern = f"resume_v*_{locale}*.md"
-        else:  # persona only
-            pattern = f"resume_v*_{persona}.md"
-        matches = sorted(hist_dir.glob(pattern))
-        if not matches:
+            patterns = [f"resume_v*_{locale}*.md"]
+        else:  # persona only — non-suffixed or variant-suffixed
+            patterns = [f"resume_v*_{persona}.md", f"resume_v*_{persona}_*.md"]
+        seen: set[Path] = set()
+        for pat in patterns:
+            for m in hist_dir.glob(pat):
+                seen.add(m)
+        if not seen:
             raise FileNotFoundError(
                 f"no resume file matching (persona={persona}, locale={locale}) in {hist_dir}"
             )
-        return matches[-1]  # highest version
+        return max(seen, key=lambda p: (_version_of(p), p.name))
 
     versioned = sorted(hist_dir.glob("resume_v*.md"))
     if not versioned:
@@ -801,6 +820,42 @@ def resolve_resume_path(
             f"no rendered resumes in {hist_dir} — run `render` first"
         )
     return versioned[-1]
+
+
+#: Variant suffixes a render can emit (#55); "base" == no suffix.
+_KNOWN_VARIANTS = ("ats", "detailed")
+
+
+def resolve_variant_paths(
+    hist_dir: Path, *, persona: str | None = None, locale: str | None = None
+) -> dict[str, Path]:
+    """Highest-version résumé per variant for a persona/locale (#91).
+
+    Returns ``{variant_name: path}`` over ``ats`` / ``detailed`` / ``base`` (the
+    non-suffixed render), each resolved to its highest VERSION. Empty dict if no
+    matching file exists — lets ``review --variants`` score every freshly-rendered
+    variant in one call."""
+    if persona and locale:
+        stem = f"{locale}_{persona}"
+    elif locale:
+        stem = f"{locale}*"
+    elif persona:
+        stem = f"*{persona}"
+    else:
+        stem = "*"
+    out: dict[str, Path] = {}
+    for variant in _KNOWN_VARIANTS:
+        matches = list(hist_dir.glob(f"resume_v*_{stem}_{variant}.md"))
+        if matches:
+            out[variant] = max(matches, key=lambda p: (_version_of(p), p.name))
+    # base = non-suffixed render (exclude variant-suffixed files)
+    base = [
+        p for p in hist_dir.glob(f"resume_v*_{stem}.md")
+        if not any(p.name.endswith(f"_{v}.md") for v in _KNOWN_VARIANTS)
+    ]
+    if base:
+        out["base"] = max(base, key=lambda p: (_version_of(p), p.name))
+    return out
 
 
 def review_file(

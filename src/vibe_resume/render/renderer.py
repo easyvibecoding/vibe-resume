@@ -174,7 +174,7 @@ def _sort_groups(groups, emphasis):
     return sorted(groups, key=lambda g: _rank_score(g) + rank_delta(g.name, emphasis), reverse=True)
 
 
-def _render_md(cfg: dict[str, Any], tailor: str | None, locale: str | None = None, persona: str | None = None, top_n: int | None = None, max_pages: float | None = None) -> tuple[str, dict]:
+def _render_md(cfg: dict[str, Any], tailor: str | None, locale: str | None = None, persona: str | None = None, top_n: int | None = None, max_pages: float | None = None, bullets_per_group: int | None = None, apply_config_budget: bool = True) -> tuple[str, dict]:
     tpl_cfg = cfg.get("render", {}).get("templates_dir")
     bundled = Path(__file__).parent / "templates"
     if tpl_cfg:
@@ -280,7 +280,15 @@ def _render_md(cfg: dict[str, Any], tailor: str | None, locale: str | None = Non
     tpl_name = _pick_template(env, locale_meta["_key"])
     tpl = env.get_template(tpl_name)
     ctx["_tpl_name"] = tpl_name
-    budget = max_pages if max_pages is not None else cfg.get("render", {}).get("page_budget")
+    # #88: an explicit per-group cap is applied first (and recorded). The
+    # "detailed" variant passes apply_config_budget=False so it is NOT silently
+    # floored by the global config.render.page_budget — a detailed résumé that
+    # hides bullets is surprising; only an explicit max_pages still caps it.
+    if bullets_per_group is not None:
+        _apply_bullets_cap(ctx, bullets_per_group)
+    budget = max_pages
+    if budget is None and apply_config_budget:
+        budget = cfg.get("render", {}).get("page_budget")
     if budget:
         return _fit_to_page_budget(tpl, ctx, locale_meta, float(budget)), ctx
     return tpl.render(**ctx), ctx
@@ -307,11 +315,38 @@ def _fit_to_page_budget(tpl, ctx: dict, locale_meta: dict, budget: float, floor:
             g["achievements"] = orig[:cap]
         md = tpl.render(**ctx)
         if estimate_pages(md) <= budget:
-            return md
-    # floor reached and still over budget — keep the floored version (honest:
-    # the ceiling is real content, not something to pad away). Caller/review
-    # will surface the residual page-count.
+            break
+    # #88: record what the budget fit dropped so render_draft can WARN rather
+    # than silently hiding bullets a human/agent deliberately wove in. (floor
+    # may still be over budget — honest: real content, not padded away.)
+    _record_truncation(ctx, groups, full)
     return md
+
+
+def _record_truncation(ctx: dict, groups: list, full: list[list]) -> None:
+    """Append per-group drop records to ``ctx['_truncation']`` (#88)."""
+    dropped = []
+    for g, orig in zip(groups, full):
+        kept = len(g.get("achievements") or [])
+        if kept < len(orig):
+            dropped.append({"name": g.get("name", "?"), "kept": kept, "total": len(orig)})
+    if dropped:
+        ctx.setdefault("_truncation", []).extend(dropped)
+
+
+def _apply_bullets_cap(ctx: dict, cap: int) -> None:
+    """Hard per-group achievements cap (`--bullets-per-group`), recording drops (#88).
+
+    Independent of the page-budget fit: lets a user force a uniform cap (or raise
+    it for the detailed variant) and still see exactly what was hidden."""
+    if cap is None or cap < 0:
+        return
+    groups = ctx.get("groups") or []
+    full = [list(g.get("achievements") or []) for g in groups]
+    for g, orig in zip(groups, full):
+        if len(orig) > cap:
+            g["achievements"] = orig[:cap]
+    _record_truncation(ctx, groups, full)
 
 
 def _hide_table_borders(table) -> None:
@@ -502,6 +537,8 @@ def render_draft(
     top_n: int | None = None,
     max_pages: float | None = None,
     variant: str | None = None,
+    bullets_per_group: int | None = None,
+    apply_config_budget: bool = True,
 ) -> list[str]:
     """Render + snapshot a version. Returns the list of *requested* formats that
     were dropped (e.g. ["pdf"] when the PDF engine is missing) so callers can
@@ -509,7 +546,16 @@ def render_draft(
     hist = _history_path(cfg)
     version = _next_version(hist)
 
-    md_text, ctx = _render_md(cfg, tailor, locale=locale, persona=persona, top_n=top_n, max_pages=max_pages)
+    md_text, ctx = _render_md(cfg, tailor, locale=locale, persona=persona, top_n=top_n,
+                              max_pages=max_pages, bullets_per_group=bullets_per_group,
+                              apply_config_budget=apply_config_budget)
+    # #88: surface any per-group bullet truncation instead of silently hiding it.
+    for t in ctx.get("_truncation") or []:
+        console.print(
+            f"[yellow]⚠ {t['name']}: showing {t['kept']}/{t['total']} achievements "
+            f"(dropped {t['total'] - t['kept']} to fit). Raise --bullets-per-group "
+            f"or the page budget, or use the detailed variant.[/yellow]"
+        )
     if not (ctx.get("profile", {}).get("summary") or "").strip():
         console.print(
             "[yellow]⚠ profile.summary is empty — Top fold check will score ≤6/10. "

@@ -161,3 +161,38 @@ def test_apply_same_name_merge_keeps_one_no_data_loss():
     assert len(out) == 1                       # exactly one X survives (no data loss)
     assert out[0].canonical_key == "remote:github.com/acme/x"   # the keyed twin is the anchor
     assert out[0].total_sessions == 13         # both groups' activities unioned
+
+
+# ---- #87: honor `action` (not tier); add agent-friendly CLI verbs -----------
+
+
+def test_load_prior_survives_custom_tier_and_honors_action(tmp_path):
+    """#87: a human edit setting `action: drop` with a non-standard `tier`
+    (e.g. manual_drop) must NOT fail validation and silently fall back to the
+    auto-only record — the action is the operative field."""
+    from vibe_resume.core.curate import _load_prior
+    y = tmp_path / "_curation.yaml"
+    y.write_text(
+        "version: 1\ngenerated_at: t\ngroups:\n"
+        "- {name: noise, sessions: 1, tier: manual_drop, action: drop}\n"
+        "- {name: keepme, sessions: 9, tier: keep, action: keep}\n"
+    )
+    rec = _load_prior(y)
+    assert rec is not None, "custom tier must not nuke the whole load"
+    by_name = {e.name: e for e in rec.groups}
+    assert by_name["noise"].action == "drop"      # honored, not downgraded
+
+
+def test_set_action_helper_drop_merge_keep():
+    """#87: programmatic verbs so agents don't hand-edit YAML."""
+    from vibe_resume.core.curate import set_action
+    rec = CurationRecord(version=1, generated_at="t", groups=[
+        CurationEntry(name="A", sessions=5, tier="needs_decision", action="keep"),
+        CurationEntry(name="B", sessions=3, tier="keep", action="keep"),
+    ])
+    assert set_action(rec, "A", "drop") is True
+    assert next(e for e in rec.groups if e.name == "A").action == "drop"
+    assert set_action(rec, "B", "merge_into", target="A") is True
+    eb = next(e for e in rec.groups if e.name == "B")
+    assert eb.action == "merge_into" and eb.target == "A"
+    assert set_action(rec, "ghost", "drop") is False   # unknown name → no-op, reported

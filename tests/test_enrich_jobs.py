@@ -382,3 +382,143 @@ def test_emit_no_clean_preserves_old_yaml(tmp_path: Path):
 
     assert (out / "001_proj-foo.yaml").exists()
     assert (out / "001_proj-foo.yaml").read_text() == "kept\n"
+
+
+# ---------------------------------------------------------------------------
+# Fix #84 — ingest must key by group IDENTITY, never by list index.
+# After `aggregate` reorders/changes groups, matching by raw[idx] attaches
+# bullets to the wrong group (silent résumé corruption).
+# ---------------------------------------------------------------------------
+
+
+def test_ingest_matches_by_name_not_position_after_reorder(tmp_path: Path, monkeypatch):
+    """Emit in one order; aggregate re-runs producing the SAME names REORDERED.
+
+    Each group's enriched content must land on the group with the MATCHING
+    name — not on whatever now sits at the original list position.
+    """
+    emit_groups = [_fake_group("alpha"), _fake_group("beta")]
+    jobs_dir = emit_jobs(emit_groups, tmp_path, persona=None, locale="en_US",
+                         tailor_keywords=None, company=None, level=None)
+
+    # 001 -> alpha, 002 -> beta (as emitted)
+    (jobs_dir / "001_alpha.yaml").write_text(
+        'summary: "ALPHA work"\nachievements: ["Alpha bullet"]\ntech_stack: []\n'
+    )
+    (jobs_dir / "002_beta.yaml").write_text(
+        'summary: "BETA work"\nachievements: ["Beta bullet"]\ntech_stack: []\n'
+    )
+
+    # aggregate re-ran: same names, REVERSED order. raw[0] is now beta.
+    current = [_fake_group("beta"), _fake_group("alpha")]
+    monkeypatch.setattr(
+        "vibe_resume.core.enrich_jobs._load_raw_groups", lambda: current
+    )
+
+    enriched, warnings = ingest_jobs(jobs_dir / "manifest.json")
+
+    by_name = {g.name: g for g in enriched}
+    # The corruption bug would attach ALPHA's yaml to raw[0] (now beta).
+    assert by_name["alpha"].summary == "ALPHA work"
+    assert by_name["alpha"].achievements == ["Alpha bullet"]
+    assert by_name["beta"].summary == "BETA work"
+    assert by_name["beta"].achievements == ["Beta bullet"]
+    # Pure reorder with all names present must NOT warn about mismatch/drop.
+    assert not [w for w in warnings if "mismatch" in w or "drop" in w.lower()]
+
+
+def test_ingest_matches_after_group_inserted(tmp_path: Path, monkeypatch):
+    """A new group inserted at the front shifts every index — names still win."""
+    emit_groups = [_fake_group("alpha"), _fake_group("beta")]
+    jobs_dir = emit_jobs(emit_groups, tmp_path, persona=None, locale="en_US",
+                         tailor_keywords=None, company=None, level=None)
+    (jobs_dir / "001_alpha.yaml").write_text(
+        'summary: "ALPHA work"\nachievements: ["Alpha bullet"]\ntech_stack: []\n'
+    )
+    (jobs_dir / "002_beta.yaml").write_text(
+        'summary: "BETA work"\nachievements: ["Beta bullet"]\ntech_stack: []\n'
+    )
+
+    # aggregate inserted a brand-new group "zeta" at index 0.
+    current = [_fake_group("zeta"), _fake_group("alpha"), _fake_group("beta")]
+    monkeypatch.setattr(
+        "vibe_resume.core.enrich_jobs._load_raw_groups", lambda: current
+    )
+
+    enriched, warnings = ingest_jobs(jobs_dir / "manifest.json")
+    by_name = {g.name: g for g in enriched}
+    assert by_name["alpha"].summary == "ALPHA work"
+    assert by_name["beta"].summary == "BETA work"
+    assert not [w for w in warnings if "mismatch" in w or "drop" in w.lower()]
+
+
+def test_ingest_matches_by_canonical_key_when_name_changed(tmp_path: Path, monkeypatch):
+    """If a group's name drifted but its canonical_key is stable, match on the key.
+
+    emit recorded the entry under the OLD name; aggregate re-grouped under a
+    new display name but kept canonical_key == old name. ingest must still
+    apply the yaml to that group.
+    """
+    emit_groups = [_fake_group("decoy"), _fake_group("old-name")]
+    jobs_dir = emit_jobs(emit_groups, tmp_path, persona=None, locale="en_US",
+                         tailor_keywords=None, company=None, level=None)
+    (jobs_dir / "001_decoy.yaml").write_text(
+        'summary: "DECOY work"\nachievements: ["Decoy bullet"]\ntech_stack: []\n'
+    )
+    (jobs_dir / "002_old-name.yaml").write_text(
+        'summary: "KEYED work"\nachievements: ["Keyed bullet"]\ntech_stack: []\n'
+    )
+
+    # aggregate renamed entry 002's group but kept its canonical_key, and put
+    # it at index 0 so a positional (index) match would land on the decoy.
+    renamed = _fake_group("new-display-name")
+    renamed.canonical_key = "old-name"  # stable identity from #37 reconcile
+    current = [renamed, _fake_group("decoy")]
+    monkeypatch.setattr(
+        "vibe_resume.core.enrich_jobs._load_raw_groups", lambda: current
+    )
+
+    enriched, warnings = ingest_jobs(jobs_dir / "manifest.json")
+    by_name = {g.name: g for g in enriched}
+    # The keyed yaml landed on the renamed group via canonical_key.
+    assert by_name["new-display-name"].summary == "KEYED work"
+    assert by_name["new-display-name"].achievements == ["Keyed bullet"]
+    # And the decoy got its own yaml, not KEYED work.
+    assert by_name["decoy"].summary == "DECOY work"
+
+
+def test_ingest_skips_entry_matching_no_group_and_warns_loudly(tmp_path: Path, monkeypatch):
+    """A manifest entry whose name matches NO current group is dropped + warned.
+
+    Critically it must NOT fall back to raw[index] and overwrite an unrelated
+    group's content.
+    """
+    emit_groups = [_fake_group("ghost"), _fake_group("real")]
+    jobs_dir = emit_jobs(emit_groups, tmp_path, persona=None, locale="en_US",
+                         tailor_keywords=None, company=None, level=None)
+    (jobs_dir / "001_ghost.yaml").write_text(
+        'summary: "GHOST work"\nachievements: ["Ghost bullet"]\ntech_stack: []\n'
+    )
+    (jobs_dir / "002_real.yaml").write_text(
+        'summary: "REAL work"\nachievements: ["Real bullet"]\ntech_stack: []\n'
+    )
+
+    # "ghost" no longer exists; only "real" survives aggregate.
+    current = [_fake_group("real")]
+    monkeypatch.setattr(
+        "vibe_resume.core.enrich_jobs._load_raw_groups", lambda: current
+    )
+
+    enriched, warnings = ingest_jobs(jobs_dir / "manifest.json")
+
+    # Only the surviving, matched group is enriched.
+    assert len(enriched) == 1
+    assert enriched[0].name == "real"
+    # GHOST's yaml must NOT have leaked onto "real" (the raw[0] fallback bug).
+    assert enriched[0].summary == "REAL work"
+    assert enriched[0].achievements == ["Real bullet"]
+    # Loud warning naming the dropped entry.
+    assert any(
+        "ghost" in w.lower() and ("drop" in w.lower() or "skip" in w.lower())
+        for w in warnings
+    ), f"expected a loud drop/skip warning naming 'ghost', got: {warnings}"

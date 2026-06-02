@@ -108,8 +108,12 @@ def gate_terms(rubric: MarketRubric, lang: str | None = None) -> list[str]:
     phrasing is locale-specific. Lowercased for substring matching."""
     terms = list(rubric.human_gate_verbs)
     by_locale = rubric.human_gate_verbs_by_locale or {}
-    if lang and lang in by_locale:
-        terms += list(by_locale[lang])
+    if lang:
+        base = lang.replace("-", "_").split("_")[0]
+        for key in (lang, base):
+            if key in by_locale:
+                terms += list(by_locale[key])
+                break
     return [t.lower() for t in terms]
 
 

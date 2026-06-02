@@ -79,3 +79,49 @@ def test_latest_considers_persona_variants(tmp_path: Path) -> None:
 def test_latest_empty_dir_raises(tmp_path: Path) -> None:
     with pytest.raises(FileNotFoundError, match="run `render` first"):
         resolve_resume_path(tmp_path)
+
+
+# ---- #63/#86: default selection must include _ats/_detailed variant suffixes ---
+
+
+def test_persona_locale_picks_highest_version_incl_variant_suffix(tmp_path: Path) -> None:
+    """#86: with variant files present, the persona+locale default must pick the
+    freshly-rendered _detailed/_ats variant — not the stale non-suffixed version."""
+    _touch(tmp_path, "resume_v003_zh_TW_agentic.md")            # stale, no suffix
+    _touch(tmp_path, "resume_v010_zh_TW_agentic_ats.md")
+    _touch(tmp_path, "resume_v011_zh_TW_agentic_detailed.md")   # newest
+    got = resolve_resume_path(tmp_path, persona="agentic", locale="zh_TW")
+    assert got.name == "resume_v011_zh_TW_agentic_detailed.md"
+
+
+def test_persona_locale_still_matches_non_suffixed_when_only_one(tmp_path: Path) -> None:
+    _touch(tmp_path, "resume_v005_en_US_hr.md")
+    got = resolve_resume_path(tmp_path, persona="hr", locale="en_US")
+    assert got.name == "resume_v005_en_US_hr.md"
+
+
+def test_locale_only_picks_highest_version_variant(tmp_path: Path) -> None:
+    _touch(tmp_path, "resume_v003_zh_TW_agentic.md")
+    _touch(tmp_path, "resume_v011_zh_TW_agentic_detailed.md")
+    got = resolve_resume_path(tmp_path, locale="zh_TW")
+    assert got.name == "resume_v011_zh_TW_agentic_detailed.md"
+
+
+# ---- #91: resolve every variant rendered for a persona/locale ---------------
+
+
+def test_resolve_variant_paths_keys_by_variant(tmp_path: Path) -> None:
+    from vibe_resume.core.review import resolve_variant_paths
+    _touch(tmp_path, "resume_v009_zh_TW_agentic.md")            # base (no variant suffix)
+    _touch(tmp_path, "resume_v010_zh_TW_agentic_ats.md")
+    _touch(tmp_path, "resume_v011_zh_TW_agentic_detailed.md")
+    _touch(tmp_path, "resume_v007_zh_TW_agentic_ats.md")        # older ats — must lose
+    out = resolve_variant_paths(tmp_path, persona="agentic", locale="zh_TW")
+    assert out["ats"].name == "resume_v010_zh_TW_agentic_ats.md"
+    assert out["detailed"].name == "resume_v011_zh_TW_agentic_detailed.md"
+    assert out["base"].name == "resume_v009_zh_TW_agentic.md"
+
+
+def test_resolve_variant_paths_empty_when_none(tmp_path: Path) -> None:
+    from vibe_resume.core.review import resolve_variant_paths
+    assert resolve_variant_paths(tmp_path, persona="hr", locale="en_US") == {}

@@ -409,7 +409,7 @@ def test_cli_run_phase_b_continue_skips_emit(seeded_cache, monkeypatch, capsys):
 
     monkeypatch.setattr(renderer, "_history_path", lambda cfg: seeded_cache)
 
-    def _fake_md(cfg, tailor, locale=None, persona=None, top_n=None, max_pages=None):
+    def _fake_md(cfg, tailor, locale=None, persona=None, top_n=None, max_pages=None, **kwargs):
         return ("# fake\n", {"locale": {"_key": locale or "en_US"}, "_tpl_name": "f.j2", "profile": {}, "groups": []})
 
     monkeypatch.setattr(renderer, "_render_md", _fake_md)

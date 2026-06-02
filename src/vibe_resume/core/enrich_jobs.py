@@ -201,27 +201,44 @@ def ingest_jobs(manifest_path: Path) -> tuple[list[ProjectGroup], list[str]]:
 
     enriched: list[ProjectGroup] = []
 
+    # Identity-keyed matching (#84). Matching by list index silently scrambles
+    # the résumé after an `aggregate` re-run reorders/adds/drops groups: each
+    # entry's bullets land on whatever now occupies the old position. Instead
+    # match every entry to the current group whose `name` equals `entry.name`,
+    # falling back to a group whose stable `canonical_key` equals `entry.name`
+    # (handles a display-name drift where the #37 reconcile key is unchanged).
+    #
+    # Each current group is consumed at most once so duplicate-named groups
+    # (#33) still split across their distinct entries by emit order instead of
+    # all collapsing onto the first match.
+    consumed: set[int] = set()
+
+    def _match(entry: EnrichJobEntry) -> ProjectGroup | None:
+        # First pass: exact name match on an as-yet-unconsumed group.
+        for i, cand in enumerate(raw):
+            if i not in consumed and cand.name == entry.name:
+                consumed.add(i)
+                return cand
+        # Fallback: a group whose canonical_key equals the manifest name
+        # (name drifted but the reconcile identity is stable).
+        for i, cand in enumerate(raw):
+            if i not in consumed and cand.canonical_key == entry.name:
+                consumed.add(i)
+                return cand
+        return None
+
     for entry in manifest.groups:
-        # entry.id is the 1-based enumerate index emit_jobs assigned over the
-        # raw group list — match by that, NOT by name, so duplicate-named
-        # groups don't collide (#33).
-        try:
-            idx = int(entry.id) - 1
-        except ValueError:
-            warnings.append(f"entry {entry.id!r}: non-numeric id — skipped")
-            continue
-        if not (0 <= idx < len(raw)):
+        g = _match(entry)
+        if g is None:
+            # No current group shares this entry's identity. Drop its YAML
+            # loudly rather than falling back to raw[index] and corrupting an
+            # unrelated group (the #84 silent-scramble bug).
             warnings.append(
-                f"entry {entry.id} ({entry.name}): index out of range "
-                f"(raw groups changed since emit?) — skipped"
+                f"entry {entry.id} ({entry.name!r}): no current group matches "
+                f"name/canonical_key — dropping its enriched YAML "
+                f"(group removed or out of range since emit?)"
             )
             continue
-        g = raw[idx]
-        if g.name != entry.name:
-            warnings.append(
-                f"entry {entry.id}: name mismatch (manifest={entry.name!r}, "
-                f"raw[{idx}]={g.name!r}) — aggregate re-run since emit? Using raw[{idx}]."
-            )
 
         yaml_path = jobs_dir / entry.output_path
         parsed: dict | None = None

@@ -248,3 +248,41 @@ def test_ai_proficiency_block_fires_on_agentic_persona():
     g = _ai_grp()
     p = _build_prompt(g, persona=get_persona("agentic"))
     assert "AI-PROFICIENCY FRAMING" in p
+
+
+# --- #89 evidence-disclosure block -------------------------------------------
+
+def _evidence_grp(summary: str, ref: str = "commit:abc"):
+    a = Activity(source=Source.CLAUDE_CODE, session_id="s1",
+                 timestamp_start="2026-01-01T00:00:00+00:00",
+                 summary=summary, raw_ref=ref)
+    return ProjectGroup(name="ev", first_activity="2026-01-01T00:00:00+00:00",
+                        last_activity="2026-02-01T00:00:00+00:00",
+                        total_sessions=3, activities=[a])
+
+
+def test_build_prompt_includes_evidence_disclosure_block():
+    g = _evidence_grp("Architected the pipeline; reviewed every diff before merge; "
+                      "cut latency 40%")
+    p = _build_prompt(g)
+    assert "EVIDENCE DISCLOSURE" in p
+    # the disclosed gate term and safe metric appear in the block's compact lines
+    assert 'human gate: "reviewed"' in p
+    assert "metric: 40%" in p
+
+
+def test_build_prompt_no_evidence_block_when_no_gate_or_metric():
+    g = _evidence_grp("Improved the build, refactored the parser")
+    p = _build_prompt(g)
+    assert "EVIDENCE DISCLOSURE" not in p
+
+
+def test_build_prompt_evidence_block_omits_unsafe_metric():
+    # a value inside a css max-width context is classified safe_to_surface=False
+    g = _evidence_grp("Reviewed the layout; set css max-width: 100% on the container")
+    p = _build_prompt(g)
+    # the human gate still surfaces in the disclosure block...
+    assert "EVIDENCE DISCLOSURE" in p
+    assert 'human gate: "reviewed"' in p
+    # ...but the unsafe 100% metric must not be surfaced as a disclosed metric
+    assert "metric: 100%" not in p

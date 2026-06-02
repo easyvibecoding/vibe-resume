@@ -200,8 +200,12 @@ def run_render(
     top_n: int | None = None,
     max_pages: float | None = None,
     variant: str | None = None,
+    bullets_per_group: int | None = None,
+    apply_config_budget: bool = True,
 ) -> list[str]:
     from vibe_resume.render.renderer import render_draft
 
     return render_draft(cfg, fmt=fmt, tailor=tailor, locale=locale, persona=persona,
-                        top_n=top_n, max_pages=max_pages, variant=variant) or []
+                        top_n=top_n, max_pages=max_pages, variant=variant,
+                        bullets_per_group=bullets_per_group,
+                        apply_config_budget=apply_config_budget) or []

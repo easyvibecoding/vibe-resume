@@ -82,14 +82,30 @@ def aggregate(ctx: click.Context) -> None:
 @cli.command()
 @click.option("--apply", "apply_", is_flag=True, default=False,
               help="Execute the edited _curation.yaml into _project_groups.curated.json")
+@click.option("--drop", "drop_", multiple=True, metavar="NAME",
+              help="Mark a group's action=drop (agent-friendly; no YAML editing). Repeatable. (#87)")
+@click.option("--merge", "merge_", multiple=True, metavar="SRC:DST",
+              help="Mark a group action=merge_into target DST. Repeatable. (#87)")
+@click.option("--keep", "keep_", multiple=True, metavar="NAME",
+              help="Mark a group's action=keep. Repeatable. (#87)")
 @click.pass_context
-def curate(ctx: click.Context, apply_: bool) -> None:
+def curate(ctx: click.Context, apply_: bool, drop_: tuple[str, ...],
+           merge_: tuple[str, ...], keep_: tuple[str, ...]) -> None:
     """Review/auto-curate project groups (merge dupes, drop noise) via an
-    editable _curation.yaml checkpoint between aggregate and enrich."""
+    editable _curation.yaml checkpoint between aggregate and enrich.
+
+    `--apply` executes the `action` field (keep/merge_into/drop) of every entry —
+    independent of `tier`. Use `--drop/--merge/--keep` to set actions without
+    hand-editing YAML, then `--apply`.
+    """
     from datetime import UTC, datetime
 
-    from vibe_resume.core.curate import run_curate
+    from vibe_resume.core.curate import run_curate, run_curate_verbs
 
+    if drop_ or merge_ or keep_:
+        click.echo(run_curate_verbs(drops=drop_, merges=merge_, keeps=keep_))
+        if not apply_:
+            return
     msg = run_curate(ctx.obj["config"], apply=apply_,
                      now=datetime.now(UTC).isoformat(timespec="seconds"))
     click.echo(msg)
@@ -578,6 +594,9 @@ def iterate(ctx: click.Context, locale: str | None, persona: str | None, tailor:
 @click.option("--variants", "variants", is_flag=True, default=False,
               help="Emit the standard variant set per locale (ATS page-budgeted + detailed) "
                    "from the same enriched cache; files suffixed _ats/_detailed. (config.render.variants)")
+@click.option("--bullets-per-group", "bullets_per_group", type=int, default=None,
+              help="Hard cap on achievements shown per group; warns when bullets are dropped (#88). "
+                   "Independent of --max-pages.")
 @click.option("--allow-partial", "allow_partial", is_flag=True, default=False,
               help="Keep exit 0 even when a requested format is dropped (default: exit non-zero) — #66")
 @click.pass_context
@@ -592,6 +611,7 @@ def render(
     no_emphasis: bool,
     max_pages: float | None,
     variants: bool,
+    bullets_per_group: int | None,
     allow_partial: bool,
 ) -> None:
     """Render resume draft to selected format and snapshot a version."""
@@ -636,12 +656,17 @@ def render(
             for f in formats:
                 if variant_set:
                     # All variants derive from the SAME enriched cache — they differ
-                    # only in selection/length, never in claims (#55, P1.4).
+                    # only in selection/length, never in claims (#55, P1.4). #88: a
+                    # variant is self-describing — it must NOT inherit the global
+                    # config page_budget, or the "detailed" variant (no max_pages)
+                    # gets silently floored to 2 bullets. Only its own max_pages caps it.
                     for v in variant_set:
                         all_dropped.extend(run_render(cfg, fmt=f, tailor=tailor, locale=locale_key, persona=p_key,
-                                           top_n=v.get("top_n"), max_pages=v.get("max_pages"), variant=v.get("name")))
+                                           top_n=v.get("top_n"), max_pages=v.get("max_pages"), variant=v.get("name"),
+                                           bullets_per_group=bullets_per_group, apply_config_budget=False))
                 else:
-                    all_dropped.extend(run_render(cfg, fmt=f, tailor=tailor, locale=locale_key, persona=p_key, top_n=top_n, max_pages=max_pages))
+                    all_dropped.extend(run_render(cfg, fmt=f, tailor=tailor, locale=locale_key, persona=p_key,
+                                       top_n=top_n, max_pages=max_pages, bullets_per_group=bullets_per_group))
 
     if all_locales:
         # If the user didn't pass --format, fan out over the configured list
@@ -906,6 +931,12 @@ def status(ctx: click.Context, enriched: bool, pending: bool, show_all: bool) ->
 @click.option("--max-pages", "max_pages", type=float, default=None,
               help="Score page-count against this budget instead of the fixed locale target "
                    "(mirrors render --max-pages; falls back to config.render.page_budget) — #68")
+@click.option("--json", "as_json", is_flag=True, default=False,
+              help="Emit the scorecard (per-check score/max/notes + total + grade + resolved target) "
+                   "as JSON on stdout for an agent to consume (#91).")
+@click.option("--variants", "variants", is_flag=True, default=False,
+              help="Score every variant (ats/detailed/base) rendered for the persona/locale in one "
+                   "call, keyed by variant (#91). Composes with --json.")
 @click.pass_context
 def review(
     ctx: click.Context,
@@ -919,18 +950,56 @@ def review(
     level: str | None,
     by_bullet: bool,
     max_pages: float | None,
+    as_json: bool,
+    variants: bool,
 ) -> None:
     """Score a rendered resume against the 8-point reviewer checklist."""
+    import json as _json
+
     from vibe_resume.core.review import (
         find_previous_review,
         newer_variant_hint,
         parse_jd_keywords,
         resolve_resume_path,
+        resolve_variant_paths,
         review_file,
         write_report,
     )
 
     hist_dir = ROOT / (ctx.obj["config"].get("render", {}).get("output_dir") or "data/resume_history")
+    _warn_if_company_stale(company)
+    jd_keywords = parse_jd_keywords(Path(jd)) if jd else None
+    # #68: review and render agree on "too long" — explicit flag, else config.render.page_budget.
+    page_target = max_pages or ctx.obj["config"].get("render", {}).get("page_budget")
+
+    def _score(p: Path):
+        return review_file(p, locale_key=locale, jd_keywords=jd_keywords,
+                           persona=persona, company=company, level=level, page_target=page_target)
+
+    # #91: score every rendered variant for this persona/locale in one call.
+    if variants:
+        var_paths = resolve_variant_paths(hist_dir, persona=persona, locale=locale)
+        if not var_paths:
+            raise click.UsageError(
+                f"no variant renders found for (persona={persona or '*'}, locale={locale or '*'}) "
+                f"in {hist_dir} — run `render --variants` first."
+            )
+        results = {name: (path, _score(path)) for name, path in sorted(var_paths.items())}
+        if as_json:
+            out = {name: {**rep.as_dict(), "target": str(path)}
+                   for name, (path, rep) in results.items()}
+            click.echo(_json.dumps(out, ensure_ascii=False, indent=2))
+            return
+        t = Table(title=f"Variant scores (persona={persona or '*'}, locale={locale or '*'})")
+        t.add_column("Variant")
+        t.add_column("Score", justify="right")
+        t.add_column("Grade")
+        t.add_column("Target")
+        for name, (path, rep) in results.items():
+            t.add_row(name, f"{rep.total}/{rep.max_total}", rep.grade, path.name)
+        console.print(t)
+        return
+
     try:
         md_path = resolve_resume_path(
             hist_dir, version=version, file=file_,
@@ -940,33 +1009,26 @@ def review(
         # Map domain errors to click's user-facing error type.
         raise click.UsageError(str(e)) from e
 
-    if (persona or locale) and not (version or file_):
-        console.print(
-            f"[dim]→ scoring {md_path.name} (matched persona={persona or '*'}, locale={locale or '*'})[/dim]"
-        )
-        # #63: a variant suffix (e.g. _detailed) can make the glob miss the file
-        # the user just rendered — disclose when a newer same-locale render exists.
-        if locale:
-            hint = newer_variant_hint(hist_dir, md_path, locale)
-            if hint:
-                console.print(f"[yellow]⚠ {hint}[/yellow]")
-
-    _warn_if_company_stale(company)
-    jd_keywords = parse_jd_keywords(Path(jd)) if jd else None
-    # #68: review and render agree on "too long" — explicit flag, else config.render.page_budget.
-    page_target = max_pages or ctx.obj["config"].get("render", {}).get("page_budget")
-    report = review_file(
-        md_path,
-        locale_key=locale,
-        jd_keywords=jd_keywords,
-        persona=persona,
-        company=company,
-        level=level,
-        page_target=page_target,
-    )
+    report = _score(md_path)
     out_dir = ROOT / "data" / "reviews"
     previous = find_previous_review(out_dir, report.source, report.locale) if diff else None
     md_out, json_out = write_report(report, out_dir, previous=previous)
+
+    # #91 / #86: structured stdout (incl. resolved target) for agents.
+    if as_json:
+        click.echo(_json.dumps({**report.as_dict(), "target": str(md_path)},
+                               ensure_ascii=False, indent=2))
+        return
+
+    # #86: ALWAYS disclose which file was scored (an agent can't otherwise tell
+    # whether it drew conclusions from the right résumé — the old code only
+    # printed this on a persona/locale match).
+    console.print(f"[cyan]Scored:[/cyan] {md_path.relative_to(ROOT)}")
+    if (persona or locale) and not (version or file_) and locale:
+        # #63: disclose when a newer same-locale render exists than the one matched.
+        hint = newer_variant_hint(hist_dir, md_path, locale)
+        if hint:
+            console.print(f"[yellow]⚠ {hint}[/yellow]")
 
     console.print(report.as_markdown(previous=previous))
     console.print(f"[cyan]wrote[/cyan] {md_out.relative_to(ROOT)}  ·  {json_out.relative_to(ROOT)}")
@@ -1695,6 +1757,24 @@ def _gate_pause(
     )
 
 
+def _reapply_curation_if_present(cfg: dict) -> None:
+    """Re-apply `_curation.yaml` after a recompute's aggregate (#85).
+
+    A gate recompute re-runs `aggregate`, which regenerates the raw groups and
+    leaves any prior `_project_groups.curated.json` stale (built from the OLD
+    aggregate). Without this, the documented human-in-the-loop curation is
+    silently bypassed on the next `--continue`. If a `_curation.yaml` exists,
+    re-execute it against the fresh raw groups so enrich runs on the curated set."""
+    from vibe_resume.core.curate import CURATION_YAML
+    if not CURATION_YAML.exists():
+        return
+    from datetime import UTC, datetime
+
+    from vibe_resume.core.curate import run_curate
+    msg = run_curate(cfg, apply=True, now=datetime.now(UTC).isoformat(timespec="seconds"))
+    console.print(f"[cyan]re-applied curation after aggregate (#85):[/cyan] {msg}")
+
+
 def _run_gated(
     cfg: dict,
     data_dir: Path,
@@ -1788,15 +1868,32 @@ def _run_gated(
         if g1_decided and g1_decided.decision.get("choice") == "reuse":
             console.print("[dim]G1=reuse → skipping extract+aggregate[/dim]")
         else:
-            console.print("[cyan]G1=reextract → extract + aggregate[/cyan]")
-            run_extractors(cfg)
-            run_aggregator(cfg)
+            # #83: G1=reextract used to replay the full extract (~4min) on EVERY
+            # --continue — the decision re-fires each resume. Once the cache is
+            # fresh (the reextract already ran this session), honor --max-age-days
+            # and skip the redundant extract; still re-aggregate (cheap) so
+            # downstream stays current.
+            cache_marker = data_dir / "cache" / "_project_groups.json"
+            extract_fresh = (
+                cache_marker.exists()
+                and (time.time() - cache_marker.stat().st_mtime) <= max_age_days * 86400
+            )
+            if do_continue and extract_fresh:
+                console.print("[dim]G1=reextract, but extract cache is fresh "
+                              "→ skipping re-extract (already done this run); re-aggregating[/dim]")
+                run_aggregator(cfg)
+            else:
+                console.print("[cyan]G1=reextract → extract + aggregate[/cyan]")
+                run_extractors(cfg)
+                run_aggregator(cfg)
+            _reapply_curation_if_present(cfg)
     else:
         # non-armed G1: current freshness-by-mtime behavior.
         cache_marker = data_dir / "cache" / "_project_groups.json"
         if not cache_marker.exists() or (time.time() - cache_marker.stat().st_mtime) > max_age_days * 86400:
             run_extractors(cfg)
             run_aggregator(cfg)
+            _reapply_curation_if_present(cfg)
 
     # G2 grouping: decision records top_n -> enrich limit, drop_noise.
     g2_limit = limit
@@ -2010,6 +2107,7 @@ def _run_resume_from(
         run_extractors(cfg)
     if Stage.AGGREGATE in stage_set:
         run_aggregator(cfg)
+        _reapply_curation_if_present(cfg)   # #85: curation survives recompute
     if Stage.ENRICH in stage_set:
         run_enricher(cfg, ingest=True, ingest_all=True)
     if Stage.RENDER in stage_set:
@@ -2363,6 +2461,56 @@ def gates_plan(changed: str, ledger_path: str | None) -> None:
         src = "single-gate invalidation"
     label = " → ".join(s.value for s in stages) if stages else "(terminal — stop/iterate, no recompute)"
     console.print(f"[cyan]{gate.value}[/cyan] changed → recompute: [bold]{label}[/bold]  [dim]({src})[/dim]")
+
+
+@gates.command("state")
+@click.option("--preset", default=None, help="Resolve the armed set from a preset (else read the ledger's marker).")
+@click.option("--gates", "gates_arg", default=None, help="Explicit armed gate set (e.g. G1,G5,G8).")
+@click.option("--json/--no-json", "as_json", default=True, help="Emit JSON (default) or a table.")
+def gates_state(preset: str | None, gates_arg: str | None, as_json: bool) -> None:
+    """Machine-readable run state (#90): armed gates, which are fully-wired vs
+    emit-only, the pending gate, each recorded decision, and per-gate recompute
+    suffix — so an agent drives the gate machine deterministically."""
+    import json as _json
+
+    from vibe_resume.core.gates import GateLedger
+    from vibe_resume.core.run_gates import (
+        active_gates_from_ledger,
+        ledger_path,
+        resolve_active_gates,
+        run_state,
+    )
+
+    data_dir = ROOT / "data"
+    ledger = GateLedger.load(ledger_path(data_dir))
+    if preset or gates_arg:
+        try:
+            active = resolve_active_gates(interactive=False, preset=preset, gates=gates_arg)
+        except ValueError as e:
+            raise click.UsageError(str(e)) from e
+    else:
+        active = active_gates_from_ledger(ledger)
+    state = run_state(active, ledger)
+    if as_json:
+        click.echo(_json.dumps(state, ensure_ascii=False, indent=2))
+        return
+    from rich.table import Table as _T
+    console.print(f"armed: [bold]{', '.join(state['armed']) or '(none — autopilot or no ledger)'}[/bold]  "
+                  f"pending: [cyan]{state['pending'] or '(all decided)'}[/cyan]")
+    console.print(f"[dim]fully-wired: {', '.join(state['fully_wired']) or '(none)'}; "
+                  f"emit-only: {', '.join(state['emit_only']) or '(none)'}[/dim]")
+    t = _T()
+    t.add_column("Gate")
+    t.add_column("Decided")
+    t.add_column("Decision")
+    t.add_column("Wired")
+    t.add_column("Recompute on change")
+    for gid, info in state["gates"].items():
+        dec = (info["decision"] or {}).get("choice") or "—"
+        t.add_row(f"{gid} {info['short']}", "✓" if info["decided"] else "·", str(dec),
+                  "full" if info["fully_wired"] else "emit",
+                  " → ".join(info["recompute_suffix"]) or "(terminal)")
+    console.print(t)
 
 
 @cli.command()

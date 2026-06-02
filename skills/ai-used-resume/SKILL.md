@@ -4,7 +4,7 @@ description: Generate a versioned, reviewer-scored résumé from the user's AI-c
 license: MIT
 compatibility: Requires Python 3.12+ and uv. Optional pandoc (PDF rendering) and claude CLI (LLM enrichment; falls back to rule-based). Works on macOS and Linux.
 metadata:
-  version: "0.33.1"
+  version: "0.34.0"
   author: easyvibecoding
   hermes:
     tags:
@@ -64,6 +64,7 @@ Invoke this skill whenever the user wants to **turn their AI-tool usage history 
 | Compare persona output | `uv run vibe-resume personas-compare --locale en_US -n 3` — side-by-side bullets per persona for the top-N groups (quality iteration loop). `--locale` required since 0.4.0. |
 | Score latest | `uv run vibe-resume review` |
 | Score with JD echo | `uv run vibe-resume review --jd data/imports/jd.txt` |
+| **Scores as JSON (for agents)** | `uv run vibe-resume review --json` → structured scorecard + resolved target path on stdout; `review --variants --json` scores every rendered variant (ats/detailed/base) in one call (#91). Review always prints which file it scored (#86). |
 | Score with persona lens | `uv run vibe-resume review --persona hr` — appends persona-specific review tips |
 | **Disclose real signals (self-mine)** | `uv run vibe-resume evidence --json` — per group: candidate metrics, backed terms, human-gate evidence, provenance. `--jd <file>` adds present-but-omitted vs genuinely-absent keywords. **Surface only what's disclosed — never invent.** |
 | **Ground in the code** | `uv run vibe-resume scan` → process each `*.scan.prompt.md` with a cheap-model subagent (one per project, parallel) → `uv run vibe-resume scan --ingest`. Grounds bullets in what the repo actually does. Opt-in; never uploads code, drops secrets. |
@@ -75,7 +76,9 @@ Invoke this skill whenever the user wants to **turn their AI-tool usage history 
 | **Angle-biased candidate bullets** | `uv run vibe-resume enrich --candidates impact_first,breadth_first,depth_first --locale en_US` emits N framings per group; `uv run vibe-resume bullets-compare --locale en_US` shows them side by side to pick per group. Angle is a prompt prefix — anti-fabrication rules unchanged. |
 | **Persona compare with scores** | `uv run vibe-resume personas-compare --locale en_US --with-scores --tailor data/imports/jd.txt` — bullet diff **plus** a per-persona review-score table; highlights the best-JD-fit persona. |
 | **Branch a gate decision** | `uv run vibe-resume run --branch G2 --decision '{"choice":"top_n","top_n":8}'` forks the ledger, recomputes that gate's suffix, auto review-diffs vs the original. `run --branches` lists forks; `run --adopt <id>` promotes one. |
-| Curate groups (human-in-loop) | `uv run vibe-resume curate` — review/merge dupe groups, drop noise; `uv run vibe-resume emphasis 'foreground my security work'` sets a free-text bias for the next enrich. |
+| Curate groups (human-in-loop) | `uv run vibe-resume curate` then set actions without editing YAML: `curate --drop <name>` / `--merge <src>:<dst>` / `--keep <name>`, then `curate --apply` (executes the `action` field, independent of `tier`) (#87). `emphasis 'foreground my security work'` sets a free-text bias for the next enrich. |
+| **Drive the gate machine (agents)** | `uv run vibe-resume gates state --json` — armed gates, fully-wired vs emit-only, pending gate, each recorded decision + recompute suffix (#90). |
+| Cap bullets per group | `uv run vibe-resume render --bullets-per-group N` — hard cap; warns when bullets are dropped instead of silently truncating (#88). The `detailed` variant is no longer floored by the global page budget. |
 | Compare two versions' scores | `uv run vibe-resume review-diff v001 v002 --jd data/imports/jd.txt` — per-check scorecard delta. |
 | Per-locale trend | `uv run vibe-resume trend --locale zh_TW` |
 

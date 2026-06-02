@@ -175,6 +175,39 @@ def record_active_set(ledger: GateLedger, active: list[Gate], timestamp: str) ->
     ledger.record(marker_gate, decision, timestamp)
 
 
+def run_state(active: list[Gate], ledger: GateLedger) -> dict[str, Any]:
+    """Machine-readable snapshot of a gated run for agents to drive (#90).
+
+    Returns armed gates, which are fully-wired vs emit-only, the first pending
+    gate, and per-gate: recorded decision, decided flag, wiring, guard phase, and
+    the ordered recompute suffix (stage names) if its decision changes. Pure — no
+    clock, no I/O; everything derives from the passed ``active`` + ``ledger`` so an
+    agent reasons about its decisions instead of parsing console prose."""
+    from vibe_resume.core.gates import GATE_DEFS, resume_plan
+
+    armed = [g for g in GATE_RUN_ORDER if g in set(active)]
+    pending = first_pending_gate(active, ledger)
+    gates: dict[str, Any] = {}
+    for g in armed:
+        rec = ledger.get(g)
+        decided = bool(rec and rec.decision.get("choice"))
+        gates[g.value] = {
+            "short": GATE_DEFS[g].short,
+            "decision": (rec.decision if rec else None),
+            "decided": decided,
+            "fully_wired": g in FULLY_WIRED,
+            "guard_phase": GUARD_PHASE.get(g),
+            "recompute_suffix": [s.value for s in resume_plan(ledger, g)],
+        }
+    return {
+        "armed": [g.value for g in armed],
+        "fully_wired": [g.value for g in armed if g in FULLY_WIRED],
+        "emit_only": [g.value for g in armed if g not in FULLY_WIRED],
+        "pending": pending.value if pending else None,
+        "gates": gates,
+    }
+
+
 def first_pending_gate(active: list[Gate], ledger: GateLedger) -> Gate | None:
     """First ACTIVE gate (in run order) without a real decision yet (#71).
 

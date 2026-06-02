@@ -4,6 +4,67 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.34.0] — 2026-06-02
+
+A batch of agent-operation fixes surfaced by a real interactive run (#82–#91):
+silent-corruption bugs first, then disclosure/ergonomics.
+
+### Fixed
+
+- **Stale enrich YAML ingested by POSITION after re-aggregate → scrambled
+  bullets** (#84, silent corruption). `ingest_jobs` matched the old manifest to
+  the current groups by list index; after `aggregate` reordered/added/dropped
+  groups, each entry's bullets landed on whatever now sat at that index (only a
+  soft "name mismatch … Using raw[N]" warning). Now keyed by group **identity**
+  (`name` → `canonical_key` fallback, each group consumed once); an entry that
+  matches no current group is **skipped + warned loudly**, never written onto an
+  unrelated group.
+- **AI-proficiency human-gate detection scored 0 for every non-English locale**
+  (#82). `gate_terms` matched only an exact locale key, but
+  `human_gate_verbs_by_locale` is keyed by base family (`zh`/`ja`/…), so `zh_TW`
+  / `ja_JP` / `de_DE` missed and a résumé that honestly paired a tool with a
+  human gate was structurally pinned at 0/10. Now normalizes to the base family.
+- **Detailed render silently truncated each group to 2 achievements** (#88).
+  The `detailed` variant inherited the global `config.render.page_budget` and got
+  floored — hiding woven content with no warning. Variants no longer inherit the
+  global budget (only their own `max_pages` caps them), and any per-group
+  truncation now prints a warning. New `render --bullets-per-group N` hard cap.
+- **`curate --apply` silently ignored the edited `action`** (#87). A human edit
+  setting `action: drop` with a non-standard `tier` (e.g. `manual_drop`) failed
+  `tier` Literal validation, so the whole record fell back to the auto-only
+  classification. `tier` is now a free `str` (`action` is authoritative).
+- **`review` scored a stale non-suffixed version and never said which file**
+  (#86, #63). The persona+locale default glob excluded `_ats`/`_detailed`
+  variants and picked the highest non-suffixed file (often stale). Now includes
+  variant suffixes, selects by **version number** (not lexical order), and
+  **always prints the resolved target path**.
+- **`run --continue` replayed the full `extract` (~4min) on every resume** (#83).
+  A `G1=reextract` decision re-fired each `--continue`. Once the extract cache is
+  fresh (the reextract already ran this session), it now honors `--max-age-days`
+  and skips the redundant extract (still re-aggregates).
+- **Gate recompute bypassed `curate --apply` cleanup** (#85). The G2/recompute
+  `aggregate` regenerated raw groups and left the curated cache stale, silently
+  dropping the human's curation. Now re-applies `_curation.yaml` after any
+  recompute aggregate so curation survives `--continue`.
+
+### Added
+
+- **`enrich --candidates` evidence-aware first pass** (#89). Each group's enrich
+  prompt now carries an `EVIDENCE DISCLOSURE` block — the human-gate phrasing and
+  `safe_to_surface` metrics the evidence layer mines from the activity record —
+  so a faithful first-pass bullet can pair tool + gate and surface real numbers
+  without the manual evidence→re-edit loop. Anti-fabrication contract intact.
+- **`curate --drop/--merge/--keep` verbs** (#87) — set actions without hand-editing
+  YAML; unknown names are reported, not silently ignored.
+- **`review --json` and `review --variants`** (#91) — structured scorecard (with
+  resolved target path) on stdout, and one-call scoring of every rendered variant
+  keyed by variant, for agent consumption.
+- **`gates state [--json]`** (#90) — machine-readable run state: armed gates,
+  fully-wired vs emit-only, the pending gate, each recorded decision, and per-gate
+  recompute suffix, so an agent drives the gate machine deterministically instead
+  of parsing console prose. (The `full_review` G3 stall noted in #90 was already
+  fixed in 0.32.3.)
+
 ## [0.33.1] — 2026-05-31
 
 ### Documentation
