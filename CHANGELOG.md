@@ -4,6 +4,21 @@ All notable changes to `vibe-resume`. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.34.1] — 2026-06-02
+
+### Fixed
+
+- **`review --file <relative path>` crashed with `ValueError`** (#92, regression
+  from the #86 `Scored:` print). The new header printed `md_path.relative_to(ROOT)`,
+  which raises when `--file` is a relative or out-of-repo path. Now resolves first
+  and guards `relative_to`, falling back to the absolute path.
+- **`review --file` mis-inferred `en_US` for a locale-tagged filename** (#92). The
+  filename→locale regex `([a-zA-Z_]+)` greedily captured the persona/variant
+  suffix too (`zh_TW_agentic_ats` from `resume_v012_zh_TW_agentic_ats.md`),
+  yielding an invalid locale that fell back to `en_US` — so a non-English résumé
+  under-scored AI-proficiency. Now captures only the `xx_YY` locale token. Affects
+  every suffixed filename, not just `--file`.
+
 ## [0.34.0] — 2026-06-02
 
 A batch of agent-operation fixes surfaced by a real interactive run (#82–#91):

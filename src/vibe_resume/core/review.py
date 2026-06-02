@@ -868,9 +868,13 @@ def review_file(
     page_target: float | None = None,
 ) -> ReviewReport:
     text = Path(md_path).read_text(encoding="utf-8")
-    # infer locale from filename if not given: resume_v007.md → en_US; resume_v010_zh_TW.md → zh_TW
+    # Infer locale from filename if not given. #92: capture ONLY the locale token
+    # (xx_YY), not the trailing persona/variant suffix — the old greedy
+    # `([a-zA-Z_]+)` grabbed e.g. `zh_TW_agentic_ats` from
+    # resume_v012_zh_TW_agentic_ats.md → invalid → silently fell back to en_US,
+    # under-scoring a non-English résumé. resume_v007.md (no token) → en_US.
     if not locale_key:
-        m = re.search(r"resume_v\d+_([a-zA-Z_]+)\.md$", str(md_path))
+        m = re.search(r"resume_v\d+_([a-z]{2}_[A-Z]{2})(?:_|\.)", str(md_path))
         locale_key = m.group(1) if m else "en_US"
     # Pre-resolve company so the ``review()`` scorer can apply keyword-anchor
     # coverage in the same pass. Unknown keys fall through cleanly.

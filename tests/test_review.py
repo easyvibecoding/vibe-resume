@@ -397,3 +397,31 @@ def test_page_target_none_keeps_locale_default():
     a = next(s for s in review(_LONG_MD, "en_US").scores if s.name == "Page count")
     b = next(s for s in review(_LONG_MD, "en_US", page_target=None).scores if s.name == "Page count")
     assert a.score == b.score   # None override == fixed locale target (back-compat)
+
+
+# ---- #92: review --file regressions (relative path crash + locale inference) ---
+
+
+def test_review_file_outside_root_does_not_crash_and_infers_locale(tmp_path, monkeypatch):
+    """#92: --file with a path not under ROOT must not crash on relative_to, and
+    the locale must be inferred from the (persona+variant-suffixed) filename."""
+    from click.testing import CliRunner
+
+    import vibe_resume.cli as cli_mod
+
+    monkeypatch.setattr(cli_mod, "ROOT", tmp_path / "repo")
+    (tmp_path / "repo" / "data" / "reviews").mkdir(parents=True)
+    # résumé lives OUTSIDE ROOT, with a zh_TW + persona + variant suffix
+    outside = tmp_path / "elsewhere"
+    outside.mkdir()
+    f = outside / "resume_v012_zh_TW_agentic_ats.md"
+    f.write_text("# 履歴\n設計並交付資料處理流程,經 PR 安全性審查人工驗證後合併。\n", encoding="utf-8")
+
+    result = CliRunner().invoke(
+        cli_mod.cli,
+        ["review", "--file", str(f), "--persona", "agentic", "--no-diff"],
+        obj={"config": {"render": {"locale": "en_US"}}},
+    )
+    assert result.exit_code == 0, result.output
+    assert "Scored:" in result.output
+    assert "zh_TW" in result.output          # locale inferred from filename, not en_US

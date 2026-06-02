@@ -1022,8 +1022,15 @@ def review(
 
     # #86: ALWAYS disclose which file was scored (an agent can't otherwise tell
     # whether it drew conclusions from the right résumé — the old code only
-    # printed this on a persona/locale match).
-    console.print(f"[cyan]Scored:[/cyan] {md_path.relative_to(ROOT)}")
+    # printed this on a persona/locale match). #92: a relative/out-of-repo
+    # --file path isn't under ROOT, so guard relative_to and fall back to the
+    # resolved absolute path instead of crashing.
+    disp = md_path.resolve()
+    try:
+        disp = disp.relative_to(ROOT)
+    except ValueError:
+        pass
+    console.print(f"[cyan]Scored:[/cyan] {disp}")
     if (persona or locale) and not (version or file_) and locale:
         # #63: disclose when a newer same-locale render exists than the one matched.
         hint = newer_variant_hint(hist_dir, md_path, locale)

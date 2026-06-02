@@ -44,3 +44,25 @@ def test_resolve_locale_only_picks_latest_of_that_locale(hist_with_persona_files
     assert "zh_TW" in p.name
     # Should be v004 (latest zh_TW) since v003 is older
     assert p.name == "resume_v004_zh_TW_hr.md"
+
+
+# ---- #92: --file locale inference must isolate the locale token -------------
+
+
+def test_review_file_infers_locale_from_persona_variant_suffixed_name(tmp_path):
+    """#92: a filename like resume_v012_zh_TW_agentic_ats.md must infer locale
+    zh_TW — the old greedy regex captured 'zh_TW_agentic_ats' → invalid → en_US,
+    so a non-English résumé under-scored AI-proficiency."""
+    from vibe_resume.core.review import review_file
+    f = tmp_path / "resume_v012_zh_TW_agentic_ats.md"
+    f.write_text("# 履歷\nsome content\n", encoding="utf-8")
+    report = review_file(f)  # no locale_key → must infer from filename
+    assert report.locale == "zh_TW"
+
+
+def test_review_file_infers_plain_locale_and_defaults(tmp_path):
+    from vibe_resume.core.review import review_file
+    (tmp_path / "resume_v010_ja_JP.md").write_text("# 履歴書\n", encoding="utf-8")
+    assert review_file(tmp_path / "resume_v010_ja_JP.md").locale == "ja_JP"
+    (tmp_path / "resume_v007.md").write_text("# resume\n", encoding="utf-8")
+    assert review_file(tmp_path / "resume_v007.md").locale == "en_US"
